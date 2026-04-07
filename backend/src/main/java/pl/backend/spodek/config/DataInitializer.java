@@ -1,10 +1,10 @@
 package pl.backend.spodek.config;
 
-import com.example.fifastats.model.AppUser;
-import com.example.fifastats.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import pl.backend.spodek.model.AppUser;
+import pl.backend.spodek.repository.UserRepository;
 
 @Component
 public class DataInitializer implements CommandLineRunner {

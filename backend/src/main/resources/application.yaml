@@ -11,7 +11,10 @@ spring:
       on-profile: dev
   data:
     mongodb:
-      uri: mongodb://localhost:27017/spodek_dev
+      # Rozbijamy to, żeby Spring nie miał wątpliwości
+      host: localhost
+      port: 27017
+      database: spodek_dev
 server:
   port: 8999
 
@@ -22,6 +25,6 @@ spring:
       on-profile: prod
   data:
     mongodb:
-      uri: ${MONGO_URI}
+      uri: ${MONGO_URI} # Tu w produkcji (Atlas) baza jest zaszyta w URI
 server:
   port: ${PORT:8080}
