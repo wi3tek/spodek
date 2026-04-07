@@ -1,1 +1,33 @@
+# --- System ---
+.DS_Store
+Thumbs.db
+.idea
+
+# --- IntelliJ / Java ---
+backend/target/
+backend/.idea/
+backend/*.iml
+backend/help/
+backend/mvnw*
+backend/.mvn
+
+# --- WebStorm / Angular ---
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.idea/
+frontend/*.swp
+frontend/npm-debug.log
+frontend/.vscode
+# --- Environment ---
+.env
+
+
+# IDEs
+.idea/
+frontend/.vscode/
+*.iml
+
+# Build & Wrapper
+backend/.mvn/wrapper/maven-wrapper.jar
 

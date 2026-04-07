@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: spodek
+  profiles:
+    active: dev
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/spodek_dev
+server:
+  port: 8999
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+server:
+  port: ${PORT:8080}
