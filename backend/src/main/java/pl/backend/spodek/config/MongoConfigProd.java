@@ -16,12 +16,12 @@ public class MongoConfigProd {
     private String mongoUri;
 
     @Bean
-    public MongoClient mongoClientProd() {
+    public MongoClient mongoClient() {
         return MongoClients.create(mongoUri);
     }
 
     @Bean
-    public MongoTemplate mongoTemplateProd() {
-        return new MongoTemplate(mongoClientProd(), "spodek_prod");
+    public MongoTemplate mongoTemplate() {
+        return new MongoTemplate(mongoClient(), "spodek_prod");
     }
 }
