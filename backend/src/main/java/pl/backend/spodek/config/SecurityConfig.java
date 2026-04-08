@@ -50,10 +50,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // DODAJ ADRES TWOJEGO FRONTENDU (BEZ KOŃCOWEGO SLASH-A!)
-        configuration.setAllowedOrigins( List.of(
-                "http://localhost:4200",
-                "https://spodek-frontend.onrender.com"
-        ) );
+        configuration.setAllowedOrigins( allowedOrigins );
         configuration.setAllowedMethods( List.of( "GET", "POST", "PUT", "DELETE", "OPTIONS" ) );
         configuration.setAllowedHeaders( List.of( "Authorization", "Cache-Control", "Content-Type" ) );
         configuration.setAllowCredentials( true );
