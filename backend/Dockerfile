@@ -1,13 +1,10 @@
-# Etap 1: Budowanie aplikacji za pomocą Maven Wrapper
-FROM eclipse-temurin:21-jdk-alpine AS build
+# Etap 1: Budowanie za pomocą oficjalnego obrazu Maven
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS build
 WORKDIR /app
-COPY mvnw .
-COPY .mvn .mvn
 COPY pom.xml .
-COPY src src
-# Nadajemy uprawnienia do wykonania dla wrappera i budujemy plik .jar
-RUN chmod +x ./mvnw
-RUN ./mvnw clean package -DskipTests
+COPY src ./src
+# Używamy systemowego 'mvn' zamiast './mvnw'
+RUN mvn clean package -DskipTests
 
 # Etap 2: Uruchomienie aplikacji
 FROM eclipse-temurin:21-jdk-alpine
