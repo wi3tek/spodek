@@ -20,7 +20,8 @@ app:
   admin:
     email: ${ADMIN_EMAIL:dev@spodek.local}
     password: ${ADMIN_PASSWORD:DevSpodekStart2026!}
-
+  cors:
+    allowed-origins: http://localhost:4200
 ---
 spring:
   config:
@@ -35,3 +36,5 @@ app:
   admin:
     email: ${ADMIN_EMAIL}
     password: ${ADMIN_PASSWORD}
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}

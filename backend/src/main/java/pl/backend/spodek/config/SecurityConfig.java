@@ -1,6 +1,7 @@
 package pl.backend.spodek.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -24,6 +25,9 @@ public class SecurityConfig {
     private final UserRepository userRepository;
     private final JwtAuthenticationFilter jwtAuthFilter; // Wstrzykujemy nasz nowy filtr
 
+    @Value("${app.cors.allowed-origins}")
+    private List<String> allowedOrigins;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -45,10 +49,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Tutaj dodasz URL swojego frontu po wdrożeniu na Render:
-        configuration.setAllowedOrigins( List.of( "http://localhost:4200", "https://twoja-nazwa-frontu.onrender.com" ) );
+        // DODAJ ADRES TWOJEGO FRONTENDU (BEZ KOŃCOWEGO SLASH-A!)
+        configuration.setAllowedOrigins( List.of(
+                "http://localhost:4200",
+                "https://spodek-frontend.onrender.com"
+        ) );
         configuration.setAllowedMethods( List.of( "GET", "POST", "PUT", "DELETE", "OPTIONS" ) );
-        configuration.setAllowedHeaders( List.of( "Authorization", "Content-Type" ) );
+        configuration.setAllowedHeaders( List.of( "Authorization", "Cache-Control", "Content-Type" ) );
+        configuration.setAllowCredentials( true );
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration( "/**", configuration );
         return source;
