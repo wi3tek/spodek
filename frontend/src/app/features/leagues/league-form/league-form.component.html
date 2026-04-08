@@ -1,0 +1,28 @@
+<div class="dashboard-container">
+  <div class="form-card">
+    <h2>🐻 Utwórz Nową Ligę</h2>
+
+    <form [formGroup]="leagueForm" (ngSubmit)="onSubmit()">
+
+      <div class="form-group">
+        <label for="name">Nazwa Ligi</label>
+        <input
+          id="name"
+          type="text"
+          formControlName="name"
+          placeholder="np. Puchar Prezesa"
+          [class.is-invalid]="leagueForm.get('name')?.invalid && leagueForm.get('name')?.touched"
+        >
+        @if (leagueForm.get('name')?.invalid && leagueForm.get('name')?.touched) {
+          <small class="error-text">Nazwa musi mieć co najmniej 3 znaki.</small>
+        }
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" (click)="cancel()">Anuluj</button>
+        <button type="submit" class="btn-primary" [disabled]="leagueForm.invalid">Zapisz Ligę</button>
+      </div>
+
+    </form>
+  </div>
+</div>

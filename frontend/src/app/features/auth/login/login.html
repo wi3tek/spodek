@@ -1,8 +1,5 @@
-<div class="login-container">
-  <h2>Logowanie do Spodka</h2>
-  <form (ngSubmit)="onSubmit()">
-    <input type="email" name="email" [(ngModel)]="credentials.email" placeholder="Email" required>
-    <input type="password" name="password" [(ngModel)]="credentials.password" placeholder="Hasło" required>
-    <button type="submit">Zaloguj</button>
-  </form>
-</div>
+<form (ngSubmit)="onSubmit()">
+  <input type="email" name="email" [(ngModel)]="credentials.login" required>
+  <input type="password" name="password" [(ngModel)]="credentials.password" required>
+  <button type="submit">Zaloguj</button>
+</form>

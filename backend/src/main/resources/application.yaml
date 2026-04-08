@@ -19,7 +19,8 @@ server:
 app:
   admin:
     email: ${ADMIN_EMAIL:dev@spodek.local}
-    password: ${ADMIN_PASSWORD:DevSpodekStart2026!}
+    password: ${ADMIN_PASSWORD:dev123}
+    name: dev
   cors:
     allowed-origins: http://localhost:4200
 ---

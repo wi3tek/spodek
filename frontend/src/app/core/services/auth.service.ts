@@ -14,13 +14,13 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/auth/login`, credentials).pipe(
       tap(response => {
         if (response.token) {
-          localStorage.setItem('spodek_token', response.token);
+          localStorage.setItem('access_token', response.token);
         }
       })
     );
   }
 
   getToken() {
-    return localStorage.getItem('spodek_token');
+    return localStorage.getItem('access_token');
   }
 }

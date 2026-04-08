@@ -18,16 +18,21 @@ public class AuthController {
     private final JwtService jwtService;
     private final UserRepository userRepository;
 
+    // pl.backend.spodek.web.AuthController (fragment)
+
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
+        // Ważne: Zmień w swojej klasie LoginRequest z 'email' na 'login' lub 'identifier'
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(request.getLogin(), request.getPassword())
         );
 
-        var user = userRepository.findByEmail(request.getEmail())
+        // Szukamy po mailu LUB nazwie tak samo jak w UserDetailsService
+        var user = userRepository.findByEmailOrName(request.getLogin(), request.getLogin())
                 .orElseThrow(() -> new RuntimeException("Użytkownik nie istnieje"));
 
+        // Generujemy token dla obiektu bazy (albo lepiej, dla AppUserContext!)
         String token = jwtService.generateToken(user);
-        return new LoginResponse(token, user.getEmail());
+        return new LoginResponse(token, user.getName()); // Zwracamy name do przywitania!
     }
 }

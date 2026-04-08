@@ -21,15 +21,22 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${app.admin.password}")
     private String adminPassword;
 
+    @Value("${app.admin.name:admin}")
+    private String adminName;
+
     @Override
     public void run(String... args) {
-        if (userRepository.findByEmail(adminEmail).isEmpty()) {
+        // Sprawdzamy po mailu LUB nazwie
+        if (userRepository.findByEmailOrName(adminEmail, adminName).isEmpty()) {
             AppUser admin = new AppUser();
             admin.setEmail(adminEmail);
+            admin.setName(adminName); // <--- Tego brakowało
             admin.setPassword(passwordEncoder.encode(adminPassword));
-            admin.setRole("ADMIN");
+            // Dobra praktyka Spring Security: Zawsze dodawaj prefiks ROLE_
+            admin.setRole("ROLE_ADMIN");
+
             userRepository.save(admin);
-            System.out.println(">>> SuperAdmin created with email: " + adminEmail);
+            System.out.println(">>> SuperAdmin created! Email: " + adminEmail + " | Name: " + adminName);
         }
     }
 }

@@ -24,6 +24,8 @@ public class AppUser implements UserDetails {
     @Indexed(unique = true)
     private String email;
     private String password;
+    @Indexed(unique = true)
+    private String name;     // NOWE POLE (może służyć jako login)
     private String role; // np. "ROLE_ADMIN"
 
     @Override

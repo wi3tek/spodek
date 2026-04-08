@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../../core/services/auth.service';
+import {Component} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {AuthService} from '../../../core/services/auth.service';
+import {Router} from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -11,19 +12,24 @@ import { AuthService } from '../../../core/services/auth.service';
   styleUrls: ['./login.scss']
 })
 export class LoginComponent {
-  credentials = { email: '', password: '' };
+  credentials = {login: '', password: ''};
 
-  constructor(private authService: AuthService) {}
-
+  constructor(private authService: AuthService, private router: Router) {
+  }
   onSubmit() {
+    // Wysyłamy obiekt 'credentials' do serwisu
     this.authService.login(this.credentials).subscribe({
-      next: (res) => {
-        console.log('Zalogowano! Token:', res.token);
-        alert('Sukces! Zalogowano do Spodka.');
+      next: (response: any) => {
+        const token = response.token;
+        if (token) {
+          localStorage.setItem('access_token', token);
+          // Teraz używamy Routera, by przejść do dashboardu
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: (err) => {
-        console.error('Błąd logowania:', err);
-        alert('Nie udało się zalogować.');
+        console.error('Błąd:', err);
+        alert('Nie udało się zalogować');
       }
     });
   }

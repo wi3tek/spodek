@@ -1,1 +1,33 @@
-/* You can add global styles to this file, and also import other style files */
+/* --- NOWA PALETA: NIEDZIEJSKI KAWALERSKI --- */
+:root {
+  --primary-brown: #6b4423;    /* Kolor futra */
+  --sash-red: #c1442a;         /* Czerwona szarfa - idealna na przyciski */
+  --beer-gold: #f59e0b;        /* Złoty kolor trunku */
+  --cream-bg: #fffbeb;         /* Kremowe tło z obrazka */
+  --text-dark: #1e293b;
+  --border-radius: 16px;       /* Bardziej zaokrąglone dla "przyjaznego" UI */
+}
+
+body {
+  background-color: var(--cream-bg);
+  color: var(--text-dark);
+  font-family: 'Inter', sans-serif;
+}
+
+/* Aktualizacja przycisku głównego */
+.btn-primary {
+  background-color: var(--sash-red);
+  color: white;
+  border-radius: var(--border-radius);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 0px #8e321f; /* Efekt "klikalnego" przycisku */
+
+  &:hover {
+    background-color: #a33923;
+    transform: translateY(2px);
+    box-shadow: 0 2px 0px #8e321f;
+    cursor: pointer;
+  }
+}

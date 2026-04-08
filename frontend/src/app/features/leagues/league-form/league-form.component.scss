@@ -1,0 +1,74 @@
+.form-card {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 30px;
+  max-width: 600px;
+  margin: 40px auto;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
+
+  h2 {
+    color: var(--primary-brown);
+    margin-top: 0;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 15px;
+  }
+}
+
+.form-group {
+  margin-bottom: 25px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+
+  input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    box-sizing: border-box; /* Ważne, żeby input nie wychodził poza div */
+
+    &:focus {
+      outline: none;
+      border-color: var(--beer-gold);
+    }
+
+    &.is-invalid {
+      border-color: var(--sash-red);
+    }
+  }
+
+  .error-text {
+    color: var(--sash-red);
+    font-size: 0.85rem;
+    margin-top: 5px;
+    display: block;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+
+  .btn-cancel {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-weight: 600;
+    padding: 12px 20px;
+
+    &:hover {
+      color: var(--text-dark);
+    }
+  }
+}
