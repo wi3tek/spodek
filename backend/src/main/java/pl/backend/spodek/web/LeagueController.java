@@ -4,6 +4,7 @@ package pl.backend.spodek.web;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import pl.backend.spodek.model.League;
+import pl.backend.spodek.model.Season;
 import pl.backend.spodek.repository.LeagueRepository;
 
 import java.util.List;
@@ -28,5 +29,13 @@ public class LeagueController {
         }
         // Save automatycznie uzupełni createdAt, updatedAt, createdBy itp.
         return leagueRepository.save(league);
+    }
+
+    @GetMapping("/{leagueId}")
+    public League getLeagueById(
+            @PathVariable String leagueId
+    ) {
+        return leagueRepository.findById( leagueId ).orElseThrow(() -> new IllegalArgumentException("League with id " +
+                "%s not found".formatted( leagueId )));
     }
 }

@@ -19,15 +19,15 @@ public class MongoAuditConfig implements AuditorAware<String> {
     public Optional<String> getCurrentAuditor() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
-            return Optional.of("system");
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals( "anonymousUser" )) {
+            return Optional.of( "system" );
         }
 
         // TAAAA DAAAM! Mamy dostęp do naszego obiektu!
         if (auth.getPrincipal() instanceof AppUserContext userContext) {
-            return Optional.of(userContext.getId()); // Zwraca np. "65abc123def456"
+            return Optional.of( userContext.getId() ); // Zwraca np. "65abc123def456"
         }
 
-        return Optional.of(auth.getName());
+        return Optional.ofNullable( auth.getName() ).or( () -> Optional.of( "system" ) );
     }
 }

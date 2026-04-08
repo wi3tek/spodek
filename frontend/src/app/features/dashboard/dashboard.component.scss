@@ -220,3 +220,47 @@
     }
   }
 }
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  .top-nav {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-nav {
+    background: transparent;
+    border: none;
+    color: var(--text-dark);
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba(var(--primary-brown-rgb), 0.1);
+    }
+
+    &.active {
+      background: var(--beer-gold);
+      color: var(--primary-brown);
+    }
+
+    @media (max-width: 600px) {
+      .nav-text { display: none; } // Na małych telefonach tylko ikony
+    }
+  }
+
+  .divider {
+    width: 1px;
+    height: 24px;
+    background: #e2e8f0;
+  }
+}

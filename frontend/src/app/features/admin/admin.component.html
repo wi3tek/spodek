@@ -1,0 +1,107 @@
+<div class="dashboard-container admin-layout">
+
+  <section class="admin-section">
+    <div class="section-header team-header-flex">
+      <h2>🐻 Zarządzanie Graczami</h2>
+      <input type="text" class="search-input" placeholder="Szukaj gracza..."
+             (input)="playerSearchTerm.set($any($event.target).value); playerCurrentPage.set(1)">
+    </div>
+
+    <div class="add-card">
+      <h3>Dodaj nowego kumpla</h3>
+      <div class="input-row">
+        <input [(ngModel)]="newPlayer().name" placeholder="Prawdziwe imię">
+        <input [(ngModel)]="newPlayer().alias" placeholder="Alias (Ksywa)">
+        <button class="btn-primary" (click)="saveNewPlayer()">Dodaj</button>
+      </div>
+    </div>
+
+    <div class="list-container">
+      @for (player of paginatedPlayers(); track player.id) {
+        <div class="team-row" [class.editing]="editingId() === player.id">
+          <div class="team-left-group">
+            <span class="player-avatar">👤</span>
+            <div class="team-names">
+              @if (editingId() === player.id) {
+                <input [(ngModel)]="player.name" class="sm-input" placeholder="Imię">
+                <input [(ngModel)]="player.alias" class="sm-input" placeholder="Alias">
+              } @else {
+                <div class="info">
+                  <strong>{{ player.alias }}</strong>
+                  <br>
+                  <small>{{ player.name }}</small>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="team-right-group">
+            <button *ngIf="editingId() === player.id" (click)="saveEdit(player, 'player')" class="btn-primary" title="Zapisz">✔
+            </button>
+            <button *ngIf="editingId() !== player.id" class="btn-icon" (click)="editingId.set(player.id!)"
+                    title="Edytuj">✏️</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="pagination" *ngIf="totalPlayerPages() > 1">
+      <button class="btn-page" [disabled]="playerCurrentPage() === 1" (click)="playerCurrentPage.set(playerCurrentPage() - 1)">«</button>
+      <div class="page-jumper">
+        <span>Str.</span>
+        <input type="number" [value]="playerCurrentPage()" (change)="goToPage($event, 'player')" class="page-input">
+        <span>z {{ totalPlayerPages() }}</span>
+      </div>
+      <button class="btn-page" [disabled]="playerCurrentPage() === totalPlayerPages()" (click)="playerCurrentPage.set(playerCurrentPage() + 1)">»</button>
+    </div>
+  </section>
+
+  <section class="admin-section">
+    <div class="section-header team-header-flex">
+      <h2>⚽ Drużyny</h2>
+      <input type="text" class="search-input" placeholder="Szukaj drużyny..."
+             (input)="teamSearchTerm.set($any($event.target).value); teamCurrentPage.set(1)">
+    </div>
+
+    <div class="list-container">
+      @for (team of paginatedTeams(); track team.id) {
+        <div class="team-row" [class.editing]="editingId() === team.id">
+          <div class="team-left-group">
+            <img [src]="'/logos/light/' + team.assetId + '.png'" class="logo-small" alt="">
+            <div class="team-names">
+              @if (editingId() === team.id) {
+                <span class="asset-id">ID: {{ team.assetId }}</span>
+                <input [(ngModel)]="team.name" class="sm-input" placeholder="Nazwa FIFA">
+                <input [(ngModel)]="team.alias" class="sm-input" placeholder="Alias">
+              } @else {
+                <div class="info">
+                  <strong>{{ team.alias || team.name }}</strong>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="team-right-group" >
+            <div class="ratings" *ngIf="editingId() !== team.id" [title]="'Ocena ogólna (ATK | POM | OBR)'">
+              {{team.overallRating}} ({{team.attackRating}} - {{team.midfieldRating}} - {{team.defenseRating}})
+            </div>
+            <button *ngIf="editingId() === team.id" (click)="saveEdit(team, 'team')" class="btn-primary"
+                    title="Zapisz">✔
+            </button>
+            <button *ngIf="editingId() !== team.id" class="btn-icon" (click)="editingId.set(team.id!)" title="Edytuj">✏️
+            </button>
+          </div>
+        </div>
+
+      }
+    </div>
+
+    <div class="pagination" *ngIf="totalTeamPages() > 1">
+      <button class="btn-page" [disabled]="teamCurrentPage() === 1" (click)="teamCurrentPage.set(teamCurrentPage() - 1)">«</button>
+      <div class="page-jumper">
+        <span>Str.</span>
+        <input type="number" [value]="teamCurrentPage()" (change)="goToPage($event, 'team')" class="page-input">
+        <span>z {{ totalTeamPages() }}</span>
+      </div>
+      <button class="btn-page" [disabled]="teamCurrentPage() === totalTeamPages()" (click)="teamCurrentPage.set(teamCurrentPage() + 1)">»</button>
+    </div>
+  </section>
+</div>

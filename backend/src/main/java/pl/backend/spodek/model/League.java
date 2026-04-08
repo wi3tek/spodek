@@ -14,23 +14,11 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class League {
+public class League extends BaseDocument {
 
     @Id
     private String id;
     private String name;
     private String status;
 
-    // --- POLA AUDYTOWE ---
-    @CreatedDate
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
-
-    @CreatedBy
-    private String createdBy;
-
-    @LastModifiedBy
-    private String updatedBy;
 }

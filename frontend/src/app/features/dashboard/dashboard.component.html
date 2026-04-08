@@ -7,8 +7,20 @@
     </div>
 
     <div class="user-actions">
-      <span class="admin-badge">Admin Panel</span>
-      <button class="btn-primary btn-sm btn-logout" (click)="logout()">Wyloguj</button>
+      <nav class="top-nav">
+        <button class="btn-nav active" routerLink="/dashboard">
+          🏠 <span class="nav-text">Dashboard</span>
+        </button>
+        <button class="btn-nav" routerLink="/admin">
+          ⚙️ <span class="nav-text">Panel Admina</span>
+        </button>
+      </nav>
+
+      <div class="divider"></div>
+
+      <button class="btn-secondary btn-sm btn-logout" (click)="logout()">
+        Wyloguj
+      </button>
     </div>
   </header>
 
@@ -27,7 +39,7 @@
               <span class="status" [class.active]="liga.status === 'ACTIVE'">
                 {{ liga.status === 'ACTIVE' ? 'Aktywna' : 'Zakończona' }}
               </span>
-              <button class="btn-primary btn-sm" (click)="openLeague(liga.id)">Zarządzaj</button>
+              <button class="btn-primary btn-sm" [routerLink]="['/league', liga.id]">Otwórz</button>
             </div>
           </div>
         } @empty {
