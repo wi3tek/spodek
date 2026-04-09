@@ -9,6 +9,8 @@ export interface SeasonTableEntry {
   goalsScored: number;
   goalsLost: number;
   goalDifference: number;
+  assists: number;
+  yellowCards: number;
+  redCards: number;
   winRatio: number;
-  
 }

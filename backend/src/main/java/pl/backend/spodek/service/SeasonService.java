@@ -6,7 +6,6 @@ import pl.backend.spodek.dto.SeasonTableEntryDTO;
 import pl.backend.spodek.model.Match;
 import pl.backend.spodek.model.Player;
 import pl.backend.spodek.repository.MatchRepository;
-import pl.backend.spodek.repository.PlayerRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -23,41 +22,43 @@ public class SeasonService {
     private final MatchRepository matchRepository;
     private final AdminService adminService;
 
-
     public List<SeasonTableEntryDTO> getSeasonTable(String seasonId) {
         // 1. Pobierz wszystkie ZAKOŃCZONE mecze z tego sezonu
+        // Zakładam, że pobierasz tylko zakończone, jeśli nie - dodaj filtrację
         List<Match> matches = matchRepository.findBySeasonId(seasonId);
         Map<String, Player> playersMap = adminService.getPlayersMap();
-        // 2. Mapa do zbierania statystyk (Klucz: playerId)
+
         Map<String, SeasonTableEntryDTO> statsMap = new HashMap<>();
 
         for (Match match : matches) {
-            processMatchSide(statsMap, match, true,playersMap);  // Procesuj gospodarzy
-            processMatchSide(statsMap, match, false,playersMap); // Procesuj gości
+            processMatchSide(statsMap, match, true, playersMap);  // Gospodarze
+            processMatchSide(statsMap, match, false, playersMap); // Goście
         }
 
-        // 3. Konwersja mapy na listę, obliczenie ratio i sortowanie
-        List<SeasonTableEntryDTO> collect = statsMap.values().stream()
-                .peek( entry -> {
-                    entry.setGoalDifference( entry.getGoalsScored() - entry.getGoalsLost() );
-//                    entry.setWinRatio( entry.getMatchesPlayed() > 0
-//                            ? (double) entry.getWins() / entry.getMatchesPlayed()
-//                            : 0.0 );
-                } )
-                .sorted( Comparator.comparing( SeasonTableEntryDTO::getWinRatio )
-                        .thenComparingInt( SeasonTableEntryDTO::getPoints )
-                        .thenComparingInt( SeasonTableEntryDTO::getGoalDifference )
-                        .thenComparingInt( SeasonTableEntryDTO::getGoalsScored )
-                        .reversed() ) // Najlepsi na górę
-                .collect( Collectors.toList() );
-        return collect;
+        // 3. Konwersja na listę i finalne sortowanie
+        return statsMap.values().stream()
+                .peek(entry -> {
+                    // Wyliczamy różnicę bramek (Indywidualne strzelone - Drużynowe stracone)
+                    entry.setGoalDifference(entry.getGoalsScored() - entry.getGoalsLost());
+                })
+                .sorted(Comparator.comparing(SeasonTableEntryDTO::getWinRatio)
+                        .thenComparingInt(SeasonTableEntryDTO::getPoints)
+                        .thenComparingInt(SeasonTableEntryDTO::getGoalDifference)
+                        .thenComparingInt(SeasonTableEntryDTO::getGoalsScored)
+                        .reversed())
+                .collect(Collectors.toList());
     }
 
-    private void processMatchSide(Map<String, SeasonTableEntryDTO> statsMap, Match match, boolean isHome,
-                                  Map<String, Player> playersMap) {
+    private void processMatchSide(
+            Map<String, SeasonTableEntryDTO> statsMap,
+            Match match,
+            boolean isHome,
+            Map<String, Player> playersMap
+    ) {
         var currentSide = isHome ? match.getHomeSide() : match.getAwaySide();
         var opponentSide = isHome ? match.getAwaySide() : match.getHomeSide();
 
+        // Wyznaczanie punktów dla drużyny w tym meczu
         int points = 0;
         int win = 0, draw = 0, loss = 0;
 
@@ -69,26 +70,44 @@ public class SeasonService {
             loss = 1;
         }
 
-        final int fPoints = points, fWin = win, fDraw = draw, fLoss = loss;
-
         for (var player : currentSide.getPlayers()) {
-            statsMap.computeIfAbsent(player.getPlayerId(), id -> {
+            String pId = player.getPlayerId();
+
+            statsMap.computeIfAbsent(pId, id -> {
                 SeasonTableEntryDTO dto = new SeasonTableEntryDTO();
                 dto.setPlayerId(id);
-                dto.setAlias(playersMap.get( player.getPlayerId() ).getAlias());
+                Player p = playersMap.get(id);
+                dto.setAlias(p != null ? p.getAlias() : "Nieznany");
+                dto.setWinRatio(BigDecimal.ZERO);
                 return dto;
             });
 
-            SeasonTableEntryDTO s = statsMap.get(player.getPlayerId());
+            SeasonTableEntryDTO s = statsMap.get(pId);
+
+            // KUMULACJA STATYSTYK (używamy += lub set(get() + value))
             s.setMatchesPlayed(s.getMatchesPlayed() + 1);
-            s.setPoints(s.getPoints() + fPoints);
-            s.setWins(s.getWins() + fWin);
-            s.setDraws(s.getDraws() + fDraw);
-            s.setLosses(s.getLosses() + fLoss);
-            s.setGoalsScored(s.getGoalsScored() + currentSide.getGoals());
+            s.setPoints(s.getPoints() + points);
+            s.setWins(s.getWins() + win);
+            s.setDraws(s.getDraws() + draw);
+            s.setLosses(s.getLosses() + loss);
+
+            // Gole strzelone TYLKO przez tego gracza (akumulacja)
+            s.setGoalsScored(s.getGoalsScored() + player.getGoals());
+
+            // Gole stracone przez DRUŻYNĘ tego gracza (akumulacja)
             s.setGoalsLost(s.getGoalsLost() + opponentSide.getGoals());
-            s.setWinRatio( BigDecimal.valueOf(s.getPoints()).divide(  BigDecimal.valueOf(   s.getMatchesPlayed()) ,
-                    RoundingMode.HALF_UP ));
+
+            // Kartki i asysty (akumulacja)
+            s.setYellowCards(s.getYellowCards() + player.getYellowCards());
+            s.setRedCards(s.getRedCards() + player.getRedCards());
+            s.setAssists(s.getAssists() + player.getAssists());
+
+            // Wyliczanie winRatio na bieżąco (pkt / mecze)
+            if (s.getMatchesPlayed() > 0) {
+                BigDecimal ratio = BigDecimal.valueOf(s.getPoints())
+                        .divide(BigDecimal.valueOf(s.getMatchesPlayed()), 2, RoundingMode.HALF_UP);
+                s.setWinRatio(ratio);
+            }
         }
     }
 }

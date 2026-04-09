@@ -11,7 +11,7 @@
     <div class="user-actions">
       <nav class="top-nav">
         <button class="btn-nav" routerLink="/dashboard">🏠 <span class="nav-text">Dashboard</span></button>
-        <button class="btn-nav" routerLink="/admin">⚙️ <span class="nav-text">Admin</span></button>
+        <button class="btn-nav" routerLink="/admin">⚙️ <span class="nav-text">Ustawienia</span></button>
       </nav>
       <div class="divider"></div>
       <button class="btn-secondary btn-sm btn-logout" (click)="logout()">Wyloguj</button>
@@ -133,16 +133,19 @@
                       <label>🟨</label>
                       <div class="stepper-controls">
                         <button type="button" (click)="p.yellowCards = Math.max(0, (p.yellowCards || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.yellowCards" min="0" max="2" (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(2, Math.max(0, p.yellowCards || 0))">
-                        <button type="button" (click)="p.yellowCards = Math.min(2, (p.yellowCards || 0) + 1)">+</button>
+                        <input type="number" [(ngModel)]="p.yellowCards" min="0" max="99"
+                               (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(2, Math.max(0, p.yellowCards || 0))">
+                        <button type="button" (click)="p.yellowCards = Math.min(20, (p.yellowCards || 0) + 1)">+
+                        </button>
                       </div>
                     </div>
                     <div class="stat-stepper">
                       <label>🟥</label>
                       <div class="stepper-controls">
                         <button type="button" (click)="p.redCards = Math.max(0, (p.redCards || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.redCards" min="0" max="1" (focus)="selectContent($event)" (blur)="p.redCards = Math.min(1, Math.max(0, p.redCards || 0))">
-                        <button type="button" (click)="p.redCards = Math.min(1, (p.redCards || 0) + 1)">+</button>
+                        <input type="number" [(ngModel)]="p.redCards" min="0" max="99" (focus)="selectContent($event)"
+                               (blur)="p.redCards = Math.min(1, Math.max(0, p.redCards || 0))">
+                        <button type="button" (click)="p.redCards = Math.min(20, (p.redCards || 0) + 1)">+</button>
                       </div>
                     </div>
                   </div>
@@ -248,7 +251,7 @@
 
     <section class="card matches-panel">
       <div class="panel-header">
-        <h2>⚽ Lista Meczów</h2>
+        <h2>⚽ Mecze</h2>
         @if (!showMatchForm()) {
           <button class="btn-primary btn-sm" (click)="addNewMatch()">+ Dodaj Mecz</button>
         }
@@ -329,7 +332,7 @@
 
     <section class="card stats-panel">
       <div class="panel-header">
-        <h2>📊 Tabela Sezonu</h2>
+        <h2>📊 Tabela</h2>
       </div>
       <table class="wietek-table">
         <thead>
@@ -345,13 +348,22 @@
             Pkt @if(sortKey() === 'points'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
           </th>
           <th (click)="toggleSort('goalsScored')" class="sortable center">
-            BZ @if(sortKey() === 'goalsScored'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            ⚽ @if(sortKey() === 'goalsScored'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th (click)="toggleSort('assists')" class="sortable center">
+            👟 @if(sortKey() === 'assists'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
           </th>
           <th (click)="toggleSort('goalsLost')" class="sortable center">
             BS @if(sortKey() === 'goalsLost'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
           </th>
           <th (click)="toggleSort('goalDifference')" class="sortable center">
             +/- @if(sortKey() === 'goalDifference'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th (click)="toggleSort('yellowCards')" class="sortable center">
+            🟨 @if(sortKey() === 'yellowCards'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th (click)="toggleSort('redCards')" class="sortable center">
+            🟥 @if(sortKey() === 'redCards'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
           </th>
           <th (click)="toggleSort('winRatio')" class="sortable highlight">
             WSP.W @if(sortKey() === 'winRatio'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
@@ -367,11 +379,14 @@
               <td>{{ row.points }}</td>
 
               <td>{{ row.goalsScored }}</td>
+              <td>{{ row.assists }}</td>
               <td>{{ row.goalsLost }}</td>
 
               <td [style.color]="row.goalDifference > 0 ? '#22c55e' : (row.goalDifference < 0 ? '#ef4444' : '#94a3b8')">
                 {{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }}
               </td>
+              <td>{{row.yellowCards}}</td>
+              <td>{{row.redCards}}</td>
               <td class="highlight-val">{{ row.winRatio | number:'1.2-2' }}</td>
             </tr>
           }

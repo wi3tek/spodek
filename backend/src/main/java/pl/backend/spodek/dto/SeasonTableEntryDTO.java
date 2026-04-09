@@ -20,5 +20,8 @@ public class SeasonTableEntryDTO {
     private int goalsScored;
     private int goalsLost;
     private int goalDifference;
+    private int yellowCards;
+    private int redCards;
+    private int assists;
     private BigDecimal winRatio;
 }

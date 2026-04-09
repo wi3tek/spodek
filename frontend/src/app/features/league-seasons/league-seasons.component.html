@@ -73,33 +73,33 @@
     </section>
 
     <section class="card stats-panel">
-      <div class="panel-header">
-        <h2>🏆 Ranking Wszech Czasów</h2>
-      </div>
+<!--      <div class="panel-header">-->
+<!--        <h2>🏆 Ranking Wszech Czasów</h2>-->
+<!--      </div>-->
 
-      <div class="table-container">
-        <table class="season-table">
-          <thead>
-          <tr>
-            <th>Gracz</th>
-            <th>M</th>
-            <th>Pkt</th>
-            <th class="highlight">WSP.W</th>
-          </tr>
-          </thead>
-          <tbody>
-            @for (row of aggregateTable(); track row.player) {
-              <tr>
-                <td><strong>{{ row.player }}</strong></td>
-                <td>{{ row.m }}</td>
-                <td>{{ row.pkt }}</td>
-                <td class="highlight-val">{{ row.wspW | number:'1.2-2' }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      <p class="table-info">Suma punktów i meczów ze wszystkich zakończonych sezonów.</p>
+<!--      <div class="table-container">-->
+<!--        <table class="season-table">-->
+<!--          <thead>-->
+<!--          <tr>-->
+<!--            <th>Gracz</th>-->
+<!--            <th>M</th>-->
+<!--            <th>Pkt</th>-->
+<!--            <th class="highlight">WSP.W</th>-->
+<!--          </tr>-->
+<!--          </thead>-->
+<!--          <tbody>-->
+<!--            @for (row of aggregateTable(); track row.player) {-->
+<!--              <tr>-->
+<!--                <td><strong>{{ row.player }}</strong></td>-->
+<!--                <td>{{ row.m }}</td>-->
+<!--                <td>{{ row.pkt }}</td>-->
+<!--                <td class="highlight-val">{{ row.wspW | number:'1.2-2' }}</td>-->
+<!--              </tr>-->
+<!--            }-->
+<!--          </tbody>-->
+<!--        </table>-->
+<!--      </div>-->
+<!--      <p class="table-info">Suma punktów i meczów ze wszystkich zakończonych sezonów.</p>-->
     </section>
 
   </div>
