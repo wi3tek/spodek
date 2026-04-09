@@ -1,5 +1,48 @@
-<form (ngSubmit)="onSubmit()">
-  <input type="email" name="email" [(ngModel)]="credentials.login" required>
-  <input type="password" name="password" [(ngModel)]="credentials.password" required>
-  <button type="submit">Zaloguj</button>
-</form>
+<div class="login-page">
+  <div class="login-card animate-in">
+
+    <div class="login-header">
+      <img src="/logo.png" alt="Logo" class="login-logo">
+      <h1>Śpoda</h1>
+      <p>Witamy oficjalnie!</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+      <div class="input-group">
+        <label for="email">E-mail / Login</label>
+        <div class="input-wrapper">
+          <span class="icon">👤</span>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            [(ngModel)]="credentials.login"
+            placeholder="Twój adres e-mail"
+            required>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="password">Hasło</label>
+        <div class="input-wrapper">
+          <span class="icon">🔒</span>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            [(ngModel)]="credentials.password"
+            placeholder="••••••••"
+            required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login" [disabled]="!loginForm.valid">
+        Zaloguj się
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <p>&copy; 2026 Śpoda Dashboard v2.0</p>
+    </div>
+  </div>
+</div>

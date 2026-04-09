@@ -1,0 +1,130 @@
+.login-page {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top right, #fdfcfb 0%, #e2d1c3 100%);
+  font-family: 'Inter', sans-serif;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 35px;
+
+  .login-logo {
+    height: 80px;
+    margin-bottom: 15px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    color: #4a3427; /* Twój Primary Brown */
+    margin: 0;
+    font-weight: 800;
+  }
+
+  p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-top: 5px;
+  }
+}
+
+.input-group {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .icon {
+    position: absolute;
+    left: 15px;
+    font-size: 1rem;
+    opacity: 0.6;
+  }
+
+  input {
+    width: 100%;
+    padding: 12px 15px 12px 45px;
+    border: 2px solid #f1f5f9;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: #d4af37; /* Twój Beer Gold */
+      box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+    }
+  }
+}
+
+.btn-login {
+  width: 100%;
+  padding: 14px;
+  background: #4a3427;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 10px;
+  box-shadow: 0 4px 15px rgba(74, 52, 39, 0.2);
+
+  &:hover:not(:disabled) {
+    background: #5d4232;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 52, 39, 0.3);
+  }
+
+  &:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.login-footer {
+  margin-top: 30px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* Animacja wejścia */
+.animate-in {
+  animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
