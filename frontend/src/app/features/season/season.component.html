@@ -235,7 +235,7 @@
             <span class="slider round"></span>
           </label>
           <span class="status-label" [class.is-finished]="newMatch.finished">
-            {{ newMatch.finished ? 'Zakończony 🔒' : 'Trwa ⚽' }}
+            {{ newMatch.finished ? 'Zakończony 🔒' : 'W trakcie ⚽' }}
           </span>
         </div>
 
@@ -269,7 +269,7 @@
                 @if (m.finished) {
                   <span class="status-tag">Zakończony 🔒</span>
                 } @else {
-                  <span class="status-tag active">Trwa... <span class="blinking-ball">⚽</span></span>
+                  <span class="status-tag active">W trakcie... <span class="blinking-ball">⚽</span></span>
                 }
               </div>
 
