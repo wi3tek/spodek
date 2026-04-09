@@ -1,37 +1,305 @@
-.league-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr; // Tabela węższa, sezony szersze
-  gap: 25px;
-  margin-top: 20px;
-
-  @media (max-width: 900px) { grid-template-columns: 1fr; }
+/* Kontener główny - zapewnia odpowiednie odstępy od krawędzi ekranu */
+.dashboard-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.wietek-table {
-  width: 100%;
-  border-collapse: collapse;
-  th { text-align: left; font-size: 12px; color: #888; padding: 10px; }
-  td { padding: 12px 10px; border-bottom: 1px solid #f0f0f0; }
-
-  .highlight { color: #d4a017; font-weight: bold; }
-  .highlight-val { color: #d4a017; font-weight: 800; font-size: 1.1em; }
-}
-
-.season-item {
+/* --- NAGŁÓWEK --- */
+.main-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  background: #fdfdfd;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  margin-bottom: 12px;
+  padding: 15px 25px;
+  background: white;
+  border-radius: var(--border-radius);
+  margin-bottom: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
+
+  /* Lewa strona z logo */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    .app-logo {
+      height: 100px;
+      width: 100px;
+      object-fit: cover; /* Na wypadek gdyby logo nie było idealnym kwadratem */
+      padding: 2px; /* Lekki margines wewnątrz ramki */
+    }
+
+    .app-title {
+      margin: 0;
+      font-size: 1.5rem;
+      color: var(--primary-brown);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+  }
+
+  /* Prawa strona z przyciskiem */
+  .user-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+
+    .admin-badge {
+      background: var(--beer-gold);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 4px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Wyjątkowy styl dla przycisku wyloguj - mniej "krzykliwy" niż czerwony */
+    .btn-logout {
+      background: #e2e8f0;
+      color: var(--text-dark);
+      box-shadow: none;
+      border: 1px solid #cbd5e1;
+
+      &:hover {
+        background: #cbd5e1;
+        box-shadow: none;
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+/* Responsywność dla małych ekranów (np. telefony pionowo) */
+@media (max-width: 600px) {
+  .main-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+
+    .brand {
+      flex-direction: column;
+      gap: 10px;
+    }
+  }
+}
+
+/* Układ całego dashboardu (Panele obok siebie) */
+.grid-layout {
+  display: grid;
+  /* Proporcja: Główny panel zajmuje więcej miejsca (1.5) niż pasek boczny (1) */
+  /* Na wąskich ekranach automatycznie zejdą pod siebie */
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+@media (min-width: 900px) {
+  .grid-layout {
+    grid-template-columns: 1.5fr 1fr;
+  }
+}
+
+/* Wygląd białych paneli */
+.card {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03); /* Bardzo lekki cień */
+  border: 1px solid #f1f5f9;
+
+  h2 {
+    margin-top: 0;
+    color: var(--primary-brown);
+    font-size: 1.25rem;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f1f5f9;
+    margin-bottom: 20px;
+  }
+}
+
+/* --- PANEL LIG (Styl Tabelaryczny) --- */
+.league-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Odstęp między wierszami lig */
+}
+
+.league-item {
+  display: flex;
+  justify-content: space-between; /* Lewo - Prawo */
+  align-items: center;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border-left: 4px solid var(--beer-gold); /* Złoty akcent z lewej */
+  transition: background 0.2s;
+
+  &:hover {
+    background: #f1f5f9; /* Lekkie przyciemnienie po najechaniu */
+  }
+
+  .league-info strong {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+  }
+
+  .league-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    .status {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #e2e8f0;
+      color: #64748b;
+
+      &.active {
+        background: #dcfce7;
+        color: #166534;
+      }
+    }
+  }
+}
+
+/* Modifikator dla mniejszego przycisku w linii */
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 0px #8e321f;
+}
+
+/* Przycisk dodawania pod listą */
+.btn-add {
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  background: transparent;
+  border: 2px dashed var(--primary-brown);
+  color: var(--primary-brown);
+  border-radius: 8px;
+  font-weight: bold;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.2s;
 
-  &:hover { transform: translateX(5px); border-color: #d4a017; }
+  &:hover {
+    background: var(--primary-brown);
+    color: white;
+    border-style: solid;
+  }
+}
 
-  h3 { margin: 0; font-size: 16px; }
-  .status-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: #eee; }
-  .status-badge.active { background: #28a745; color: white; }
+/* --- PANEL OSTATNICH AKTYWNOŚCI --- */
+.recent-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    color: var(--text-dark);
+    font-size: 0.95rem;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .time {
+      font-size: 0.8rem;
+      color: #888;
+      white-space: nowrap;
+      margin-left: 15px;
+    }
+  }
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  .top-nav {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-nav {
+    background: transparent;
+    border: none;
+    color: var(--text-dark);
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba(var(--primary-brown-rgb), 0.1);
+    }
+
+    &.active {
+      background: var(--beer-gold);
+      color: var(--primary-brown);
+    }
+
+    @media (max-width: 600px) {
+      .nav-text { display: none; } // Na małych telefonach tylko ikony
+    }
+  }
+
+  .divider {
+    width: 1px;
+    height: 24px;
+    background: #e2e8f0;
+  }
+}
+
+
+.title-group {
+  display: flex;
+  flex-direction: column;
+
+  .btn-back-link {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-align: left;
+    padding: 0;
+    &:hover { color: var(--primary-brown); }
+  }
+
+  .app-title {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--primary-brown);
+    font-weight: 800;
+  }
+}
+
+
+.status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #e2e8f0;
+  color: #64748b;
+
+  &.active {
+    background: #dcfce7;
+    color: #166534;
+  }
 }

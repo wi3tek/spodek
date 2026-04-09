@@ -3,35 +3,59 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import {Player} from '../models/player.model';
 import {Team} from '../models/team.model';
+import { Observable, tap } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private http = inject(HttpClient);
-  private apiUrl = environment.apiUrl;
+  private playersUrl = `${environment.apiUrl}/players`;
+  private teamsUrl = `${environment.apiUrl}/teams`;
 
-  // Sygnały - serce reaktywności Angulara 19/21
-  players = signal<Player[]>([]);
-  teams = signal<Team[]>([]);
+  // Sygnały przechowujące stan - AdminComponent z nich korzysta
+  players = signal<any[]>([]);
+  teams = signal<any[]>([]);
 
-  // --- OBSŁUGA GRACZY ---
+  // --- GRACZE ---
+
   loadPlayers() {
-    this.http.get<Player[]>(`${this.apiUrl}/players`).subscribe(data => this.players.set(data));
+    this.http.get<any[]>(this.playersUrl).subscribe(data => {
+      this.players.set(data);
+    });
   }
 
-  addPlayer(player: Partial<Player>) {
-    return this.http.post<Player>(`${this.apiUrl}/players`, player);
+  // Używamy tap(), aby po sukcesie na serwerze odświeżyć lokalną listę (cache UI)
+  addPlayer(player: any): Observable<any> {
+    return this.http.post(this.playersUrl, player).pipe(
+      tap(() => this.loadPlayers())
+    );
   }
 
-  updatePlayer(player: Player) {
-    return this.http.put<Player>(`${this.apiUrl}/players/${player.id}`, player);
+  updatePlayer(player: any): Observable<any> {
+    return this.http.put(`${this.playersUrl}/${player.id}`, player).pipe(
+      tap(() => this.loadPlayers())
+    );
   }
 
-  // --- OBSŁUGA DRUŻYN ---
+  // Metody dla formularza meczowego (v2)
+  getPlayers(): Observable<any[]> {
+    return this.http.get<any[]>(this.playersUrl);
+  }
+
+  // --- DRUŻYNY ---
+
   loadTeams() {
-    this.http.get<Team[]>(`${this.apiUrl}/teams`).subscribe(data => this.teams.set(data));
+    this.http.get<any[]>(this.teamsUrl).subscribe(data => {
+      this.teams.set(data);
+    });
   }
 
-  updateTeam(team: Team) {
-    return this.http.put<Team>(`${this.apiUrl}/teams/${team.id}`, team);
+  updateTeam(team: any): Observable<any> {
+    return this.http.put(`${this.teamsUrl}/${team.id}`, team).pipe(
+      tap(() => this.loadTeams())
+    );
+  }
+
+  getTeams(): Observable<any[]> {
+    return this.http.get<any[]>(this.teamsUrl);
   }
 }

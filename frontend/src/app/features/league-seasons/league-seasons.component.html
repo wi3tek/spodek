@@ -1,60 +1,105 @@
-<div class="dashboard-container league-view">
+<div class="dashboard-container">
 
-  <header class="view-header">
-    <div class="title-area">
-      <button class="btn-back" routerLink="/dashboard">←</button>
-      <h1>{{ league()?.name }}</h1>
+  <header class="main-header">
+    <div class="brand">
+      <img src="/logo.png" alt="Logo" class="app-logo">
+      <div class="title-group">
+        <button class="btn-back-link" routerLink="/dashboard">← Wróć do lig</button>
+        <h1 class="app-title">{{ league()?.name }}</h1>
+      </div>
     </div>
-    <button class="btn-primary">+ Nowy Sezon</button>
+
+    <div class="user-actions">
+      <nav class="top-nav">
+        <button class="btn-nav" routerLink="/dashboard">
+          🏠 <span class="nav-text">Dashboard</span>
+        </button>
+        <button class="btn-nav" routerLink="/admin">
+          ⚙️ <span class="nav-text">Ustawienia</span>
+        </button>
+      </nav>
+      <div class="divider"></div>
+      <button class="btn-secondary btn-sm btn-logout" (click)="logout()">
+        Wyloguj
+      </button>
+    </div>
   </header>
 
-  <div class="league-grid">
-
-    <section class="card stats-panel">
-      <div class="card-header">
-        <h2>🏆 Ranking Wszech Czasów</h2>
-        <small>Sortowanie: Współczynnik Wietka (WSP.W)</small>
-      </div>
-
-      <table class="wietek-table">
-        <thead>
-        <tr>
-          <th>Gracz</th>
-          <th>M</th>
-          <th>Pkt</th>
-          <th class="highlight">WSP.W</th>
-        </tr>
-        </thead>
-        <tbody>
-          @for (row of aggregateTable(); track row.player) {
-            <tr>
-              <td><strong>{{ row.player }}</strong></td>
-              <td>{{ row.m }}</td>
-              <td>{{ row.pkt }}</td>
-              <td class="highlight-val">{{ row.wspW | number:'1.2-2' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </section>
+  <div class="grid-layout">
 
     <section class="card seasons-panel">
-      <h2>Sezony</h2>
-      <div class="seasons-list">
-        @for (season of seasons(); track season.id) {
-          <div class="season-item" [routerLink]="['/season', season.id]">
-            <div class="season-info">
-              <h3>{{ season.name }}</h3>
-              <span class="status-badge" [class.active]="season.status === 'ACTIVE'">
-                {{ season.status }}
-              </span>
-            </div>
-            <span class="arrow">❯</span>
-          </div>
-        } @empty {
-          <div class="empty-state">Brak sezonów. Stwórz pierwszy! ⚽</div>
-        }
+      <div class="panel-header">
+        <h2>Sezony</h2>
+        <button class="btn-primary btn-sm" (click)="showAddForm.set(!showAddForm())">
+          {{ showAddForm() ? 'Anuluj' : '+ Nowy Sezon' }}
+        </button>
+
       </div>
+      <br>
+      @if (showAddForm()) {
+        <div class="inline-add-form animate-in">
+          <input type="text" [(ngModel)]="newSeasonName" placeholder="Nazwa nowego sezonu..." (keyup.enter)="saveSeason()">
+          <button class="btn-save-sm" (click)="saveSeason()">Stwórz</button>
+        </div>
+      }
+
+      <div class="league-list"> @for (season of seasons(); track season.id) {
+        <div class="league-item season-item" [class.editing]="editingSeasonId() === season.id">
+
+          <div class="league-info" [routerLink]="editingSeasonId() !== season.id ? ['/season', season.id] : null">
+            @if (editingSeasonId() === season.id) {
+              <input [(ngModel)]="season.name" class="edit-input" (click)="$event.stopPropagation()">
+            } @else {
+              <strong>{{ season.name }}</strong>
+              <span class="status" [class.active]="season.status === 'ACTIVE'" (click)="$event.stopPropagation(); toggleStatus(season)">
+                {{ season.status === 'ACTIVE' ? 'Aktywny' : 'Zakończony' }}
+                </span>
+            }
+          </div>
+
+          <div class="league-actions">
+            @if (editingSeasonId() === season.id) {
+              <button class="btn-save-sm" (click)="saveEdit(season)">✅</button>
+            } @else {
+              <button class="btn-icon" (click)="$event.stopPropagation(); editingSeasonId.set(season.id!)">✏️</button>
+              <button class="btn-primary btn-sm" [routerLink]="['/season', season.id]">Otwórz</button>
+            }
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-state">Brak sezonów. Czas rozpocząć nową edycję! ⚽</div>
+      }
+      </div>
+    </section>
+
+    <section class="card stats-panel">
+      <div class="panel-header">
+        <h2>🏆 Ranking Wszech Czasów</h2>
+      </div>
+
+      <div class="table-container">
+        <table class="season-table">
+          <thead>
+          <tr>
+            <th>Gracz</th>
+            <th>M</th>
+            <th>Pkt</th>
+            <th class="highlight">WSP.W</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (row of aggregateTable(); track row.player) {
+              <tr>
+                <td><strong>{{ row.player }}</strong></td>
+                <td>{{ row.m }}</td>
+                <td>{{ row.pkt }}</td>
+                <td class="highlight-val">{{ row.wspW | number:'1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="table-info">Suma punktów i meczów ze wszystkich zakończonych sezonów.</p>
     </section>
 
   </div>

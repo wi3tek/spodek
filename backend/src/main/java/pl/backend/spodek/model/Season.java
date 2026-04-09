@@ -16,4 +16,5 @@ public class Season extends BaseDocument {
     private String name;     // np. "Wiosna 2026", "Edycja Kawalerska"
     private String leagueId; // Klucz do ligi
     private String status;   // ACTIVE, FINISHED
+    private boolean uniqueTeams;
 }

@@ -4,7 +4,6 @@ package pl.backend.spodek.web;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import pl.backend.spodek.model.League;
-import pl.backend.spodek.model.Season;
 import pl.backend.spodek.repository.LeagueRepository;
 
 import java.util.List;

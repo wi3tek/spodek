@@ -1,0 +1,382 @@
+<div class="dashboard-container">
+
+  <header class="main-header">
+    <div class="brand">
+      <img src="/logo.png" alt="Logo" class="app-logo">
+      <div class="title-group">
+        <button class="btn-back-link" [routerLink]="['/league', season()?.leagueId]">← Powrót do ligi</button>
+        <h1 class="app-title">{{ season()?.name }}</h1>
+      </div>
+    </div>
+    <div class="user-actions">
+      <nav class="top-nav">
+        <button class="btn-nav" routerLink="/dashboard">🏠 <span class="nav-text">Dashboard</span></button>
+        <button class="btn-nav" routerLink="/admin">⚙️ <span class="nav-text">Admin</span></button>
+      </nav>
+      <div class="divider"></div>
+      <button class="btn-secondary btn-sm btn-logout" (click)="logout()">Wyloguj</button>
+    </div>
+  </header>
+
+  @if (showMatchForm()) {
+    <section class="card match-form-panel animate-in">
+      <div class="form-header">
+        <div class="time-stamp">
+          <span class="date">{{ today | date:'dd.MM.yyyy' }}</span>
+          <span class="time">{{ today | date:'HH:mm' }}</span>
+        </div>
+        <h2>{{ editingMatch() ? 'Edytuj Mecz' : 'Nowy Mecz' }}</h2>
+        <button class="btn-close" (click)="closeForm()">✕</button>
+      </div>
+
+      <div class="match-form-layout">
+
+        <div class="teams-score-row">
+
+          <div class="team-side">
+            <h3 class="side-title">Gospodarze</h3>
+            @if (!newMatch.homeSide.teamId) {
+              <div class="input-group">
+                <input class="search-input" type="text"
+                       [ngModel]="searchHomeTeam()"
+                       (ngModelChange)="searchHomeTeam.set($event)"
+                       placeholder="Szukaj drużyny...">
+                @if (homeTeamSuggestions().length > 0) {
+                  <div class="suggestions">
+                    @for (t of homeTeamSuggestions(); track t.id) {
+                      <div class="s-item" (click)="selectTeam('home', t)">
+                        <img [src]="'/logos/light/' + (t.assetId || 'default') + '.png'" width="20">
+                        {{ t.alias || t.teamName || t.name }}
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="locked-team">
+                <div class="team-info">
+                  <img [src]="'/logos/light/' + (newMatch.homeSide.assetId || 'default') + '.png'">
+                  <strong>{{ newMatch.homeSide.teamName }}</strong>
+                </div>
+                <button class="btn-change-team" (click)="clearTeam('home')">Zmień</button>
+              </div>
+            }
+          </div>
+
+          <div class="score-side">
+            <div class="score-inputs">
+              <div class="score-display">{{ homeGoals }}</div>
+              <span class="separator">:</span>
+              <div class="score-display">{{ awayGoals }}</div>
+            </div>
+          </div>
+
+          <div class="team-side">
+            <h3 class="side-title">Goście</h3>
+            @if (!newMatch.awaySide.teamId) {
+              <div class="input-group">
+                <input class="search-input" type="text"
+                       [ngModel]="searchAwayTeam()"
+                       (ngModelChange)="searchAwayTeam.set($event)"
+                       placeholder="Szukaj drużyny...">
+                @if (awayTeamSuggestions().length > 0) {
+                  <div class="suggestions">
+                    @for (t of awayTeamSuggestions(); track t.id) {
+                      <div class="s-item" (click)="selectTeam('away', t)">
+                        <img [src]="'/logos/light/' + (t.assetId || 'default') + '.png'" width="20">
+                        {{ t.alias || t.teamName || t.name }}
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="locked-team">
+                <div class="team-info">
+                  <img [src]="'/logos/light/' + (newMatch.awaySide.assetId || 'default') + '.png'">
+                  <strong>{{ newMatch.awaySide.teamName }}</strong>
+                </div>
+                <button class="btn-change-team" (click)="clearTeam('away')">Zmień</button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="players-meta-row">
+
+          <div class="players-side">
+            <div class="players-selection">
+              @for (p of newMatch.homeSide.players; track p.playerId) {
+                <div class="player-card-edit">
+                  <div class="player-header">
+                    <strong>{{ p.alias }}</strong>
+                    <span class="remove-btn" (click)="removePlayer('home', p.playerId)">✕</span>
+                  </div>
+                  <div class="player-stats-inputs">
+                    <div class="stat-stepper">
+                      <label>⚽</label>
+                      <div class="stepper-controls">
+                        <button type="button" (click)="p.goals = Math.max(0, (p.goals || 0) - 1)">-</button>
+                        <input type="number" [(ngModel)]="p.goals" min="0" max="99" (focus)="selectContent($event)" (blur)="p.goals = Math.min(99, Math.max(0, p.goals || 0))">
+                        <button type="button" (click)="p.goals = Math.min(99, (p.goals || 0) + 1)">+</button>
+                      </div>
+                    </div>
+                    <div class="stat-stepper">
+                      <label>👟</label>
+                      <div class="stepper-controls">
+                        <button type="button" (click)="p.assists = Math.max(0, (p.assists || 0) - 1)">-</button>
+                        <input type="number" [(ngModel)]="p.assists" min="0" max="99" (focus)="selectContent($event)" (blur)="p.assists = Math.min(99, Math.max(0, p.assists || 0))">
+                        <button type="button" (click)="p.assists = Math.min(99, (p.assists || 0) + 1)">+</button>
+                      </div>
+                    </div>
+                    <div class="stat-stepper">
+                      <label>🟨</label>
+                      <div class="stepper-controls">
+                        <button type="button" (click)="p.yellowCards = Math.max(0, (p.yellowCards || 0) - 1)">-</button>
+                        <input type="number" [(ngModel)]="p.yellowCards" min="0" max="2" (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(2, Math.max(0, p.yellowCards || 0))">
+                        <button type="button" (click)="p.yellowCards = Math.min(2, (p.yellowCards || 0) + 1)">+</button>
+                      </div>
+                    </div>
+                    <div class="stat-stepper">
+                      <label>🟥</label>
+                      <div class="stepper-controls">
+                        <button type="button" (click)="p.redCards = Math.max(0, (p.redCards || 0) - 1)">-</button>
+                        <input type="number" [(ngModel)]="p.redCards" min="0" max="1" (focus)="selectContent($event)" (blur)="p.redCards = Math.min(1, Math.max(0, p.redCards || 0))">
+                        <button type="button" (click)="p.redCards = Math.min(1, (p.redCards || 0) + 1)">+</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+              @if (newMatch.homeSide.players.length < 2) {
+                <select class="player-select" (change)="onPlayerSelect('home', $event)">
+                  <option value="">+ Gracz...</option>
+                  @for (p of filteredPlayers(); track p.id) {
+                    <option [value]="p.id">{{ p.alias }}</option>
+                  }
+                </select>
+              }
+            </div>
+          </div>
+
+          <div class="meta-side">
+            <div class="week-input">
+              <label>Kolejka:</label>
+              <input type="number" [(ngModel)]="newMatch.matchweek" class="week-field"
+                     (focus)="selectContent($event)"
+                     (blur)="newMatch.matchweek = newMatch.matchweek || 1">
+            </div>
+          </div>
+
+          <div class="players-side">
+            <div class="players-selection">
+              @for (p of newMatch.awaySide.players; track p.playerId) {
+                <div class="player-card-edit">
+                  <div class="player-header">
+                    <strong>{{ p.alias }}</strong>
+                    <span class="remove-btn" (click)="removePlayer('away', p.playerId)">✕</span>
+                  </div>
+                  <div class="player-stats-inputs">
+                    <div class="stat-stepper">
+                      <label>⚽</label>
+                      <div class="stepper-controls">
+                        <button type="button" (click)="p.goals = Math.max(0, (p.goals || 0) - 1)">-</button>
+                        <input type="number" [(ngModel)]="p.goals" min="0" max="99" (focus)="selectContent($event)" (blur)="p.goals = Math.min(99, Math.max(0, p.goals || 0))">
+                        <button type="button" (click)="p.goals = Math.min(99, (p.goals || 0) + 1)">+</button>
+                      </div>
+                    </div>
+                    <div class="stat-stepper">
+                      <label>👟</label>
+                      <div class="stepper-controls">
+                        <button type="button" (click)="p.assists = Math.max(0, (p.assists || 0) - 1)">-</button>
+                        <input type="number" [(ngModel)]="p.assists" min="0" max="99" (focus)="selectContent($event)" (blur)="p.assists = Math.min(99, Math.max(0, p.assists || 0))">
+                        <button type="button" (click)="p.assists = Math.min(99, (p.assists || 0) + 1)">+</button>
+                      </div>
+                    </div>
+                    <div class="stat-stepper">
+                      <label>🟨</label>
+                      <div class="stepper-controls">
+                        <button type="button" (click)="p.yellowCards = Math.max(0, (p.yellowCards || 0) - 1)">-</button>
+                        <input type="number" [(ngModel)]="p.yellowCards" min="0" max="2" (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(2, Math.max(0, p.yellowCards || 0))">
+                        <button type="button" (click)="p.yellowCards = Math.min(2, (p.yellowCards || 0) + 1)">+</button>
+                      </div>
+                    </div>
+                    <div class="stat-stepper">
+                      <label>🟥</label>
+                      <div class="stepper-controls">
+                        <button type="button" (click)="p.redCards = Math.max(0, (p.redCards || 0) - 1)">-</button>
+                        <input type="number" [(ngModel)]="p.redCards" min="0" max="1" (focus)="selectContent($event)" (blur)="p.redCards = Math.min(1, Math.max(0, p.redCards || 0))">
+                        <button type="button" (click)="p.redCards = Math.min(1, (p.redCards || 0) + 1)">+</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+              @if (newMatch.awaySide.players.length < 2) {
+                <select class="player-select" (change)="onPlayerSelect('away', $event)">
+                  <option value="">+ Gracz...</option>
+                  @for (p of filteredPlayers(); track p.id) {
+                    <option [value]="p.id">{{ p.alias }}</option>
+                  }
+                </select>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <div class="status-toggle-wrapper">
+          <label class="switch">
+            <input type="checkbox" [(ngModel)]="newMatch.finished">
+            <span class="slider round"></span>
+          </label>
+          <span class="status-label" [class.is-finished]="newMatch.finished">
+            {{ newMatch.finished ? 'Zakończony 🔒' : 'Trwa ⚽' }}
+          </span>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn-secondary btn-sm" (click)="closeForm()">Anuluj</button>
+          <button class="btn-primary btn-sm" [disabled]="!isFormValid()" (click)="saveFullMatch()">Zapisz</button>
+        </div>
+      </div>
+    </section>
+  }
+
+  <div class="grid-layout">
+
+    <section class="card matches-panel">
+      <div class="panel-header">
+        <h2>⚽ Lista Meczów</h2>
+        @if (!showMatchForm()) {
+          <button class="btn-primary btn-sm" (click)="addNewMatch()">+ Dodaj Mecz</button>
+        }
+      </div>
+
+      <br>
+      <div class="match-list">
+        @for (m of matches(); track m.id) {
+          <div class="match-element animate-in" [class.finished]="m.finished">
+
+            <div class="match-header-row">
+              <div class="match-time">{{ m.createdAt | date:'HH:mm' }}</div>
+
+              <div class="match-status-center">
+                @if (m.finished) {
+                  <span class="status-tag">Zakończony 🔒</span>
+                } @else {
+                  <span class="status-tag active">Trwa... <span class="blinking-ball">⚽</span></span>
+                }
+              </div>
+
+              <div class="header-right-actions">
+                @if (m.finished) {
+                  <button class="btn-icon delete" (click)="deleteMatch(m.id)" title="Usuń ten mecz">🗑️</button>
+                } @else {
+                  <button class="btn-icon edit" (click)="editMatch(m)" title="Edytuj mecz">✏️</button>
+                }
+              </div>
+            </div>
+
+            <div class="match-content compact-mode">
+              <div class="players-col home-players">
+                @for (p of m.homeSide.players; track p.playerId) {
+                  <div class="player-entry">
+                    <span class="player-alias">{{ p.alias }}</span>
+                    <span class="player-stats-mini">
+                      @if (p.goals > 0) { <small>⚽{{p.goals}}</small> }
+                      @if (p.assists > 0) { <small>👟{{p.assists}}</small> }
+                    </span>
+                  </div>
+                }
+              </div>
+
+              <div class="team-block">
+                <img [src]="'/logos/light/' + m.homeSide.assetId + '.png'" class="team-logo">
+                <span class="team-name">{{ m.homeSide.teamName }}</span>
+              </div>
+
+              <div class="score-center">
+                <span class="score">{{ m.homeSide.goals }}</span>
+                <span class="separator">:</span>
+                <span class="score">{{ m.awaySide.goals }}</span>
+              </div>
+
+              <div class="team-block">
+                <img [src]="'/logos/light/' + m.awaySide.assetId + '.png'" class="team-logo">
+                <span class="team-name">{{ m.awaySide.teamName }}</span>
+              </div>
+
+              <div class="players-col away-players">
+                @for (p of m.awaySide.players; track p.playerId) {
+                  <div class="player-entry">
+                    <span class="player-stats-mini">
+                      @if (p.assists > 0) { <small>👟{{p.assists}}</small> }
+                      @if (p.goals > 0) { <small>⚽{{p.goals}}</small> }
+                    </span>
+                    <span class="player-alias">{{ p.alias }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-state">Brak meczów. Dodaj pierwszy!</div>
+        }
+      </div>
+    </section>
+
+    <section class="card stats-panel">
+      <div class="panel-header">
+        <h2>📊 Tabela Sezonu</h2>
+      </div>
+      <table class="wietek-table">
+        <thead>
+        <tr>
+          <th>Poz</th>
+          <th (click)="toggleSort('alias')" class="sortable">
+            Gracz @if(sortKey() === 'alias'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th (click)="toggleSort('matchesPlayed')" class="sortable center">
+            M @if(sortKey() === 'matchesPlayed'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th (click)="toggleSort('points')" class="sortable center">
+            Pkt @if(sortKey() === 'points'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th (click)="toggleSort('goalsScored')" class="sortable center">
+            BZ @if(sortKey() === 'goalsScored'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th (click)="toggleSort('goalsLost')" class="sortable center">
+            BS @if(sortKey() === 'goalsLost'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th (click)="toggleSort('goalDifference')" class="sortable center">
+            +/- @if(sortKey() === 'goalDifference'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th (click)="toggleSort('winRatio')" class="sortable highlight">
+            WSP.W @if(sortKey() === 'winRatio'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (row of sortedTable(); track row.playerId; let i = $index) {
+            <tr class="animate-in">
+              <td>{{ i + 1 }}</td>
+              <td><strong>{{ row.alias }}</strong></td>
+              <td>{{ row.matchesPlayed }}</td>
+              <td>{{ row.points }}</td>
+
+              <td>{{ row.goalsScored }}</td>
+              <td>{{ row.goalsLost }}</td>
+
+              <td [style.color]="row.goalDifference > 0 ? '#22c55e' : (row.goalDifference < 0 ? '#ef4444' : '#94a3b8')">
+                {{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }}
+              </td>
+              <td class="highlight-val">{{ row.winRatio | number:'1.2-2' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  </div>
+</div>

@@ -5,4 +5,5 @@ export interface Season {
   status: 'ACTIVE' | 'FINISHED';
   createdAt?: string;
   updatedAt?: string;
+  uniqueTeams: boolean;
 }

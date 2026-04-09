@@ -1,0 +1,354 @@
+/* ==========================================================================
+   GLOBAL & LAYOUT
+   ========================================================================== */
+.dashboard-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+
+  @media (min-width: 900px) {
+    grid-template-columns: 1.5fr 1fr;
+  }
+}
+
+.card {
+  background: white;
+  border-radius: var(--border-radius, 10px);
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
+
+  h2 {
+    margin-top: 0;
+    color: var(--primary-brown);
+    font-size: 1.25rem;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f1f5f9;
+    margin-bottom: 20px;
+  }
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  background: white;
+  border-radius: var(--border-radius, 10px);
+  margin-bottom: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    @media (max-width: 600px) { flex-direction: column; gap: 10px; }
+
+    .app-logo {
+      height: 100px;
+      width: 100px;
+      object-fit: cover;
+      padding: 2px;
+    }
+
+    .title-group {
+      display: flex;
+      flex-direction: column;
+
+      .btn-back-link {
+        background: none; border: none; padding: 0;
+        color: #64748b; font-size: 0.8rem; cursor: pointer; text-align: left;
+        &:hover { color: var(--primary-brown); }
+      }
+
+      .app-title { margin: 0; font-size: 1.5rem; color: var(--primary-brown); font-weight: 800; }
+    }
+  }
+
+  .user-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+
+    .top-nav { display: flex; gap: 10px; }
+    .btn-nav {
+      background: transparent; border: none; color: var(--text-dark); font-weight: 600;
+      padding: 8px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+      &:hover { background: rgba(0,0,0, 0.05); }
+      @media (max-width: 600px) { .nav-text { display: none; } }
+    }
+    .divider { width: 1px; height: 24px; background: #e2e8f0; }
+    .btn-logout {
+      background: #e2e8f0; color: var(--text-dark); border: 1px solid #cbd5e1; box-shadow: none;
+      &:hover { background: #cbd5e1; }
+    }
+  }
+}
+
+/* ==========================================================================
+   FORMULARZ DODAWANIA/EDYCJI MECZU (NOWY DWURZĘDOWY)
+   ========================================================================== */
+.match-form-panel {
+  max-width: 900px;
+  margin: 0 auto 30px auto;
+  border-top: 4px solid var(--beer-gold);
+  background: #fffcf5;
+  padding: 20px;
+  border-radius: var(--border-radius, 10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.form-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f1f5f9;
+
+  .time-stamp {
+    display: flex; flex-direction: column; color: #94a3b8;
+    .date { font-size: 0.75rem; }
+    .time { font-size: 1.1rem; font-weight: bold; color: var(--beer-gold); }
+  }
+  h2 { margin: 0; font-size: 1.2rem; color: var(--primary-brown); }
+  .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; &:hover { color: #ef4444; } }
+}
+
+/* Układ: Drużyny i Wynik */
+.teams-score-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 20px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px dashed #f1f5f9;
+
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr; gap: 15px; align-items: center;
+    .score-side { order: -1; margin-bottom: 10px; }
+    .side-title { display: none; }
+  }
+}
+
+/* Układ: Zawodnicy i Kolejka */
+.players-meta-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px minmax(0, 1fr);
+  gap: 20px;
+
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
+    .meta-side { order: -1; display: flex; justify-content: center; margin-bottom: 10px; }
+  }
+}
+
+.side-title { margin: 0 0 10px 0; font-size: 1rem; color: var(--text-dark); text-align: center; }
+
+/* Wynik (Środek) */
+.score-side { display: flex; justify-content: center; padding-bottom: 10px; }
+
+.score-inputs {
+  display: flex;
+  flex-direction: row; /* GWARANCJA jednej linii */
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.score-display {
+  width: 45px; height: 55px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; font-weight: 900; color: var(--text-dark);
+  border: 2px solid var(--primary-brown); border-radius: 6px;
+  background-color: #f1f5f9;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.separator { font-size: 2rem; font-weight: bold; color: #94a3b8; line-height: 1; padding-bottom: 4px; }
+
+/* Kolejka (Środek Dół) */
+.meta-side {
+  display: flex; justify-content: center; padding-top: 10px;
+  .week-input {
+    display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 0.8rem; color: #64748b; font-weight: bold;
+    .week-field { width: 60px; padding: 8px; text-align: center; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1.1rem; font-weight: bold; }
+  }
+}
+
+/* Wyszukiwarka i Drużyny */
+.input-group {
+  position: relative; width: 100%; margin-bottom: 10px;
+  .search-input { width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; &:focus { border-color: var(--beer-gold); outline: none; } }
+}
+
+.suggestions {
+  position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #cbd5e1;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000; border-radius: 6px; margin-top: 4px; max-height: 250px; overflow-y: auto;
+  .s-item { padding: 12px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-weight: 500; &:hover { background: #f8fafc; color: var(--primary-brown); } img { width: 30px; height: 30px; object-fit: contain; } }
+}
+
+.locked-team {
+  display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc;
+  border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 10px;
+  .team-info { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-dark); img { width: 26px; height: 26px; object-fit: contain; } }
+  .btn-change-team { background: white; border: 1px dashed #94a3b8; padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer; color: #64748b; &:hover { background: #fef2f2; color: #dc2626; border-color: #dc2626; } }
+}
+
+/* Gracze i Steppery */
+.players-selection { min-height: 50px; padding: 10px; background: #f8fafc; border-radius: 6px; border: 1px dashed #cbd5e1; }
+.player-select { width: 100%; padding: 8px; margin-top: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+
+.player-card-edit { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+.player-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; .remove-btn { cursor: pointer; color: #94a3b8; &:hover { color: #ff6b6b; } } }
+
+.player-stats-inputs { display: flex; flex-direction: column; gap: 12px; padding: 10px 0; }
+.stat-stepper { display: flex; align-items: center; justify-content: center; gap: 15px; label { font-size: 1.2rem; min-width: 30px; text-align: center; } }
+.stepper-controls {
+  display: flex; align-items: center; background: #f1f5f9; border-radius: 8px; padding: 2px; border: 1px solid #cbd5e1;
+  button { width: 36px; height: 36px; border: none; background: white; color: var(--primary-brown); font-size: 1.4rem; font-weight: bold; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); &:active { transform: scale(0.9); } }
+  input { width: 40px; border: none; background: transparent; text-align: center; font-size: 1.1rem; font-weight: 800; color: var(--text-dark); -moz-appearance: textfield; &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } &:focus { outline: none; } }
+}
+
+/* Akcje formularza i przełącznik */
+.form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9; @media (max-width: 500px) { flex-direction: column; gap: 15px; .btn-group { width: 100%; display: flex; button { flex: 1; } } } }
+.status-toggle-wrapper { display: flex; align-items: center; gap: 10px; .status-label { font-size: 0.85rem; font-weight: bold; color: #94a3b8; &.is-finished { color: #dc2626; } } }
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; input { opacity: 0; width: 0; height: 0; } .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px; &:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; } } input:checked + .slider { background-color: #dc2626; } input:checked + .slider:before { transform: translateX(20px); } }
+
+/* ==========================================================================
+   LISTA MECZÓW
+   ========================================================================== */
+.match-list { display: flex; flex-direction: column; gap: 8px; }
+
+.match-element {
+  display: flex; flex-direction: column; background: #fafafa; border-radius: 10px; padding: 10px 15px; border-left: 4px solid var(--beer-gold);
+  &.finished { border-left-color: #cbd5e1; opacity: 0.9; }
+}
+
+/* Nagłówek i animacja piłki */
+.match-header-row { display: flex; justify-content: space-between; align-items: center; position: relative; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px dashed #f1f5f9; }
+.match-time { font-size: 0.75rem; color: #94a3b8; font-weight: bold; }
+.match-status-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; }
+.status-tag { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; &.active { color: #22c55e; } }
+@keyframes heartbeat-ball { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
+.blinking-ball { display: inline-block; font-size: 1.25rem; margin-left: 4px; animation: heartbeat-ball 1.2s infinite ease-in-out; }
+
+/* Przyciski Ikony na górze */
+.header-right-actions { display: flex; gap: 8px; z-index: 2; }
+.btn-icon { background: white; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; padding: 4px 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02); &:hover { transform: translateY(-1px); } &.edit:hover { background: #f0f9ff; border-color: #bae6fd; } &.delete:hover { background: #fef2f2; border-color: #fecaca; } }
+
+/* Zawartość meczu */
+.match-content {
+  display: grid; grid-template-columns: 120px 1fr 100px 1fr 120px; align-items: center; gap: 8px;
+  @media (max-width: 1100px) { grid-template-columns: 1fr 1fr 1fr; .players-col { display: none; } }
+}
+
+.team-block { display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center; .team-logo { width: 35px; height: 35px; object-fit: contain; } .team-name { font-size: 0.85rem; font-weight: 700; color: var(--text-dark); line-height: 1.1; } }
+.score-center { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary-brown); color: white; padding: 8px 15px; border-radius: 8px; .score { font-size: 1.3rem; font-weight: 900; } .separator { opacity: 0.5; font-size: 1.2rem; } }
+
+.players-col {
+  display: flex; flex-direction: column; gap: 4px;
+  &.home-players { align-items: flex-start; } &.away-players { align-items: flex-end; }
+  .player-entry { display: flex; align-items: center; gap: 5px; }
+  .player-alias { font-size: 0.85rem; font-weight: 500; color: #64748b; background: #fff; padding: 1px 6px; border-radius: 4px; border: 1px solid #f1f5f9; }
+  .player-stats-mini { display: flex; gap: 3px; small { font-size: 0.7rem; color: var(--beer-gold); font-weight: bold; } }
+}
+
+/* ==========================================================================
+   TABELA
+   ========================================================================== */
+.season-table { width: 100%; border-collapse: collapse; td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; } th { text-align: left; font-size: 0.7rem; color: #94a3b8; padding: 10px 8px; } .highlight-val { font-weight: 800; color: var(--beer-gold); text-align: center; } }
+.btn-sm { padding: 8px 16px; font-size: 0.85rem; box-shadow: 0 2px 0px #8e321f; }
+
+.wietek-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #94a3b8;
+    padding: 12px 8px;
+    border-bottom: 2px solid #f1f5f9;
+
+    &.highlight {
+      text-align: right;
+      padding-right: 8px;
+    }
+  }
+
+  td {
+    padding: 14px 8px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+
+    &.highlight-val {
+      text-align: right;
+      padding-right: 8px;
+      font-weight: 800;
+      color: var(--beer-gold);
+    }
+  }
+
+  // Wyśrodkowanie kolumn liczbowych (M, Pkt, +/-) dla symetrii
+  th:nth-child(3), th:nth-child(4), th:nth-child(5),
+  td:nth-child(3), td:nth-child(4), td:nth-child(5) {
+    text-align: center;
+  }
+
+  tr:hover {
+    background-color: #f8fafc;
+  }
+
+  .highlight-val {
+    font-weight: 800;
+    color: var(--beer-gold);
+    text-align: right;
+    font-size: 1.1rem;
+  }
+
+  /* Wyśrodkowanie liczb dla lepszej czytelności */
+  td:nth-child(3), td:nth-child(4), td:nth-child(5) {
+    text-align: center;
+  }
+}
+
+.wietek-table {
+  th, td {
+    // Wyśrodkowanie wszystkich kolumn z liczbami (od 3 do 7 kolumny)
+    &:nth-child(n+3):nth-child(-n+7) {
+      text-align: center;
+    }
+  }
+
+  th {
+    &.sortable {
+      font-size: 0.7rem; // Nieco mniejszy font nagłówków, by wszystko weszło
+    }
+  }
+
+  td {
+    font-size: 0.9rem;
+  }
+
+  // Kolumna BZ i BS może mieć lekki szary kolor, by nie odciągać uwagi od punktów
+  td:nth-child(5), td:nth-child(6) {
+    color: #64748b;
+  }
+}
