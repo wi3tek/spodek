@@ -386,4 +386,29 @@ export class SeasonComponent implements OnInit {
       this.sortDirection.set('desc');
     }
   }
+
+  // Ustawienia stronicowania
+  currentPage = signal(1);
+  pageSize = 10; // Ile meczów na jednej stronie
+
+  paginatedMatches = computed(() => {
+    const startIndex = (this.currentPage() - 1) * this.pageSize;
+    return this.matches().slice(startIndex, startIndex + this.pageSize);
+  });
+
+  // Obliczamy łączną liczbę stron
+  totalPages = computed(() => Math.ceil(this.matches().length / this.pageSize));
+
+  // Metody nawigacji
+  nextPage() {
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.update(p => p + 1);
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage() > 1) {
+      this.currentPage.update(p => p - 1);
+    }
+  }
 }

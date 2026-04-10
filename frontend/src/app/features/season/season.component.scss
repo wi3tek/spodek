@@ -8,12 +8,15 @@
 }
 
 .grid-layout {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  display: flex;
+  flex-direction: column; /* Układ pionowy: Mecze (góra), Tabela (dół) */
   gap: 24px;
 
-  @media (min-width: 900px) {
-    grid-template-columns: 1.5fr 1fr;
+  /* Media query dla tabletów w poziomie i komputerów */
+  @media (min-width: 1100px) {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr; /* Układ boczny */
+    align-items: start;
   }
 }
 
@@ -252,14 +255,63 @@
 .btn-icon { background: white; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; padding: 4px 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02); &:hover { transform: translateY(-1px); } &.edit:hover { background: #f0f9ff; border-color: #bae6fd; } &.delete:hover { background: #fef2f2; border-color: #fecaca; } }
 
 /* Zawartość meczu */
+/* KOMPAKTOWA ZAWARTOŚĆ MECZU */
 .match-content {
-  display: grid; grid-template-columns: 120px 1fr 100px 1fr 120px; align-items: center; gap: 8px;
-  @media (max-width: 1100px) { grid-template-columns: 1fr 1fr 1fr; .players-col { display: none; } }
+  display: grid;
+  /* Desktop: 5 kolumn */
+  grid-template-columns: 120px 1fr 100px 1fr 120px;
+  align-items: center;
+  gap: 10px;
+
+  /* Mobilki i Tablet Pion: Przebudowa na 3 kolumny (Drużyna - Wynik - Drużyna) */
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr 90px 1fr;
+
+    /* Aliasy pod logotypami */
+    .players-col {
+      grid-row: 2; /* Spychamy graczy do drugiego rzędu pod zespoły */
+      margin-top: 10px;
+      display: flex !important; /* Wymuszamy widoczność */
+
+      &.home-players { grid-column: 1; align-items: center; }
+      &.away-players { grid-column: 3; align-items: center; }
+    }
+
+    .team-block { grid-row: 1; }
+    .score-center { grid-row: 1; grid-column: 2; }
+  }
 }
 
 .team-block { display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center; .team-logo { width: 35px; height: 35px; object-fit: contain; } .team-name { font-size: 0.85rem; font-weight: 700; color: var(--text-dark); line-height: 1.1; } }
-.score-center { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary-brown); color: white; padding: 8px 15px; border-radius: 8px; .score { font-size: 1.3rem; font-weight: 900; } .separator { opacity: 0.5; font-size: 1.2rem; } }
+.score-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--primary-brown);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 8px;
 
+  /* NOWE KLUCZOWE POPRAWKI */
+  width: fit-content;    // Szerokość dopasowana do cyfr
+  min-width: 80px;       // Rozsądna stała podstawa, żeby wynik nie "skakał"
+  margin: 0 auto;        // Centrowanie wewnątrz komórki grida/flexa
+  flex-shrink: 0;        // Gwarancja, że grid go nie zgniecie
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); // Delikatna głębia
+
+  .score {
+    font-size: 1.3rem;
+    font-weight: 900;
+    line-height: 1; // Zapobiega rozpychaniu w pionie
+  }
+
+  .separator {
+    opacity: 0.5;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+}
 .players-col {
   display: flex; flex-direction: column; gap: 4px;
   &.home-players { align-items: flex-start; } &.away-players { align-items: flex-end; }
@@ -350,5 +402,45 @@
   // Kolumna BZ i BS może mieć lekki szary kolor, by nie odciągać uwagi od punktów
   td:nth-child(5), td:nth-child(6) {
     color: #64748b;
+  }
+}
+
+.pagination-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #f1f5f9;
+
+  .page-info {
+    font-size: 0.9rem;
+    color: #64748b;
+    strong { color: var(--primary-brown); }
+  }
+
+  .btn-page {
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: var(--primary-brown);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+
+    &:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: var(--beer-gold);
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
   }
 }

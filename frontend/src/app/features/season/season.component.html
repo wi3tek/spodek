@@ -259,7 +259,7 @@
 
       <br>
       <div class="match-list">
-        @for (m of matches(); track m.id) {
+        @for (m of paginatedMatches(); track m.id) {
           <div class="match-element animate-in" [class.finished]="m.finished">
 
             <div class="match-header-row">
@@ -328,6 +328,14 @@
           <div class="empty-state">Brak meczów. Dodaj pierwszy!</div>
         }
       </div>
+
+      @if (totalPages() > 1) {
+        <div class="pagination-wrapper">
+          <button class="btn-page" (click)="prevPage()" [disabled]="currentPage() === 1">◀</button>
+          <span class="page-info">Strona <strong>{{ currentPage() }}</strong> z {{ totalPages() }}</span>
+          <button class="btn-page" (click)="nextPage()" [disabled]="currentPage() === totalPages()">▶</button>
+        </div>
+      }
     </section>
 
     <section class="card stats-panel">
