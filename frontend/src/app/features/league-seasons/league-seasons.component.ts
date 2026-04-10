@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router'; // Dodany Router
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LeagueService } from '../../core/services/league.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,7 +15,7 @@ import { Season } from '../../core/models/season.model';
 })
 export class LeagueSeasonsComponent implements OnInit {
   private route = inject(ActivatedRoute);
-  private router = inject(Router); // Dodany router do logout
+  private router = inject(Router);
   private seasonService = inject(SeasonService);
   private leagueService = inject(LeagueService);
 
@@ -25,13 +25,9 @@ export class LeagueSeasonsComponent implements OnInit {
 
   showAddForm = signal(false);
   newSeasonName = signal('');
-  editingSeasonId = signal<string | null>(null);
+  newSeasonUniqueTeams = signal(true); // Nowy sygnał dla formularza
 
-  aggregateTable = signal([
-    { player: 'Wietek', m: 12, pkt: 28, wspW: 2.33, bilans: '+15' },
-    { player: 'Szef', m: 10, pkt: 20, wspW: 2.00, bilans: '+8' },
-    { player: 'Młody', m: 14, pkt: 15, wspW: 1.07, bilans: '-4' }
-  ]);
+  editingSeasonId = signal<string | null>(null);
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -51,14 +47,17 @@ export class LeagueSeasonsComponent implements OnInit {
     const name = this.newSeasonName().trim();
     if (!id || !name) return;
 
+    // Tworzymy payload - używamy wartości z sygnału
     const newSeason: Partial<Season> = {
       name: name,
       leagueId: id,
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      uniqueTeams: this.newSeasonUniqueTeams()
     };
 
     this.seasonService.createSeason(newSeason).subscribe(() => {
       this.newSeasonName.set('');
+      this.newSeasonUniqueTeams.set(true); // Resetujemy do domyślnej
       this.showAddForm.set(false);
       this.loadData(id);
     });
@@ -66,7 +65,15 @@ export class LeagueSeasonsComponent implements OnInit {
 
   saveEdit(season: Season) {
     if (!season.id) return;
-    this.seasonService.updateSeason(season.id, season).subscribe(() => {
+
+    // TWARDY PAYLOAD: Kopiujemy właściwości, by uniknąć problemów z referencją Angulara,
+    // i wymuszamy, by uniqueTeams było czystym typem boolean.
+    const payload: Season = {
+      ...season,
+      uniqueTeams: !!season.uniqueTeams
+    };
+
+    this.seasonService.updateSeason(season.id, payload).subscribe(() => {
       this.editingSeasonId.set(null);
       if (this.leagueId()) this.loadData(this.leagueId()!);
     });
@@ -80,9 +87,5 @@ export class LeagueSeasonsComponent implements OnInit {
   logout() {
     localStorage.removeItem('spodek_token');
     this.router.navigate(['/login']);
-  }
-
-  addNewSeason() {
-    this.showAddForm.set(true);
   }
 }

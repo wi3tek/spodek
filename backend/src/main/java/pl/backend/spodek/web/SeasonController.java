@@ -8,6 +8,7 @@ import pl.backend.spodek.model.Season;
 import pl.backend.spodek.repository.SeasonRepository;
 import pl.backend.spodek.service.SeasonService;
 
+import java.util.Comparator;
 import java.util.List;
 
 @RequestMapping("/api/seasons")
@@ -21,7 +22,9 @@ public class SeasonController {
     @GetMapping("/league/{leagueId}")
     public List<Season> getSeasonsByLeague(@PathVariable String leagueId) {
         // Zwracamy sezony od najnowszego (audyt nam w tym pomaga)
-        return seasonRepository.findByLeagueId( leagueId );
+        return seasonRepository.findByLeagueId( leagueId ).stream()
+                .sorted(Comparator.comparing( Season::getCreatedAt ).reversed())
+                .toList();
     }
 
     @PostMapping
@@ -35,6 +38,7 @@ public class SeasonController {
         return seasonRepository.findById( id )
                 .map( existing -> {
                     existing.setName( season.getName() );
+                    existing.setUniqueTeams( season.isUniqueTeams() );
                     return seasonRepository.save( existing );
                 } )
                 .orElseThrow( () -> new RuntimeException( "Nie ma takiego sezonu" ) );

@@ -33,73 +33,73 @@
         <button class="btn-primary btn-sm" (click)="showAddForm.set(!showAddForm())">
           {{ showAddForm() ? 'Anuluj' : '+ Nowy Sezon' }}
         </button>
-
       </div>
       <br>
+
       @if (showAddForm()) {
-        <div class="inline-add-form animate-in">
-          <input type="text" [(ngModel)]="newSeasonName" placeholder="Nazwa nowego sezonu..." (keyup.enter)="saveSeason()">
-          <button class="btn-save-sm" (click)="saveSeason()">Stwórz</button>
+        <div class="add-season-card animate-in">
+          <div class="input-row">
+            <input type="text" class="full-input" [(ngModel)]="newSeasonName" placeholder="Nazwa nowego sezonu..." (keyup.enter)="saveSeason()">
+            <label class="custom-toggle">
+              <input type="checkbox" [ngModel]="newSeasonUniqueTeams()" (ngModelChange)="newSeasonUniqueTeams.set($event)">
+              <span class="slider"></span>
+              <span class="label-text">Unikalne drużyny</span>
+            </label>
+          </div>
+          <button class="btn-primary btn-sm mt-10" (click)="saveSeason()">Stwórz</button>
         </div>
       }
 
-      <div class="league-list"> @for (season of seasons(); track season.id) {
-        <div class="league-item season-item" [class.editing]="editingSeasonId() === season.id">
+      <div class="league-list">
+        @for (season of seasons(); track season.id) {
+          <div class="league-item season-item" [class.editing]="editingSeasonId() === season.id">
 
-          <div class="league-info" [routerLink]="editingSeasonId() !== season.id ? ['/season', season.id] : null">
-            @if (editingSeasonId() === season.id) {
-              <input [(ngModel)]="season.name" class="edit-input" (click)="$event.stopPropagation()">
-            } @else {
-              <strong>{{ season.name }}</strong>
-              <span class="status" [class.active]="season.status === 'ACTIVE'" (click)="$event.stopPropagation(); toggleStatus(season)">
-                {{ season.status === 'ACTIVE' ? 'Aktywny' : 'Zakończony' }}
-                </span>
-            }
-          </div>
+            <div class="league-info" [routerLink]="editingSeasonId() !== season.id ? ['/season', season.id] : null">
+              @if (editingSeasonId() === season.id) {
 
-          <div class="league-actions">
-            @if (editingSeasonId() === season.id) {
-              <button class="btn-save-sm" (click)="saveEdit(season)">✅</button>
-            } @else {
-              <button class="btn-icon" (click)="$event.stopPropagation(); editingSeasonId.set(season.id!)">✏️</button>
-              <button class="btn-primary btn-sm" [routerLink]="['/season', season.id]">Otwórz</button>
-            }
+                <div class="edit-group" (click)="$event.stopPropagation()">
+                  <input [(ngModel)]="season.name" class="edit-input">
+
+                  <label class="custom-toggle">
+                    <input type="checkbox" [ngModel]="!!season.uniqueTeams" (ngModelChange)="season.uniqueTeams = $event">
+                    <span class="slider"></span>
+                    <span class="label-text">Unikalne drużyny</span>
+                  </label>
+                </div>
+
+              } @else {
+
+                <div class="view-group">
+                  <strong>{{ season.name }}</strong>
+                  <div class="badges">
+                    <span class="status" [class.active]="season.status === 'ACTIVE'" (click)="$event.stopPropagation(); toggleStatus(season)">
+                      {{ season.status === 'ACTIVE' ? 'Aktywny' : 'Zakończony' }}
+                    </span>
+                    @if (season.uniqueTeams) {
+                      <span class="badge-unique">🛡️ Unikalne Drużyny</span>
+                    }
+                  </div>
+                </div>
+
+              }
+            </div>
+
+            <div class="league-actions">
+              @if (editingSeasonId() === season.id) {
+                <button class="btn-icon" (click)="saveEdit(season)" title="Zapisz">✅</button>
+              } @else {
+                <button class="btn-icon" (click)="$event.stopPropagation(); editingSeasonId.set(season.id!)">✏️</button>
+                <button class="btn-primary btn-sm" [routerLink]="['/season', season.id]">Otwórz</button>
+              }
+            </div>
           </div>
-        </div>
-      } @empty {
-        <div class="empty-state">Brak sezonów. Czas rozpocząć nową edycję! ⚽</div>
-      }
+        } @empty {
+          <div class="empty-state">Brak sezonów. Czas rozpocząć nową edycję! ⚽</div>
+        }
       </div>
     </section>
 
     <section class="card stats-panel">
-<!--      <div class="panel-header">-->
-<!--        <h2>🏆 Ranking Wszech Czasów</h2>-->
-<!--      </div>-->
-
-<!--      <div class="table-container">-->
-<!--        <table class="season-table">-->
-<!--          <thead>-->
-<!--          <tr>-->
-<!--            <th>Gracz</th>-->
-<!--            <th>M</th>-->
-<!--            <th>Pkt</th>-->
-<!--            <th class="highlight">WSP.W</th>-->
-<!--          </tr>-->
-<!--          </thead>-->
-<!--          <tbody>-->
-<!--            @for (row of aggregateTable(); track row.player) {-->
-<!--              <tr>-->
-<!--                <td><strong>{{ row.player }}</strong></td>-->
-<!--                <td>{{ row.m }}</td>-->
-<!--                <td>{{ row.pkt }}</td>-->
-<!--                <td class="highlight-val">{{ row.wspW | number:'1.2-2' }}</td>-->
-<!--              </tr>-->
-<!--            }-->
-<!--          </tbody>-->
-<!--        </table>-->
-<!--      </div>-->
-<!--      <p class="table-info">Suma punktów i meczów ze wszystkich zakończonych sezonów.</p>-->
     </section>
 
   </div>

@@ -303,3 +303,161 @@
     color: #166534;
   }
 }
+
+/* --- FORMULARZ DODAWANIA --- */
+.add-season-card {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+
+  .input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .full-input {
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 1rem;
+    &:focus { outline: none; border-color: var(--beer-gold); }
+  }
+
+  .mt-10 { margin-top: 10px; width: 100%; }
+}
+
+/* --- LISTA SEZONÓW --- */
+.league-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.league-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* W trybie view wszystko wyśrodkowane */
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border-left: 4px solid var(--beer-gold);
+  transition: background 0.2s;
+
+  &:hover { background: #f1f5f9; }
+
+  /* Kiedy edytujemy, zmieniamy wyrównanie do góry, żeby przycisk "Zapisz" nie zjeżdżał */
+  &.editing {
+    align-items: flex-start;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-left-color: var(--primary-brown);
+
+    .league-actions { padding-top: 6px; } /* Wyrównanie ikony ✅ do inputa */
+  }
+
+  .league-info {
+    flex: 1;
+    cursor: pointer;
+  }
+
+  .league-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-left: 15px;
+  }
+}
+
+/* Grupa w widoku (nazwa + badge) */
+.view-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  strong { font-size: 1.1rem; color: var(--text-dark); }
+
+  .badges {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+}
+
+/* Grupa w edycji (input + toggle) */
+.edit-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .edit-input {
+    padding: 8px;
+    border: 2px solid var(--beer-gold);
+    border-radius: 6px;
+    font-weight: bold;
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+/* --- BADGES (Statusy) --- */
+.status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: #e2e8f0;
+  color: #64748b;
+
+  &.active { background: #dcfce7; color: #166534; }
+}
+
+.badge-unique {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* --- CUSTOM TOGGLE SWITCH --- */
+.custom-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+
+  input { display: none; } /* Ukrywamy natywny checkbox */
+
+  .slider {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background-color: #cbd5e1;
+    border-radius: 20px;
+    transition: 0.3s;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+  }
+
+  input:checked + .slider { background-color: var(--beer-gold); }
+  input:checked + .slider::after { transform: translateX(16px); }
+
+  .label-text { font-size: 0.85rem; color: #64748b; font-weight: 600; }
+}
