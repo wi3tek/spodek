@@ -133,8 +133,9 @@
                       <label>🟨</label>
                       <div class="stepper-controls">
                         <button type="button" (click)="p.yellowCards = Math.max(0, (p.yellowCards || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.yellowCards" min="0" max="99"
-                               (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(2, Math.max(0, p.yellowCards || 0))">
+                        <input type="number" [(ngModel)]="p.yellowCards" min="0" max="20"
+                               (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(20, Math.max(0,
+                               p.yellowCards || 0))">
                         <button type="button" (click)="p.yellowCards = Math.min(20, (p.yellowCards || 0) + 1)">+
                         </button>
                       </div>
@@ -143,8 +144,8 @@
                       <label>🟥</label>
                       <div class="stepper-controls">
                         <button type="button" (click)="p.redCards = Math.max(0, (p.redCards || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.redCards" min="0" max="99" (focus)="selectContent($event)"
-                               (blur)="p.redCards = Math.min(1, Math.max(0, p.redCards || 0))">
+                        <input type="number" [(ngModel)]="p.redCards" min="0" max="20" (focus)="selectContent($event)"
+                               (blur)="p.redCards = Math.min(20, Math.max(0, p.redCards || 0))">
                         <button type="button" (click)="p.redCards = Math.min(20, (p.redCards || 0) + 1)">+</button>
                       </div>
                     </div>
@@ -200,16 +201,20 @@
                       <label>🟨</label>
                       <div class="stepper-controls">
                         <button type="button" (click)="p.yellowCards = Math.max(0, (p.yellowCards || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.yellowCards" min="0" max="2" (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(2, Math.max(0, p.yellowCards || 0))">
-                        <button type="button" (click)="p.yellowCards = Math.min(2, (p.yellowCards || 0) + 1)">+</button>
+                        <input type="number" [(ngModel)]="p.yellowCards" min="0" max="20"
+                               (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(20, Math.max(0,
+                               p.yellowCards || 0))">
+                        <button type="button" (click)="p.yellowCards = Math.min(20, (p.yellowCards || 0) + 1)">+
+                        </button>
                       </div>
                     </div>
                     <div class="stat-stepper">
                       <label>🟥</label>
                       <div class="stepper-controls">
                         <button type="button" (click)="p.redCards = Math.max(0, (p.redCards || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.redCards" min="0" max="1" (focus)="selectContent($event)" (blur)="p.redCards = Math.min(1, Math.max(0, p.redCards || 0))">
-                        <button type="button" (click)="p.redCards = Math.min(1, (p.redCards || 0) + 1)">+</button>
+                        <input type="number" [(ngModel)]="p.redCards" min="0" max="20" (focus)="selectContent($event)"
+                               (blur)="p.redCards = Math.min(20, Math.max(0, p.redCards || 0))">
+                        <button type="button" (click)="p.redCards = Math.min(20, (p.redCards || 0) + 1)">+</button>
                       </div>
                     </div>
                   </div>
@@ -275,6 +280,7 @@
 
               <div class="header-right-actions">
                 @if (m.finished) {
+                  <button class="btn-icon view" (click)="viewMatchDetails(m)" title="Szczegóły meczu">👁️</button>
                   <button class="btn-icon delete" (click)="deleteMatch(m.id)" title="Usuń ten mecz">🗑️</button>
                 } @else {
                   <button class="btn-icon edit" (click)="editMatch(m)" title="Edytuj mecz">✏️</button>
@@ -403,3 +409,65 @@
     </section>
   </div>
 </div>
+
+@if (viewingMatch()) {
+  <div class="modal-overlay" (click)="closeMatchDetails()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Szczegóły Meczu (Kolejka {{ viewingMatch()?.matchweek || '-' }})</h3>
+        <button class="btn-close" (click)="closeMatchDetails()">✕</button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="details-score-board">
+          <div class="team">
+            <img [src]="'/logos/light/' + viewingMatch().homeSide.assetId + '.png'" alt="Home Team">
+            <span>{{ viewingMatch().homeSide.teamName }}</span>
+          </div>
+          <div class="score">
+            {{ viewingMatch().homeSide.goals }} : {{ viewingMatch().awaySide.goals }}
+          </div>
+          <div class="team">
+            <img [src]="'/logos/light/' + viewingMatch().awaySide.assetId + '.png'" alt="Away Team">
+            <span>{{ viewingMatch().awaySide.teamName }}</span>
+          </div>
+        </div>
+
+        <div class="details-players-grid">
+
+          <div class="side-players">
+            <h4>Gospodarze</h4>
+            @for (p of viewingMatch().homeSide.players; track p.playerId) {
+              <div class="details-player-row">
+                <strong>{{ p.alias }}</strong>
+                <div class="stats-badges">
+                  @if (p.goals > 0) { <span class="badge goal" title="Gole">⚽ {{p.goals}}</span> }
+                  @if (p.assists > 0) { <span class="badge assist" title="Asysty">👟 {{p.assists}}</span> }
+                  @if (p.yellowCards > 0) { <span class="badge yellow" title="Żółte kartki">🟨 {{p.yellowCards}}</span> }
+                  @if (p.redCards > 0) { <span class="badge red" title="Czerwone kartki">🟥 {{p.redCards}}</span> }
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="side-players">
+            <h4>Goście</h4>
+            @for (p of viewingMatch().awaySide.players; track p.playerId) {
+              <div class="details-player-row">
+                <strong>{{ p.alias }}</strong>
+                <div class="stats-badges">
+                  @if (p.goals > 0) { <span class="badge goal" title="Gole">⚽ {{p.goals}}</span> }
+                  @if (p.assists > 0) { <span class="badge assist" title="Asysty">👟 {{p.assists}}</span> }
+                  @if (p.yellowCards > 0) { <span class="badge yellow" title="Żółte kartki">🟨 {{p.yellowCards}}</span> }
+                  @if (p.redCards > 0) { <span class="badge red" title="Czerwone kartki">🟥 {{p.redCards}}</span> }
+                </div>
+              </div>
+            }
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+}

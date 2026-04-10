@@ -411,4 +411,14 @@ export class SeasonComponent implements OnInit {
       this.currentPage.update(p => p - 1);
     }
   }
+
+  viewingMatch = signal<any | null>(null);
+
+  viewMatchDetails(match: any) {
+    this.viewingMatch.set(match);
+  }
+
+  closeMatchDetails() {
+    this.viewingMatch.set(null);
+  }
 }

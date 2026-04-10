@@ -252,10 +252,9 @@
 
 /* Przyciski Ikony na górze */
 .header-right-actions { display: flex; gap: 8px; z-index: 2; }
-.btn-icon { background: white; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; padding: 4px 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02); &:hover { transform: translateY(-1px); } &.edit:hover { background: #f0f9ff; border-color: #bae6fd; } &.delete:hover { background: #fef2f2; border-color: #fecaca; } }
+.btn-icon { background: white; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; padding: 4px 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02); &:hover { transform: translateY(-1px); } &.edit:hover { background: #f0f9ff; border-color: #bae6fd; } &.delete:hover { background: #fef2f2; border-color: #fecaca; } &.view:hover { background: #f3f4f6; border-color: #d1d5db; } }
 
 /* Zawartość meczu */
-/* KOMPAKTOWA ZAWARTOŚĆ MECZU */
 .match-content {
   display: grid;
   /* Desktop: 5 kolumn */
@@ -263,15 +262,14 @@
   align-items: center;
   gap: 10px;
 
-  /* Mobilki i Tablet Pion: Przebudowa na 3 kolumny (Drużyna - Wynik - Drużyna) */
+  /* Mobilki i Tablet Pion: Przebudowa na 3 kolumny */
   @media (max-width: 1100px) {
     grid-template-columns: 1fr 90px 1fr;
 
-    /* Aliasy pod logotypami */
     .players-col {
-      grid-row: 2; /* Spychamy graczy do drugiego rzędu pod zespoły */
+      grid-row: 2;
       margin-top: 10px;
-      display: flex !important; /* Wymuszamy widoczność */
+      display: flex !important;
 
       &.home-players { grid-column: 1; align-items: center; }
       &.away-players { grid-column: 3; align-items: center; }
@@ -292,26 +290,16 @@
   color: white;
   padding: 8px 15px;
   border-radius: 8px;
+  width: fit-content;
+  min-width: 80px;
+  margin: 0 auto;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
-  /* NOWE KLUCZOWE POPRAWKI */
-  width: fit-content;    // Szerokość dopasowana do cyfr
-  min-width: 80px;       // Rozsądna stała podstawa, żeby wynik nie "skakał"
-  margin: 0 auto;        // Centrowanie wewnątrz komórki grida/flexa
-  flex-shrink: 0;        // Gwarancja, że grid go nie zgniecie
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); // Delikatna głębia
-
-  .score {
-    font-size: 1.3rem;
-    font-weight: 900;
-    line-height: 1; // Zapobiega rozpychaniu w pionie
-  }
-
-  .separator {
-    opacity: 0.5;
-    font-size: 1.2rem;
-    line-height: 1;
-  }
+  .score { font-size: 1.3rem; font-weight: 900; line-height: 1; }
+  .separator { opacity: 0.5; font-size: 1.2rem; line-height: 1; }
 }
+
 .players-col {
   display: flex; flex-direction: column; gap: 4px;
   &.home-players { align-items: flex-start; } &.away-players { align-items: flex-end; }
@@ -330,79 +318,19 @@
   width: 100%;
   border-collapse: collapse;
 
-  th {
-    text-align: left;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    color: #94a3b8;
-    padding: 12px 8px;
-    border-bottom: 2px solid #f1f5f9;
+  th { text-align: left; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; padding: 12px 8px; border-bottom: 2px solid #f1f5f9; &.highlight { text-align: right; padding-right: 8px; } }
+  td { padding: 14px 8px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; color: var(--text-dark); &.highlight-val { text-align: right; padding-right: 8px; font-weight: 800; color: var(--beer-gold); } }
 
-    &.highlight {
-      text-align: right;
-      padding-right: 8px;
-    }
-  }
-
-  td {
-    padding: 14px 8px;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 0.95rem;
-    color: var(--text-dark);
-
-    &.highlight-val {
-      text-align: right;
-      padding-right: 8px;
-      font-weight: 800;
-      color: var(--beer-gold);
-    }
-  }
-
-  // Wyśrodkowanie kolumn liczbowych (M, Pkt, +/-) dla symetrii
-  th:nth-child(3), th:nth-child(4), th:nth-child(5),
-  td:nth-child(3), td:nth-child(4), td:nth-child(5) {
-    text-align: center;
-  }
-
-  tr:hover {
-    background-color: #f8fafc;
-  }
-
-  .highlight-val {
-    font-weight: 800;
-    color: var(--beer-gold);
-    text-align: right;
-    font-size: 1.1rem;
-  }
-
-  /* Wyśrodkowanie liczb dla lepszej czytelności */
-  td:nth-child(3), td:nth-child(4), td:nth-child(5) {
-    text-align: center;
-  }
+  th:nth-child(3), th:nth-child(4), th:nth-child(5), td:nth-child(3), td:nth-child(4), td:nth-child(5) { text-align: center; }
+  tr:hover { background-color: #f8fafc; }
+  .highlight-val { font-weight: 800; color: var(--beer-gold); text-align: right; font-size: 1.1rem; }
 }
 
 .wietek-table {
-  th, td {
-    // Wyśrodkowanie wszystkich kolumn z liczbami (od 3 do 7 kolumny)
-    &:nth-child(n+3):nth-child(-n+7) {
-      text-align: center;
-    }
-  }
-
-  th {
-    &.sortable {
-      font-size: 0.7rem; // Nieco mniejszy font nagłówków, by wszystko weszło
-    }
-  }
-
-  td {
-    font-size: 0.9rem;
-  }
-
-  // Kolumna BZ i BS może mieć lekki szary kolor, by nie odciągać uwagi od punktów
-  td:nth-child(5), td:nth-child(6) {
-    color: #64748b;
-  }
+  th, td { &:nth-child(n+3):nth-child(-n+7) { text-align: center; } }
+  th { &.sortable { font-size: 0.7rem; } }
+  td { font-size: 0.9rem; }
+  td:nth-child(5), td:nth-child(6) { color: #64748b; }
 }
 
 .pagination-wrapper {
@@ -414,33 +342,134 @@
   padding-top: 15px;
   border-top: 1px solid #f1f5f9;
 
-  .page-info {
-    font-size: 0.9rem;
-    color: #64748b;
-    strong { color: var(--primary-brown); }
+  .page-info { font-size: 0.9rem; color: #64748b; strong { color: var(--primary-brown); } }
+  .btn-page { background: white; border: 1px solid #e2e8f0; color: var(--primary-brown); width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; &:hover:not(:disabled) { background: #f8fafc; border-color: var(--beer-gold); } &:disabled { opacity: 0.3; cursor: not-allowed; } }
+}
+
+/* ==========================================================================
+   MODAL SZCZEGÓŁÓW MECZU (NOWE)
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  overflow: hidden;
+  animation: modalFadeIn 0.2s ease-out forwards;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+
+  h3 { margin: 0; font-size: 1.1rem; color: var(--primary-brown); }
+  .btn-close { background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; padding: 0; line-height: 1; &:hover { color: #ef4444; } }
+}
+
+.modal-body {
+  padding: 20px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.details-score-board {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--primary-brown);
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+
+  .team {
+    display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1;
+    img { width: 45px; height: 45px; object-fit: contain; }
+    span { font-size: 0.9rem; font-weight: bold; text-align: center; line-height: 1.2; }
   }
 
-  .btn-page {
-    background: white;
-    border: 1px solid #e2e8f0;
-    color: var(--primary-brown);
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    cursor: pointer;
+  .score {
+    font-size: 2.2rem;
+    font-weight: 900;
+    padding: 0 15px;
+    white-space: nowrap;
+  }
+}
+
+.details-players-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.side-players {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 15px;
+  border: 1px solid #f1f5f9;
+
+  h4 {
+    margin: 0 0 10px 0;
+    font-size: 0.85rem;
+    color: #64748b;
+    text-transform: uppercase;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+}
+
+.details-player-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed #e2e8f0;
+
+  &:last-child { border-bottom: none; padding-bottom: 0; }
+
+  strong { color: var(--text-dark); font-size: 0.95rem; }
+
+  .stats-badges {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
+    gap: 6px;
+    flex-wrap: wrap;
 
-    &:hover:not(:disabled) {
-      background: #f8fafc;
-      border-color: var(--beer-gold);
-    }
+    .badge {
+      font-size: 0.75rem;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 3px;
 
-    &:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
+      &.goal { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+      &.assist { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
+      &.yellow { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+      &.red { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
     }
   }
 }
