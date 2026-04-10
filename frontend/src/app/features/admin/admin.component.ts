@@ -74,7 +74,7 @@ export class AdminComponent implements OnInit {
     if (!p.name || !p.alias) return;
 
     if (!this.isAliasUnique(p.alias)) {
-      alert('BŁĄD: Alias "' + p.alias + '" jest już zajęty!');
+      alert('BŁĄD: Nazwa gracza "' + p.alias + '" jest już zajęta!');
       return;
     }
 

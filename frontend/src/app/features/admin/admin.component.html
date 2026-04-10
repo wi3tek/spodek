@@ -17,8 +17,8 @@
     <div class="add-card">
       <h3>Dodaj nowego kumpla</h3>
       <div class="input-row">
-        <input [(ngModel)]="newPlayer().name" placeholder="Prawdziwe imię">
-        <input [(ngModel)]="newPlayer().alias" placeholder="Alias (Ksywa)">
+        <input [(ngModel)]="newPlayer().name" placeholder="Imię">
+        <input [(ngModel)]="newPlayer().alias" placeholder="Nazwa">
         <button class="btn-primary" (click)="saveNewPlayer()">Dodaj</button>
       </div>
     </div>
@@ -31,7 +31,7 @@
             <div class="team-names">
               @if (editingId() === player.id) {
                 <input [(ngModel)]="player.name" class="sm-input" placeholder="Imię">
-                <input [(ngModel)]="player.alias" class="sm-input" placeholder="Alias">
+                <input [(ngModel)]="player.alias" class="sm-input" placeholder="Nazwa">
               } @else {
                 <div class="info">
                   <strong>{{ player.alias }}</strong>
@@ -80,8 +80,8 @@
             <div class="team-names">
               @if (editingId() === team.id) {
                 <span class="asset-id">ID: {{ team.assetId }}</span>
-                <input [(ngModel)]="team.name" class="sm-input" placeholder="Nazwa FIFA">
-                <input [(ngModel)]="team.alias" class="sm-input" placeholder="Alias">
+                <input [(ngModel)]="team.name" class="sm-input" placeholder="Nazwa drużyny">
+                <input [(ngModel)]="team.alias" class="sm-input" placeholder="Wyświetlana nazwa">
               } @else {
                 <div class="info">
                   <strong>{{ team.alias || team.name }}</strong>
