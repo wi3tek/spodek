@@ -95,7 +95,7 @@ public class SeasonService {
             s.setGoalsScored(s.getGoalsScored() + player.getGoals());
 
             // Gole stracone przez DRUŻYNĘ tego gracza (akumulacja)
-            s.setGoalsLost(s.getGoalsLost() + opponentSide.getGoals());
+            s.setGoalsLost(s.getGoalsLost() + currentSide.getGoals());
 
             // Kartki i asysty (akumulacja)
             s.setYellowCards(s.getYellowCards() + player.getYellowCards());
