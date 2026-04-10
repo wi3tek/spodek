@@ -42,10 +42,13 @@
             </div>
           </div>
           <div class="team-right-group">
-            <button *ngIf="editingId() === player.id" (click)="saveEdit(player, 'player')" class="btn-primary" title="Zapisz">✔
-            </button>
-            <button *ngIf="editingId() !== player.id" class="btn-icon" (click)="editingId.set(player.id!)"
-                    title="Edytuj">✏️</button>
+            @if (editingId() === player.id) {
+              <button (click)="saveEdit(player, 'player')" class="btn-primary" title="Zapisz">✔</button>
+              <button (click)="editingId.set(null)" class="btn-icon" title="Anuluj">✖</button>
+            } @else {
+              <button class="btn-icon" (click)="editingId.set(player.id!)" title="Edytuj">✏️</button>
+              <button class="btn-icon delete-btn" (click)="deletePlayer(player.id!)" title="Usuń gracza">🗑️</button>
+            }
           </div>
         </div>
       }

@@ -111,4 +111,20 @@ export class AdminComponent implements OnInit {
       this.adminService.updatePlayer(item).subscribe(() => this.editingId.set(null));
     }
   }
+
+  deletePlayer(id: string) {
+    if (confirm('⚠️ Czy na pewno chcesz usunąć gracza?')) {
+      this.adminService.deletePlayer(id).subscribe({
+        next: () => {
+          alert('✅ Gracz został usunięty.');
+          this.adminService.loadPlayers();
+        },
+        error: (err) => {
+          // Jeśli backend wysłał IllegalStateException, komunikat będzie tutaj
+          const msg = typeof err.error === 'string' ? err.error : 'Nie można usunąć gracza (prawdopodobnie grał już w meczach).';
+          alert('🚫 Błąd: ' + msg);
+        }
+      });
+    }
+  }
 }

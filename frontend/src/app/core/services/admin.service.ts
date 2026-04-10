@@ -58,4 +58,8 @@ export class AdminService {
   getTeams(): Observable<any[]> {
     return this.http.get<any[]>(this.teamsUrl);
   }
+
+  deletePlayer(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.playersUrl}/${id}`);
+  }
 }

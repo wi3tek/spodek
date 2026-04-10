@@ -78,6 +78,11 @@
   }
 }
 
+/* Opcjonalnie: poprawka dla przycisku Anuluj (X) w trybie edycji */
+.team-right-group .btn-icon[title="Anuluj"]:hover {
+  color: #64748b;
+}
+
 .pagination {
   display: flex;
   justify-content: center;
@@ -107,8 +112,24 @@
 }
 
 .btn-save-sm { background: #28a745; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-.btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; opacity: 0.6; &:hover { opacity: 1; } }
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.6;
+  transition: all 0.2s;
 
+  &:hover {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+
+  /* Styl specjalny dla usuwania */
+  &.delete-btn:hover {
+    color: #ef4444; /* Czerwony kolor destrukcyjny */
+  }
+}
 
 .title-group {
   display: flex;

@@ -1,6 +1,7 @@
 package pl.backend.spodek.web;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.backend.spodek.model.Player;
@@ -14,7 +15,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PlayerController {
 
-    private final PlayerRepository playerRepository;
     private final AdminService adminService;
 
     @GetMapping
@@ -33,5 +33,15 @@ public class PlayerController {
     public ResponseEntity<Player> update(@PathVariable String id, @RequestBody Player player) {
         player.setId(id);
         return ResponseEntity.ok(adminService.savePlayer(player));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletePlayer(@PathVariable String id) {
+        try {
+            adminService.deletePlayer(id);
+            return ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status( HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }

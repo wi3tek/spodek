@@ -7,6 +7,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import pl.backend.spodek.model.Player;
 import pl.backend.spodek.model.Team;
+import pl.backend.spodek.repository.MatchRepository;
 import pl.backend.spodek.repository.PlayerRepository;
 import pl.backend.spodek.repository.TeamRepository;
 
@@ -17,8 +18,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AdminService {
+
     private final PlayerRepository playerRepository;
     private final TeamRepository teamRepository;
+    private final MatchRepository matchRepository;
 
     // Cacheable: Jeśli dane są w cache, metoda w ogóle się nie wykona (brak logu MISS)
     @Cacheable(value = "playersCache")
@@ -46,5 +49,18 @@ public class AdminService {
     public Team saveTeam(Team team) {
         log.warn("🧹 [CACHE EVICT] Zmiana w drużynach - czyszczę cache.");
         return teamRepository.save(team);
+    }
+
+    @CacheEvict(value = "playersCache", allEntries = true)
+    public void deletePlayer(String id) {
+        // Sprawdzamy czy gracz istnieje w jakimkolwiek meczu
+        // Zakładam istnienie metody w MatchRepository
+        long playerMatches = matchRepository.countByPlayerInvolvement(id);
+
+        if (playerMatches > 0) {
+            throw new IllegalStateException("Nie można usunąć gracza, ponieważ jest przypisany do rozegranych meczów!");
+        }
+
+        playerRepository.deleteById(id);
     }
 }
