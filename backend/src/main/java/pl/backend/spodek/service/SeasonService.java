@@ -92,10 +92,11 @@ public class SeasonService {
             s.setLosses(s.getLosses() + loss);
 
             // Gole strzelone TYLKO przez tego gracza (akumulacja)
-            s.setGoalsScored(s.getGoalsScored() + player.getGoals());
-
+            //s.setPlayerGoalsScored(s.getPlayerGoalsScored() + player.getGoals());
+            // gole strzelone przez dryzyne
+            s.setGoalsScored(s.getGoalsScored() + currentSide.getGoals())
             // Gole stracone przez DRUŻYNĘ tego gracza (akumulacja)
-            s.setGoalsLost(s.getGoalsLost() + currentSide.getGoals());
+            s.setGoalsLost(s.getGoalsLost() + opponentSide.getGoals());
 
             // Kartki i asysty (akumulacja)
             s.setYellowCards(s.getYellowCards() + player.getYellowCards());
