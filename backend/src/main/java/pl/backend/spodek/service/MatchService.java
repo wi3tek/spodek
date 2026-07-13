@@ -7,6 +7,7 @@ import pl.backend.spodek.dto.MatchDTO;
 import pl.backend.spodek.model.Match;
 import pl.backend.spodek.model.Player;
 import pl.backend.spodek.model.Team;
+import pl.backend.spodek.rating.service.RatingHistoryService;
 import pl.backend.spodek.repository.MatchRepository;
 import pl.backend.spodek.repository.PlayerRepository;
 
@@ -20,13 +21,20 @@ public class MatchService {
     private final MatchRepository matchRepository;
     private final AdminService adminService; // Wstrzykujemy AdminService zamiast repozytoriów
     private final PlayerRepository playerRepository;
+    private final RatingHistoryService ratingHistoryService; // Serwis ratingowy
+    private final SeasonService seasonService;
 
-
-    public Match createMatch(Match dto) {
+    public Match createMatch(Match match) {
         // currentMatchId to null, bo mecz jeszcze nie istnieje
-        validatePlayersAvailability( dto, null );
+        validatePlayersAvailability( match, null );
+        match.setLeagueId( seasonService.getLeagueIdBySeason( match.getSeasonId() ) );
+        Match savedMatch = matchRepository.save( match );
 
-        return matchRepository.save( dto );
+        // Jeśli mecz jest od razu zapisywany jako zakończony, aplikujemy rating
+        if (savedMatch.isFinished()) {
+            ratingHistoryService.applyMatchRating(savedMatch);
+        }
+        return savedMatch;
     }
 
     public Match updateMatch(String matchId, Match matchDetails) {
@@ -44,12 +52,30 @@ public class MatchService {
         existingMatch.setMatchweek( matchDetails.getMatchweek() );
         existingMatch.setHomeSide( matchDetails.getHomeSide() );
         existingMatch.setAwaySide( matchDetails.getAwaySide() );
+
+        // --- NOWA LOGIKA: ELO NA ŻYWO ---
+        if (!matchDetails.isFinished()) {
+            // Mecz wciąż trwa - wyliczamy symulację ELO i zapisujemy TYLKO w obiekcie Match
+            ratingHistoryService.enrichMatchWithLiveRating(existingMatch);
+        } else {
+            // Mecz się kończy - czyścimy liveRating, bo dane przechodzą do twardej historii
+            clearLiveRatings(existingMatch);
+        }
+
         existingMatch.setFinished( matchDetails.isFinished() );
 
         // Pozwalamy zmienić status na finished w tej edycji (zamknięcie meczu)
         existingMatch.setFinished( matchDetails.isFinished() );
 
-        return matchRepository.save( existingMatch );
+
+        Match updatedMatch = matchRepository.save( existingMatch );
+
+        // --- TWARDA HISTORIA ELO ---
+        if (updatedMatch.isFinished()) {
+            ratingHistoryService.recalculateHistoryFromMatch(updatedMatch.getLeagueId(), updatedMatch.getCreatedAt());
+        }
+
+        return updatedMatch;
     }
 
     public List<MatchDTO> getMatchesBySeason(String seasonId) {
@@ -94,6 +120,9 @@ public class MatchService {
             pDto.setAssists( p.getAssists() );   // MAPOWANIE ASYST
             pDto.setYellowCards( p.getYellowCards() );
             pDto.setRedCards( p.getRedCards() );
+
+            pDto.setLiveRating(p.getLiveRating());
+            pDto.setLiveRatingDifference(p.getLiveRatingDifference());
             return pDto;
         } ).toList() );
 
@@ -160,5 +189,35 @@ public class MatchService {
             }
         }
         return "o podanym ID";
+    }
+
+    private void clearLiveRatings(Match match) {
+        if (match.getHomeSide() != null && match.getHomeSide().getPlayers() != null) {
+            match.getHomeSide().getPlayers().forEach(p -> {
+                p.setLiveRating(null);
+                p.setLiveRatingDifference(null);
+            });
+        }
+        if (match.getAwaySide() != null && match.getAwaySide().getPlayers() != null) {
+            match.getAwaySide().getPlayers().forEach(p -> {
+                p.setLiveRating(null);
+                p.setLiveRatingDifference(null);
+            });
+        }
+    }
+
+    // USUWANIE MECZU Z PRZELICZENIEM ELO
+    public void deleteMatch(String matchId) {
+        Match existingMatch = matchRepository.findById(matchId)
+                .orElseThrow(() -> new IllegalArgumentException("Mecz o podanym ID nie istnieje: " + matchId));
+
+        // Usuwamy dokument z bazy
+        matchRepository.delete(existingMatch);
+
+        // EFEKT DOMINA: Jeśli usunięty mecz był zakończony, naprawiamy historię ELO
+        if (existingMatch.isFinished()) {
+            log.info("🗑️ Usunięto zakończony mecz {}. Uruchamiam przeliczanie wsteczne ELO.", matchId);
+            ratingHistoryService.recalculateHistoryFromMatch(existingMatch.getLeagueId(), existingMatch.getCreatedAt());
+        }
     }
 }

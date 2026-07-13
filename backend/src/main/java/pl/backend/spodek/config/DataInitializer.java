@@ -1,6 +1,7 @@
 package pl.backend.spodek.config;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -8,8 +9,10 @@ import org.springframework.stereotype.Component;
 import pl.backend.spodek.model.AppUser;
 import pl.backend.spodek.repository.UserRepository;
 
+
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -36,7 +39,7 @@ public class DataInitializer implements CommandLineRunner {
             admin.setRole("ROLE_ADMIN");
 
             userRepository.save(admin);
-            System.out.println(">>> SuperAdmin created! Email: " + adminEmail + " | Name: " + adminName);
+            log.info( ">>> SuperAdmin created! Email: {} | Name: {}", adminEmail, adminName );
         }
     }
 }

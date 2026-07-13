@@ -49,11 +49,13 @@ public class MatchController {
     // USUWANIE MECZU
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMatch(@PathVariable String id) {
-        log.warn("🗑️ Usuwanie meczu o ID: {}", id);
-        if (matchRepository.existsById(id)) {
-            matchRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
+        log.warn("🗑️ Żądanie usunięcia meczu o ID: {}", id);
+        try {
+            matchService.deleteMatch(id);
+            return ResponseEntity.noContent().build(); // Zwraca kod 204 (sukces, brak treści)
+        } catch (IllegalArgumentException e) {
+            log.error("Nie znaleziono meczu do usunięcia: {}", e.getMessage());
+            return ResponseEntity.notFound().build();  // Zwraca kod 404 (nie znaleziono)
         }
-        return ResponseEntity.notFound().build();
     }
 }

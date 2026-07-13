@@ -4,6 +4,11 @@ spring:
   profiles:
     active: dev
 
+rating:
+  default-start-rating: 1000
+  match-weight-index-default: 20
+  rating-difference-index: 400
+
 ---
 spring:
   config:

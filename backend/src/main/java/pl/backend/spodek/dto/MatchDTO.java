@@ -1,6 +1,8 @@
 package pl.backend.spodek.dto;
 
 import lombok.Data;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,5 +34,8 @@ public class MatchDTO {
         private int assists;
         private int yellowCards;
         private int redCards;
+
+        private BigDecimal liveRating;
+        private BigDecimal liveRatingDifference;
     }
 }

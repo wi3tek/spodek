@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Document(collection = "matches")
@@ -14,6 +15,7 @@ public class Match extends BaseDocument {
     @Id
     private String id;
     private String seasonId;
+    private String leagueId;
     private int matchweek;
 
     private MatchSide homeSide;
@@ -34,5 +36,9 @@ public class Match extends BaseDocument {
         private int redCards;
         private int goals;
         private int assists;
+
+        // NOWE POLA DLA ELO "NA ŻYWO" - TYLKO DLA TRWAJĄCYCH MECZÓW
+        private BigDecimal liveRating;
+        private BigDecimal liveRatingDifference;
     }
 }

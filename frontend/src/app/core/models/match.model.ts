@@ -14,6 +14,7 @@ export interface MatchSide {
 export interface Match {
   id?: string;
   seasonId: string;
+  leagueId: string;
   matchweek: number;
   homeSide: MatchSide;
   awaySide: MatchSide;
