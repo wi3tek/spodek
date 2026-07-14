@@ -1,17 +1,19 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms'; // KONIECZNE
+import { FormsModule } from '@angular/forms';
 import { SeasonService } from '../../core/services/season.service';
 import { MatchService } from '../../core/services/match.service';
 import { AdminService } from '../../core/services/admin.service';
+import { MatchweekService } from '../../core/services/matchweek.service';
+import {debounceTime, distinctUntilChanged, Subject} from 'rxjs'; // NOWE
 
 @Component({
   selector: 'app-season',
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './season.component.html',
-  styleUrls: ['./season.component.scss']
+  styleUrls: ['./season.component.scss'],
 })
 export class SeasonComponent implements OnInit {
   private route = inject(ActivatedRoute);
@@ -19,6 +21,7 @@ export class SeasonComponent implements OnInit {
   private matchService = inject(MatchService);
   private seasonService = inject(SeasonService);
   private adminService = inject(AdminService);
+  private matchweekService = inject(MatchweekService); // NOWE
 
   // --- DANE ---
   seasonId = signal<string | null>(null);
@@ -28,37 +31,110 @@ export class SeasonComponent implements OnInit {
   allTeams = signal<any[]>([]);
   today = new Date();
 
-  // --- STAN FORMULARZA ---
+  // --- STAN FORMULARZA MECZU ---
   showMatchForm = signal(false);
   editingMatch = signal<any | null>(null);
   searchHomeTeam = signal('');
   searchAwayTeam = signal('');
   searchPlayerQuery = signal('');
   matchStateTrigger = signal(0);
+  tableData = signal<any[]>([]);
 
-  tableData = signal<any[]>([]); // Możesz tu użyć interface SeasonTableEntryDTO jeśli go masz
+  // --- STAN OBECNOŚCI I MATCHMAKINGU (NOWE) ---
+  showAttendanceModal = signal(false);
+  activeMatchweek = signal<number>(1);
+  presentPlayerIds = signal<string[]>([]);
+  visibleInModalIds = signal<string[]>([]);
 
-  // Obiekt roboczy meczu
-  newMatch: any = {
-    matchweek: 1,
-    homeSide: { teamId: '', assetId: '', teamName: '', goals: 0, players: [] }, // ZMIANA
-    awaySide: { teamId: '', assetId: '', teamName: '', goals: 0, players: [] }, // ZMIANA
-    finished: false
-  };
+  searchNewPlayerQuery = signal('');
+  // Strumień do opóźniania żądań przy zmianie kolejki
+  private matchweekSubject = new Subject<number>();
 
-  // --- REAKTYWNE PODPOWIEDZI (COMPUTED) ---
+  // Oblicza, którzy gracze ROZEGRALI jakikolwiek mecz w aktualnej kolejce
+  playersWithMatchesInWeek = computed(() => {
+    const week = this.activeMatchweek();
+    const matchesInWeek = this.matches().filter((m) => m.matchweek === week);
+    const lockedIds = new Set<string>();
 
-  // Gracze: Alfabetycznie, max 10, tylko ci, którzy NIE są jeszcze w tym meczu
-  filteredPlayers = computed(() => {
-    const query = this.searchPlayerQuery().toLowerCase();
-    this.matchStateTrigger(); // KRYTYCZNE: Odświeża listę po dodaniu/usunięciu gracza!
+    for (const match of matchesInWeek) {
+      if (match.homeSide?.players) {
+        match.homeSide.players.forEach((p: any) => lockedIds.add(p.playerId));
+      }
+      if (match.awaySide?.players) {
+        match.awaySide.players.forEach((p: any) => lockedIds.add(p.playerId));
+      }
+    }
+    return Array.from(lockedIds);
+  });
 
-    const selectedIds = this.getSelectedPlayerIds();
+  // Modal mapuje ID z visibleInModalIds na obiekty graczy i od razu ich sortuje
+  modalDisplayPlayers = computed(() => {
+    const visibleIds = this.visibleInModalIds();
+    const presentIds = this.presentPlayerIds();
+    const lockedIds = this.playersWithMatchesInWeek(); // Opcjonalnie: zablokowani zawsze na samej górze
+
+    // 1. Wyciągamy graczy z bazy
+    const unsortedPlayers = this.allPlayers().filter((p) => visibleIds.includes(p.id));
+
+    // 2. Sortujemy:
+    // Priorytet 1: Grał w tej kolejce (zablokowany checkbox) - na samą górę
+    // Priorytet 2: Zaznaczony jako obecny (gotowy do gry)
+    // Priorytet 3: Odznaczony (wyszarzony) - spada na dół
+    // Priorytet 4: Alfabet
+    return unsortedPlayers.sort((a, b) => {
+      const isALocked = lockedIds.includes(a.id);
+      const isBLocked = lockedIds.includes(b.id);
+
+      const isAPresent = presentIds.includes(a.id);
+      const isBPresent = presentIds.includes(b.id);
+
+      // Krok 1: Kto grał (Locked) ten wyżej
+      if (isALocked !== isBLocked) {
+        return isALocked ? -1 : 1;
+      }
+
+      // Krok 2: Kto jest zaznaczony ten wyżej
+      if (isAPresent !== isBPresent) {
+        return isAPresent ? -1 : 1;
+      }
+
+      // Krok 3: Jeśli status jest ten sam, sortuj alfabetycznie po aliasie
+      return a.alias.localeCompare(b.alias);
+    });
+  });
+
+  attendanceSuggestions = computed(() => {
+    const query = this.searchNewPlayerQuery().toLowerCase();
+    if (query.length < 2) return [];
+
+    const visibleIds = this.visibleInModalIds();
 
     return this.allPlayers()
-      .filter(p =>
-        !selectedIds.includes(p.id) &&
-        (p.alias.toLowerCase().includes(query) || p.name.toLowerCase().includes(query))
+      .filter(
+        (p) =>
+          !visibleIds.includes(p.id) &&
+          (p.alias.toLowerCase().includes(query) || p.name.toLowerCase().includes(query)),
+      )
+      .slice(0, 5);
+  });
+
+  newMatch: any = {
+    matchweek: 1,
+    homeSide: { teamId: '', assetId: '', teamName: '', goals: 0, players: [] },
+    awaySide: { teamId: '', assetId: '', teamName: '', goals: 0, players: [] },
+    finished: false,
+  };
+
+  // ... (Wszystkie Twoje computed() zostają BEZ ZMIAN)
+  filteredPlayers = computed(() => {
+    const query = this.searchPlayerQuery().toLowerCase();
+    this.matchStateTrigger();
+    const selectedIds = this.getSelectedPlayerIds();
+    return this.allPlayers()
+      .filter(
+        (p) =>
+          !selectedIds.includes(p.id) &&
+          (p.alias.toLowerCase().includes(query) || p.name.toLowerCase().includes(query)),
       )
       .sort((a, b) => a.alias.localeCompare(b.alias))
       .slice(0, 10);
@@ -68,14 +144,14 @@ export class SeasonComponent implements OnInit {
     const query = this.searchHomeTeam().toLowerCase();
     this.matchStateTrigger();
     if (query.length < 3) return [];
-
     const usedInWeek = this.getUsedTeamIdsInMatchweek();
-    const awayTeamId = this.newMatch.awaySide.teamId; // ZMIANA NA teamId
-
-    return this.allTeams().filter(t =>
-      t.id !== awayTeamId && // Porównujemy Mongo ID
-      !usedInWeek.includes(t.id) &&
-      ((t.teamName || t.name || '').toLowerCase().includes(query) || (t.alias || '').toLowerCase().includes(query))
+    const awayTeamId = this.newMatch.awaySide.teamId;
+    return this.allTeams().filter(
+      (t) =>
+        t.id !== awayTeamId &&
+        !usedInWeek.includes(t.id) &&
+        ((t.teamName || t.name || '').toLowerCase().includes(query) ||
+          (t.alias || '').toLowerCase().includes(query)),
     );
   });
 
@@ -83,14 +159,14 @@ export class SeasonComponent implements OnInit {
     const query = this.searchAwayTeam().toLowerCase();
     this.matchStateTrigger();
     if (query.length < 3) return [];
-
     const usedInWeek = this.getUsedTeamIdsInMatchweek();
-    const homeTeamId = this.newMatch.homeSide.teamId; // ZMIANA NA teamId
-
-    return this.allTeams().filter(t =>
-      t.id !== homeTeamId && // Porównujemy Mongo ID
-      !usedInWeek.includes(t.id) &&
-      ((t.teamName || t.name || '').toLowerCase().includes(query) || (t.alias || '').toLowerCase().includes(query))
+    const homeTeamId = this.newMatch.homeSide.teamId;
+    return this.allTeams().filter(
+      (t) =>
+        t.id !== homeTeamId &&
+        !usedInWeek.includes(t.id) &&
+        ((t.teamName || t.name || '').toLowerCase().includes(query) ||
+          (t.alias || '').toLowerCase().includes(query)),
     );
   });
 
@@ -99,119 +175,245 @@ export class SeasonComponent implements OnInit {
     if (id) {
       this.seasonId.set(id);
       this.loadSeasonData(id);
-      this.loadInitialData(); // Pobieramy graczy i drużyny do selectów
+      this.loadInitialData();
     }
   }
 
   loadInitialData() {
-    // Zakładamy, że AdminService ma metody zwracające Observable z listami
-    this.adminService.getPlayers().subscribe(p => this.allPlayers.set(p));
-    this.adminService.getTeams().subscribe(t => this.allTeams.set(t));
+    this.adminService.getPlayers().subscribe((p) => this.allPlayers.set(p));
+    this.adminService.getTeams().subscribe((t) => this.allTeams.set(t));
   }
 
   loadSeasonData(id: string) {
-    // 1. Pobierz dane o sezonie
-    this.seasonService.getSeasonById(id).subscribe(s => this.season.set(s));
+    this.seasonService.getSeasonById(id).subscribe((s) => this.season.set(s));
 
-    // 2. Pobierz listę meczów
-    this.matchService.getMatchesBySeason(id).subscribe(m => {
-      this.matches.set(m.sort((a: any, b: any) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ));
+    this.matchService.getMatchesBySeason(id).subscribe((m) => {
+      const sorted = m.sort(
+        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      this.matches.set(sorted);
+
+      // NOWE: Ustawienie aktywnej kolejki na podstawie ostatniego meczu
+      if (sorted.length > 0) {
+        this.activeMatchweek.set(sorted[0].matchweek);
+      }
     });
 
-    // 3. Pobierz tabelę (to jest nasza nowa rura!)
     this.seasonService.getSeasonTable(id).subscribe({
-      next: (table) => {
-        this.tableData.set(table);
-      },
-      error: (err) => console.error('Błąd pobierania tabeli:', err)
+      next: (table) => this.tableData.set(table),
+      error: (err) => console.error('Błąd pobierania tabeli:', err),
     });
   }
 
-  // --- LOGIKA FORMULARZA ---
+  // ==========================================
+  // NOWE METODY: OBECNOŚĆ I MATCHMAKING
+  // ==========================================
+
+  openAttendanceModal() {
+    this.showAttendanceModal.set(true);
+    this.loadAttendanceForWeek(this.activeMatchweek());
+  }
+
+  closeAttendanceModal() {
+    this.showAttendanceModal.set(false);
+  }
+
+  // NOWE ZABEZPIECZENIE: Najniższa dozwolona kolejka (najwyższa rozegrana)
+  minAllowedMatchweek = computed(() => {
+    const m = this.matches();
+    if (m.length === 0) return 1;
+
+    // Zwracamy najwyższą rozegraną kolejkę. Nie pozwalamy cofać się poniżej niej.
+    return Math.max(...m.map((match) => match.matchweek));
+  });
+
+  // (Twój obecny maxAllowedMatchweek zostaje bez zmian)
+  maxAllowedMatchweek = computed(() => {
+    const m = this.matches();
+    if (m.length === 0) return 1;
+    const highestPlayed = Math.max(...m.map((match) => match.matchweek));
+    return highestPlayed + 1;
+  });
+
+  // BRAKUJĄCY KONSTRUKTOR DLA DEBOUNCE'A (Opóźnienia)
+  constructor() {
+    this.matchweekSubject.pipe(debounceTime(400), distinctUntilChanged()).subscribe((newWeek) => {
+      this.loadAttendanceForWeek(newWeek);
+    });
+  }
+
+  // ZAKTUALIZOWANA METODA: Waliduje i blokuje złe wpisy
+  onWeekChange(newWeek: number) {
+    const max = this.maxAllowedMatchweek();
+    const min = this.minAllowedMatchweek();
+    let validWeek = newWeek;
+
+    // Blokada przed przeskakiwaniem kolejek w górę
+    if (newWeek > max) {
+      alert(
+        `Błąd! Nie możesz przeskoczyć do kolejki ${newWeek}. Najpierw rozegraj kolejkę ${max - 1}.`,
+      );
+      validWeek = max;
+    }
+    // Blokada przed cofaniem się do zamkniętych kolejek
+    else if (newWeek < min) {
+      alert(
+        `Błąd! Kolejka ${newWeek} jest już zamknięta. Możesz zarządzać obecnością tylko dla bieżącej (${min}) lub nowej (${max}) kolejki.`,
+      );
+      validWeek = min;
+    }
+    // Zabezpieczenie przed bzdurnymi danymi
+    else if (!newWeek) {
+      validWeek = min;
+    }
+
+    // Odświeżamy UI natychmiast, żeby cofnąć błędną liczbę w inpucie
+    this.activeMatchweek.set(validWeek);
+
+    // Wysyłamy poprawną wartość do strumienia pobierającego z bazy
+    this.matchweekSubject.next(validWeek);
+  }
+  loadAttendanceForWeek(week: number) {
+    if (!this.seasonId()) return;
+    this.matchweekService.getMatchweek(this.seasonId()!, week).subscribe({
+      next: (res) => {
+        const backendPresent = res.presentPlayerIds || [];
+        this.presentPlayerIds.set(backendPresent);
+
+        // Zbieramy ID graczy, którzy grali w tej kolejce
+        const matchesInWeek = this.matches().filter((m) => m.matchweek === week);
+        const playedIds = new Set<string>();
+        matchesInWeek.forEach((m) => {
+          m.homeSide?.players?.forEach((p: any) => playedIds.add(p.playerId));
+          m.awaySide?.players?.forEach((p: any) => playedIds.add(p.playerId));
+        });
+
+        // Wrzucamy do widoku modala (zaznaczonych + tych co grali)
+        const allVisible = Array.from(new Set([...backendPresent, ...Array.from(playedIds)]));
+        this.visibleInModalIds.set(allVisible);
+      },
+      error: (err) => console.error('Błąd pobierania obecności', err),
+    });
+  }
+
+  togglePlayerPresence(playerId: string) {
+    const current = this.presentPlayerIds();
+    if (current.includes(playerId)) {
+      // Odznaczamy (ale NIE USUWA to gracza z visibleInModalIds)
+      this.presentPlayerIds.set(current.filter((id) => id !== playerId));
+    } else {
+      // Zaznaczamy z powrotem
+      this.presentPlayerIds.set([...current, playerId]);
+    }
+  }
+
+  addPlayerToAttendance(player: any) {
+    // 1. Dodajemy do widoku modala
+    const currentVisible = this.visibleInModalIds();
+    if (!currentVisible.includes(player.id)) {
+      this.visibleInModalIds.set([...currentVisible, player.id]);
+    }
+    // 2. Automatycznie zaznaczamy ptaszkiem
+    const currentPresent = this.presentPlayerIds();
+    if (!currentPresent.includes(player.id)) {
+      this.presentPlayerIds.set([...currentPresent, player.id]);
+    }
+    this.searchNewPlayerQuery.set(''); // Czyścimy input
+  }
+
+  saveAttendance() {
+    if (!this.seasonId()) return;
+    this.matchweekService
+      .updateAttendance(this.seasonId()!, this.activeMatchweek(), this.presentPlayerIds())
+      .subscribe({
+        next: () => this.closeAttendanceModal(),
+        error: (err) => alert('Błąd zapisu obecności: ' + err.message),
+      });
+  }
+
+  proposeMatch() {
+    alert(
+      `Backend wie już o obecności graczy! Następny krok to endpoint Matchmakingu, który przyjmie dane: \nSeason: ${this.seasonId()}\nKolejka: ${this.activeMatchweek()}`,
+    );
+  }
+
+  // ==========================================
+  // RESZTA KODU POZOSTAJE BEZ ZMIAN
+  // (wklej tu wszystkie swoje stare metody onPlayerSelect, saveFullMatch, deleteMatch itd.)
+  // ==========================================
 
   onPlayerSelect(side: 'home' | 'away', event: Event) {
     const select = event.target as HTMLSelectElement;
     const playerId = select.value;
     if (!playerId) return;
 
-    const player = this.allPlayers().find(p => p.id === playerId);
+    const player = this.allPlayers().find((p) => p.id === playerId);
     if (player) {
       this.addPlayerToSide(side, player);
     }
-    select.value = ''; // Reset selecta, żeby można było wybrać kolejnego
+    select.value = '';
   }
 
   removePlayer(side: 'home' | 'away', playerId: string) {
     const target = side === 'home' ? this.newMatch.homeSide : this.newMatch.awaySide;
     target.players = target.players.filter((p: any) => p.playerId !== playerId);
-    this.matchStateTrigger.update(v => v + 1); // Wymusza powrót gracza do selecta!
+    this.matchStateTrigger.update((v) => v + 1);
   }
 
   selectTeam(side: 'home' | 'away', team: any) {
     const targetSide = side === 'home' ? this.newMatch.homeSide : this.newMatch.awaySide;
-
-    // KRYTYCZNE ROZDZIELENIE:
-    targetSide.teamId = team.id; // PRAWDZIWE MONGO ID (do bazy i walidacji)
-    targetSide.assetId = team.assetId || 'default'; // NAZWA GRAFIKI (tylko do <img src>)
+    targetSide.teamId = team.id;
+    targetSide.assetId = team.assetId || 'default';
     targetSide.teamName = team.alias || team.teamName || team.name;
 
     if (side === 'home') this.searchHomeTeam.set('');
     else this.searchAwayTeam.set('');
 
-    this.matchStateTrigger.update(v => v + 1);
+    this.matchStateTrigger.update((v) => v + 1);
   }
 
   clearTeam(side: 'home' | 'away') {
     const targetSide = side === 'home' ? this.newMatch.homeSide : this.newMatch.awaySide;
-    targetSide.teamId = '';  // CZYŚCIMY MONGO ID
+    targetSide.teamId = '';
     targetSide.assetId = '';
     targetSide.teamName = '';
-
-    this.matchStateTrigger.update(v => v + 1);
+    this.matchStateTrigger.update((v) => v + 1);
   }
 
-// --- DYNAMICZNE WYNIKI MECZU ---
   get homeGoals(): number {
     return this.newMatch.homeSide.players.reduce((sum: number, p: any) => sum + (p.goals || 0), 0);
   }
-
   get awayGoals(): number {
     return this.newMatch.awaySide.players.reduce((sum: number, p: any) => sum + (p.goals || 0), 0);
   }
-
-  // NOWE: Dynamiczne asysty
   get homeAssists(): number {
-    return this.newMatch.homeSide.players.reduce((sum: number, p: any) => sum + (p.assists || 0), 0);
+    return this.newMatch.homeSide.players.reduce(
+      (sum: number, p: any) => sum + (p.assists || 0),
+      0,
+    );
+  }
+  get awayAssists(): number {
+    return this.newMatch.awaySide.players.reduce(
+      (sum: number, p: any) => sum + (p.assists || 0),
+      0,
+    );
   }
 
-  get awayAssists(): number {
-    return this.newMatch.awaySide.players.reduce((sum: number, p: any) => sum + (p.assists || 0), 0);
-  }
   saveFullMatch() {
     if (!this.isFormValid()) return;
-
-    // --- NOWA WALIDACJA ASYST ---
     if (this.homeAssists > this.homeGoals) {
-      alert(`BŁĄD GOSPODARZY: Drużyna zdobyła ${this.homeGoals} bramek, ale graczom przypisano aż ${this.homeAssists} asyst! Zmniejsz liczbę asyst.`);
-      return; // Przerwanie zapisu
+      alert(`BŁĄD GOSPODARZY: Zbyt dużo asyst!`);
+      return;
     }
-
     if (this.awayAssists > this.awayGoals) {
-      alert(`BŁĄD GOŚCI: Drużyna zdobyła ${this.awayGoals} bramek, ale graczom przypisano aż ${this.awayAssists} asyst! Zmniejsz liczbę asyst.`);
-      return; // Przerwanie zapisu
+      alert(`BŁĄD GOŚCI: Zbyt dużo asyst!`);
+      return;
     }
 
-    // Automatycznie przepisujemy policzone gole do obiektu tuż przed wysłaniem na backend
     this.newMatch.homeSide.goals = this.homeGoals;
     this.newMatch.awaySide.goals = this.awayGoals;
 
-    const payload = {
-      ...this.newMatch,
-      seasonId: this.seasonId()
-    };
-
+    const payload = { ...this.newMatch, seasonId: this.seasonId() };
     const request = this.editingMatch()
       ? this.matchService.updateMatch(this.editingMatch().id, payload)
       : this.matchService.createMatch(payload);
@@ -221,7 +423,7 @@ export class SeasonComponent implements OnInit {
         this.loadSeasonData(this.seasonId()!);
         this.closeForm();
       },
-      error: (err) => alert('Błąd zapisu: ' + (err.error?.message || 'Nieznany błąd serwera'))
+      error: (err) => alert('Błąd zapisu: ' + (err.error?.message || 'Nieznany błąd serwera')),
     });
   }
 
@@ -235,29 +437,19 @@ export class SeasonComponent implements OnInit {
     );
   }
 
-  // --- POMOCNICZE ---
-
   addNewMatch() {
     this.resetForm();
     this.showMatchForm.set(true);
-
-    // Wymuszamy płynny scroll do góry po wyrenderowaniu formularza
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 50);
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
   }
 
   editMatch(match: any) {
     if (match.finished) return;
     this.editingMatch.set(match);
-
-    // Głęboka kopia obiektu
     this.newMatch = JSON.parse(JSON.stringify(match));
-
     this.searchHomeTeam.set(match.homeSide.teamName || '');
     this.searchAwayTeam.set(match.awaySide.teamName || '');
-
-    this.matchStateTrigger.update(v => v + 1); // Wymusza przeliczenie walidacji i selectów
+    this.matchStateTrigger.update((v) => v + 1);
     this.showMatchForm.set(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -272,17 +464,12 @@ export class SeasonComponent implements OnInit {
     this.searchHomeTeam.set('');
     this.searchAwayTeam.set('');
     this.newMatch = {
-      matchweek: this.matches().length > 0 ? this.matches()[this.matches().length - 1].matchweek : 1,
+      matchweek: this.activeMatchweek(), // Domyślnie używamy aktywnej kolejki z sesji
       homeSide: { assetId: '', goals: 0, players: [] },
       awaySide: { assetId: '', goals: 0, players: [] },
-      finished: false
+      finished: false,
     };
   }
-
-
-
-  // (Reszta Twoich metod: getSelectedPlayerIds, getUsedTeamIdsInMatchweek, addPlayerToSide)
-  // [Wklej tutaj kod, który już miałeś wcześniej]
 
   logout() {
     localStorage.removeItem('spodek_token');
@@ -297,127 +484,89 @@ export class SeasonComponent implements OnInit {
       target.players.push({
         playerId: player.id,
         alias: player.alias,
-        goals: 0,      // Inicjalizacja statystyk
+        goals: 0,
         assists: 0,
         yellowCards: 0,
-        redCards: 0
+        redCards: 0,
       });
-      this.matchStateTrigger.update(v => v + 1);
+      this.matchStateTrigger.update((v) => v + 1);
     }
   }
 
-  /**
-   * Pobiera listę wszystkich ID graczy wybranych obecnie w formularzu
-   * Służy do filtrowania listy podpowiedzi (brak duplikatów)
-   */
   getSelectedPlayerIds(): string[] {
     const homeIds = this.newMatch.homeSide.players.map((p: any) => p.playerId);
     const awayIds = this.newMatch.awaySide.players.map((p: any) => p.playerId);
     return [...homeIds, ...awayIds];
   }
 
-  /**
-   * Zwraca listę ID drużyn, które wystąpiły już w danej kolejce
-   * Działa tylko jeśli w opcjach sezonu flaga uniqueTeams jest na true
-   */
   getUsedTeamIdsInMatchweek(): string[] {
     if (!this.season()?.uniqueTeams) return [];
     return this.matches()
-      .filter(m => m.matchweek === this.newMatch.matchweek && m.id !== this.editingMatch()?.id)
-      // Pobieramy prawdziwe ID z bazy (teamId lub gameTeamId, zależy co wysyła backend), a NIE assetId ("default")
-      .flatMap(m => [m.homeSide.teamId || m.homeSide.assetId, m.awaySide.teamId || m.awaySide.assetId]);
+      .filter((m) => m.matchweek === this.newMatch.matchweek && m.id !== this.editingMatch()?.id)
+      .flatMap((m) => [
+        m.homeSide.teamId || m.homeSide.assetId,
+        m.awaySide.teamId || m.awaySide.assetId,
+      ]);
   }
 
-// --- POPRAWKA W USUWANIU MECZU ---
   deleteMatch(matchId: string) {
     if (confirm('Czy na pewno chcesz usunąć ten mecz?')) {
       this.matchService.deleteMatch(matchId).subscribe(() => {
-        // 1. Odświeżamy dane z serwera
         this.loadSeasonData(this.seasonId()!);
-        // 2. Wymuszamy reset list unikalności
-        this.matchStateTrigger.update(v => v + 1);
-        // 3. Jeśli formularz był otwarty na tym meczu - zamykamy
-        if (this.editingMatch()?.id === matchId) {
-          this.closeForm();
-        }
+        this.matchStateTrigger.update((v) => v + 1);
+        if (this.editingMatch()?.id === matchId) this.closeForm();
       });
     }
   }
 
   selectContent(event: FocusEvent) {
     const input = event.target as HTMLInputElement;
-    if (input) {
-      input.select();
-    }
+    if (input) input.select();
   }
-
   protected readonly Math = Math;
 
-
-  // Stan sortowania
-  sortKey = signal<string>('points'); // domyślne sortowanie po punktach
+  sortKey = signal<string>('points');
   sortDirection = signal<'asc' | 'desc'>('desc');
 
   sortedTable = computed(() => {
-    const data = [...this.tableData()]; // kopiujemy dane z oryginalnego sygnału
+    const data = [...this.tableData()];
     const key = this.sortKey();
     const dir = this.sortDirection();
-
     return data.sort((a, b) => {
       let valA = a[key];
       let valB = b[key];
-
-      // Obsługa sortowania (jeśli wartości są równe, używamy punktów jako "tie-breakera")
-      if (valA === valB) {
-        return b.points - a.points;
-      }
-
+      if (valA === valB) return b.points - a.points;
       return dir === 'asc' ? valA - valB : valB - valA;
     });
   });
 
   toggleSort(key: string) {
-    if (this.sortKey() === key) {
-      // Jeśli klikasz w to samo -> zmień kierunek
+    if (this.sortKey() === key)
       this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
-    } else {
-      // Jeśli klikasz w nowy nagłówek -> sortuj malejąco (bo w sporcie to naturalne)
+    else {
       this.sortKey.set(key);
       this.sortDirection.set('desc');
     }
   }
 
-  // Ustawienia stronicowania
   currentPage = signal(1);
-  pageSize = 10; // Ile meczów na jednej stronie
-
+  pageSize = 10;
   paginatedMatches = computed(() => {
     const startIndex = (this.currentPage() - 1) * this.pageSize;
     return this.matches().slice(startIndex, startIndex + this.pageSize);
   });
-
-  // Obliczamy łączną liczbę stron
   totalPages = computed(() => Math.ceil(this.matches().length / this.pageSize));
-
-  // Metody nawigacji
   nextPage() {
-    if (this.currentPage() < this.totalPages()) {
-      this.currentPage.update(p => p + 1);
-    }
+    if (this.currentPage() < this.totalPages()) this.currentPage.update((p) => p + 1);
   }
-
   prevPage() {
-    if (this.currentPage() > 1) {
-      this.currentPage.update(p => p - 1);
-    }
+    if (this.currentPage() > 1) this.currentPage.update((p) => p - 1);
   }
 
   viewingMatch = signal<any | null>(null);
-
   viewMatchDetails(match: any) {
     this.viewingMatch.set(match);
   }
-
   closeMatchDetails() {
     this.viewingMatch.set(null);
   }

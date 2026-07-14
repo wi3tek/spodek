@@ -9,6 +9,45 @@ rating:
   match-weight-index-default: 20
   rating-difference-index: 400
 
+# ===================================================================
+# KONFIGURACJA ALGORYTMU MATCHMAKINGU (FIFA SCORE APP)
+# ===================================================================
+matchmaking:
+  weights:
+    # Wpływ na różnicę rozegranych spotkań w całym wieczorze.
+    # Wysoka wartość (>500): Bezwzględnie zrównuje liczbę meczów wszystkich graczy.
+    # Niska wartość (<100): Pozwala jednym grać znacznie więcej niż innym.
+    global-match-difference-penalty: 1000
+
+    history:
+      # Wpływ na powtarzalność par (gracze w jednej drużynie).
+      # Wysoka wartość (>100): System agresywnie wymusza grę z nowym partnerem.
+      # Niska wartość (<20): Często te same dwójki będą grać ze sobą.
+      same-team-penalty: 50
+
+      # Wpływ na powtarzalność rywali (gracz przeciwko graczowi).
+      # Wysoka wartość (>150): System unika powtarzania pojedynków z poprzednich meczów.
+      # Niska wartość (<30): Ci sami gracze będą często na siebie wpadać.
+      same-opponent-penalty: 100
+
+    elo:
+      # Mnożnik różnicy sił zespołów (np. 0.5 * różnica 200 ELO = 100 pkt karnych).
+      # Wysoka wartość (>1.0): ELO staje się priorytetem, wymuszając wyrównane siły kosztem różnorodności.
+      # Niska wartość (<0.2): Pozwala na mecze faworytów z nowicjuszami.
+      difference-weight: 0.5
+
+  streaks:
+    # Zmęczenie: Punkty karne dodawane za N meczów zagranych z rzędu.
+    played-consecutive:
+      level-1: 0      # 1 mecz: optymalnie, brak kar.
+      level-2: 50     # 2 mecze: lekka sugestia rotacji (przy małej liczbie graczy zostaną na boisku).
+      level-3: 300    # 3 mecze: silna sugestia przerwy (zagrają tylko, jeśli reszta już gra/jest zmęczona).
+      level-4: 2000   # 4 mecze: twarda blokada (w praktyce usiądą na ławce).
+
+    # Głód gry: Punkty UJEMNE (bonusy) za siedzenie na ławce przez N spotkań.
+    benched-consecutive:
+      level-1: -100   # 1 mecz pauzy: wysoki priorytet powrotu na boisko.
+      level-2: -1000  # 2 mecze pauzy: absolutna gwarancja gry w następnym meczu.
 ---
 spring:
   config:
