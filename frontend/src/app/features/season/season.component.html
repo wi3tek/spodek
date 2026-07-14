@@ -2,7 +2,7 @@
 
   <header class="main-header">
     <div class="brand">
-      <img src="/logo.png" alt="Logo" class="app-logo">
+      <img src="/logo.png" alt="Logo" class="app-logo" width="100" height="100">
       <div class="title-group">
         <button class="btn-back-link" [routerLink]="['/league', season()?.leagueId]">← Powrót do ligi</button>
         <h1 class="app-title">{{ season()?.name }}</h1>
@@ -27,6 +27,74 @@
         </div>
         <h2>{{ editingMatch() ? 'Edytuj Mecz' : 'Nowy Mecz' }}</h2>
         <button class="btn-close" (click)="closeForm()">✕</button>
+      </div>
+
+      <div class="form-section-kanapa">
+        <div class="kanapa-header">
+          <h3>🛋️ Kanapa (Obecni na Kolejce {{ activeMatchweek() }})</h3>
+          <div class="week-selector-inline">
+            <label>Zmień kolejkę:</label>
+            <input type="number"
+                   [ngModel]="activeMatchweek()"
+                   (ngModelChange)="onWeekChange($event)"
+                   [min]="minAllowedMatchweek()"
+                   [max]="maxAllowedMatchweek()"
+                   class="week-input-mini">
+          </div>
+        </div>
+
+        <div class="kanapa-layout">
+
+          @if (isLoadingAttendance()) {
+            <app-fifa-loader></app-fifa-loader>
+          } @else {
+            <div class="attendance-grid-mini">
+              @for (p of modalDisplayPlayers(); track p.id) {
+                <label class="attendance-item-mini"
+                       [class.selected]="presentPlayerIds().includes(p.id)"
+                       [class.absent]="!presentPlayerIds().includes(p.id)">
+
+                  <input type="checkbox"
+                         [checked]="presentPlayerIds().includes(p.id)"
+                         (change)="togglePlayerPresenceAndSave(p.id)">
+
+                  <span class="player-alias">{{ p.alias }}</span>
+                </label>
+              } @empty {
+                <div class="empty-state-mini">Brak graczy. Wyszukaj i dodaj obok!</div>
+              }
+            </div>
+
+            <div class="attendance-search-mini">
+              <input type="text"
+                     class="search-input"
+                     [ngModel]="searchNewPlayerQuery()"
+                     (ngModelChange)="searchNewPlayerQuery.set($event)"
+                     placeholder="🔍 Dodaj z bazy...">
+              @if (attendanceSuggestions().length > 0) {
+                <div class="suggestions">
+                  @for (s of attendanceSuggestions(); track s.id) {
+                    <div class="s-item" (click)="addPlayerToAttendanceAndSave(s)">
+                      {{ s.alias }}
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          } </div>
+      </div>
+
+      <div class="form-section-suggestions">
+        <div class="suggestions-header">
+          <h3>✨ Algorytm Proponuje</h3>
+          <button class="btn-magic btn-sm" (click)="generateSuggestionsMock()">Zaproponuj</button>
+        </div>
+
+        <div class="suggestions-cards">
+          <div class="suggestion-card placeholder">
+            <div class="s-teams">Kliknij "Zaproponuj", aby algorytm dobrał pary z "Kanapy" ↑</div>
+          </div>
+        </div>
       </div>
 
       <div class="match-form-layout">
@@ -166,11 +234,7 @@
           <div class="meta-side">
             <div class="week-input">
               <label>Kolejka:</label>
-              <input type="number" [(ngModel)]="newMatch.matchweek" class="week-field"
-                     [min]="minAllowedMatchweek()"
-                     [max]="maxAllowedMatchweek()"
-                     (focus)="selectContent($event)"
-                     (blur)="newMatch.matchweek = newMatch.matchweek || minAllowedMatchweek()">
+              <span class="week-display">{{ activeMatchweek() }}</span>
             </div>
           </div>
 
@@ -257,16 +321,14 @@
   <div class="grid-layout">
 
     <section class="card matches-panel">
-      <div class="panel-header">
+      <div class="panel-header matches-header">
         <h2>
           ⚽ Mecze
-          <span class="active-week-badge" title="Zmienisz ją w panelu obecności">Kolejka: {{ activeMatchweek() }}</span>
+          <span class="active-week-badge" title="Zmienisz ją w formularzu dodawania meczu">Kolejka: {{ activeMatchweek() }}</span>
         </h2>
 
         @if (!showMatchForm()) {
         <div class="header-actions">
-          <button class="btn-magic btn-sm" (click)="proposeMatch()">✨ Zaproponuj Mecz</button>
-          <button class="btn-secondary btn-sm" (click)="openAttendanceModal()">👥 Obecność</button>
           <button class="btn-primary btn-sm" (click)="addNewMatch()">+ Dodaj Mecz</button>
         </div>
         }
@@ -478,77 +540,6 @@
 
         </div>
       </div>
-    </div>
-  </div>
-}
-
-@if (showAttendanceModal()) {
-  <div class="modal-overlay" (click)="closeAttendanceModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-
-      <div class="modal-header">
-        <h3>👥 Lista Obecności</h3>
-        <button class="btn-close" (click)="closeAttendanceModal()">✕</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="attendance-week-selector">
-          <label>Kolejka:</label>
-          <input type="number"
-                 [ngModel]="activeMatchweek()"
-                 (ngModelChange)="onWeekChange($event)"
-                 [min]="minAllowedMatchweek()"
-                 [max]="maxAllowedMatchweek()"
-                 class="week-input-small"
-                 title="Możesz wybrać kolejkę od {{ minAllowedMatchweek() }} do {{ maxAllowedMatchweek() }}">
-        </div>
-
-        <div class="attendance-search-box">
-          <input type="text"
-                 class="search-input"
-                 [ngModel]="searchNewPlayerQuery()"
-                 (ngModelChange)="searchNewPlayerQuery.set($event)"
-                 placeholder="🔍 Szukaj gracza, aby dodać do kanapy...">
-
-          @if (attendanceSuggestions().length > 0) {
-            <div class="suggestions">
-              @for (s of attendanceSuggestions(); track s.id) {
-                <div class="s-item" (click)="addPlayerToAttendance(s)">
-                  {{ s.alias }} <small>({{ s.name }})</small>
-                </div>
-              }
-            </div>
-          }
-        </div>
-
-        <div class="attendance-grid">
-          @for (p of modalDisplayPlayers(); track p.id) {
-            <label class="attendance-item"
-                   [class.selected]="presentPlayerIds().includes(p.id)"
-                   [class.absent]="!presentPlayerIds().includes(p.id)">
-
-              <input type="checkbox"
-                     [checked]="presentPlayerIds().includes(p.id)"
-                     (change)="togglePlayerPresence(p.id)">
-
-              <div class="player-info">
-                <span class="player-alias">{{ p.alias }}</span>
-                <span class="player-name-small">
-                {{ presentPlayerIds().includes(p.id) ? p.name : 'Zaraz wracam...' }}
-              </span>
-              </div>
-            </label>
-          } @empty {
-            <div class="empty-state">Brak graczy na tej kolejce. Wyszukaj i dodaj ich powyżej!</div>
-          }
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn-secondary btn-sm" (click)="closeAttendanceModal()">Anuluj</button>
-        <button class="btn-primary btn-sm" (click)="saveAttendance()">Zapisz Obecność</button>
-      </div>
-
     </div>
   </div>
 }

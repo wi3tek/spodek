@@ -7,11 +7,12 @@ import { MatchService } from '../../core/services/match.service';
 import { AdminService } from '../../core/services/admin.service';
 import { MatchweekService } from '../../core/services/matchweek.service';
 import {debounceTime, distinctUntilChanged, Subject} from 'rxjs'; // NOWE
+import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
 
 @Component({
   selector: 'app-season',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, FifaLoaderComponent],
   templateUrl: './season.component.html',
   styleUrls: ['./season.component.scss'],
 })
@@ -49,6 +50,8 @@ export class SeasonComponent implements OnInit {
   searchNewPlayerQuery = signal('');
   // Strumień do opóźniania żądań przy zmianie kolejki
   private matchweekSubject = new Subject<number>();
+
+  isLoadingAttendance = signal(false); // NOWA FLAGA
 
   // Oblicza, którzy gracze ROZEGRALI jakikolwiek mecz w aktualnej kolejce
   playersWithMatchesInWeek = computed(() => {
@@ -205,19 +208,6 @@ export class SeasonComponent implements OnInit {
     });
   }
 
-  // ==========================================
-  // NOWE METODY: OBECNOŚĆ I MATCHMAKING
-  // ==========================================
-
-  openAttendanceModal() {
-    this.showAttendanceModal.set(true);
-    this.loadAttendanceForWeek(this.activeMatchweek());
-  }
-
-  closeAttendanceModal() {
-    this.showAttendanceModal.set(false);
-  }
-
   // NOWE ZABEZPIECZENIE: Najniższa dozwolona kolejka (najwyższa rozegrana)
   minAllowedMatchweek = computed(() => {
     const m = this.matches();
@@ -270,17 +260,22 @@ export class SeasonComponent implements OnInit {
     // Odświeżamy UI natychmiast, żeby cofnąć błędną liczbę w inpucie
     this.activeMatchweek.set(validWeek);
 
+    // WŁĄCZAMY LOADER NATYCHMIAST (przed opóźnieniem debounce)
+    this.isLoadingAttendance.set(true);
+
     // Wysyłamy poprawną wartość do strumienia pobierającego z bazy
     this.matchweekSubject.next(validWeek);
   }
   loadAttendanceForWeek(week: number) {
     if (!this.seasonId()) return;
+
+    this.isLoadingAttendance.set(true); // Upewniamy się, że loader działa przy pierwszym wejściu
+
     this.matchweekService.getMatchweek(this.seasonId()!, week).subscribe({
       next: (res) => {
         const backendPresent = res.presentPlayerIds || [];
         this.presentPlayerIds.set(backendPresent);
 
-        // Zbieramy ID graczy, którzy grali w tej kolejce
         const matchesInWeek = this.matches().filter((m) => m.matchweek === week);
         const playedIds = new Set<string>();
         matchesInWeek.forEach((m) => {
@@ -288,11 +283,15 @@ export class SeasonComponent implements OnInit {
           m.awaySide?.players?.forEach((p: any) => playedIds.add(p.playerId));
         });
 
-        // Wrzucamy do widoku modala (zaznaczonych + tych co grali)
         const allVisible = Array.from(new Set([...backendPresent, ...Array.from(playedIds)]));
         this.visibleInModalIds.set(allVisible);
+
+        this.isLoadingAttendance.set(false); // WYŁĄCZAMY LOADER PO SUKCESIE
       },
-      error: (err) => console.error('Błąd pobierania obecności', err),
+      error: (err) => {
+        console.error('Błąd pobierania obecności', err);
+        this.isLoadingAttendance.set(false); // WYŁĄCZAMY LOADER W RAZIE BŁĘDU
+      },
     });
   }
 
@@ -319,22 +318,6 @@ export class SeasonComponent implements OnInit {
       this.presentPlayerIds.set([...currentPresent, player.id]);
     }
     this.searchNewPlayerQuery.set(''); // Czyścimy input
-  }
-
-  saveAttendance() {
-    if (!this.seasonId()) return;
-    this.matchweekService
-      .updateAttendance(this.seasonId()!, this.activeMatchweek(), this.presentPlayerIds())
-      .subscribe({
-        next: () => this.closeAttendanceModal(),
-        error: (err) => alert('Błąd zapisu obecności: ' + err.message),
-      });
-  }
-
-  proposeMatch() {
-    alert(
-      `Backend wie już o obecności graczy! Następny krok to endpoint Matchmakingu, który przyjmie dane: \nSeason: ${this.seasonId()}\nKolejka: ${this.activeMatchweek()}`,
-    );
   }
 
   // ==========================================
@@ -413,6 +396,9 @@ export class SeasonComponent implements OnInit {
     this.newMatch.homeSide.goals = this.homeGoals;
     this.newMatch.awaySide.goals = this.awayGoals;
 
+    // NOWE: Gwarancja przypisania poprawnej kolejki ze zsynchronizowanego nagłówka "Kanapy"
+    this.newMatch.matchweek = this.activeMatchweek();
+
     const payload = { ...this.newMatch, seasonId: this.seasonId() };
     const request = this.editingMatch()
       ? this.matchService.updateMatch(this.editingMatch().id, payload)
@@ -440,6 +426,10 @@ export class SeasonComponent implements OnInit {
   addNewMatch() {
     this.resetForm();
     this.showMatchForm.set(true);
+
+    // Tukej wołomy zaro po liste obecności z aktywnyj kolyjki!
+    this.loadAttendanceForWeek(this.activeMatchweek());
+
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
   }
 
@@ -449,6 +439,11 @@ export class SeasonComponent implements OnInit {
     this.newMatch = JSON.parse(JSON.stringify(match));
     this.searchHomeTeam.set(match.homeSide.teamName || '');
     this.searchAwayTeam.set(match.awaySide.teamName || '');
+
+    // Ustawiómy kolyjka na ta ze szpilu i ciągniemy z bazy szpilerów
+    this.activeMatchweek.set(match.matchweek);
+    this.loadAttendanceForWeek(match.matchweek);
+
     this.matchStateTrigger.update((v) => v + 1);
     this.showMatchForm.set(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -569,5 +564,34 @@ export class SeasonComponent implements OnInit {
   }
   closeMatchDetails() {
     this.viewingMatch.set(null);
+  }
+
+  private saveAttendanceHidden() {
+    if (!this.seasonId()) return;
+    this.matchweekService
+      .updateAttendance(this.seasonId()!, this.activeMatchweek(), this.presentPlayerIds())
+      .subscribe({
+        error: (err) => console.error('Błąd cichego zapisu obecności: ', err),
+      });
+  }
+
+  // NOWA: Autozapis po zmianie checkboxa
+  togglePlayerPresenceAndSave(playerId: string) {
+    this.togglePlayerPresence(playerId);
+    this.saveAttendanceHidden();
+  }
+
+  // NOWA: Autozapis po dodaniu z wyszukiwarki
+  addPlayerToAttendanceAndSave(player: any) {
+    this.addPlayerToAttendance(player);
+    this.saveAttendanceHidden();
+  }
+
+  generateSuggestionsMock() {
+    alert(
+      'Tutaj uderzymy do API Matchmakingu! Szukamy najlepszych meczów z ' +
+        this.presentPlayerIds().length +
+        ' graczy.',
+    );
   }
 }

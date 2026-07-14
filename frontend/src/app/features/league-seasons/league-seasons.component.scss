@@ -24,8 +24,6 @@
     gap: 15px;
 
     .app-logo {
-      height: 100px;
-      width: 100px;
       object-fit: cover; /* Na wypadek gdyby logo nie było idealnym kwadratem */
       padding: 2px; /* Lekki margines wewnątrz ramki */
     }
