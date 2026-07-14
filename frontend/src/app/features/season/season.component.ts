@@ -8,6 +8,7 @@ import { AdminService } from '../../core/services/admin.service';
 import { MatchweekService } from '../../core/services/matchweek.service';
 import {debounceTime, distinctUntilChanged, Subject} from 'rxjs'; // NOWE
 import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
+import { MatchmakingService } from '../../core/services/matchmaking.service'; // NOWE
 
 @Component({
   selector: 'app-season',
@@ -23,6 +24,7 @@ export class SeasonComponent implements OnInit {
   private seasonService = inject(SeasonService);
   private adminService = inject(AdminService);
   private matchweekService = inject(MatchweekService); // NOWE
+  private matchmakingService = inject(MatchmakingService); // NOWE
 
   // --- DANE ---
   seasonId = signal<string | null>(null);
@@ -52,6 +54,17 @@ export class SeasonComponent implements OnInit {
   private matchweekSubject = new Subject<number>();
 
   isLoadingAttendance = signal(false); // NOWA FLAGA
+
+  // --- ZMIANY W STANIE SUGEROWANYCH MECZÓW (PAGINACJA) ---
+  allSuggestedMatches = signal<any[]>([]);
+  currentSuggestionPage = signal(0);
+  isSuggesting = signal(false); // Do zablokowania przycisku na czas ładowania
+
+  // W locie wycinamy tylko 3 kafelki dla aktualnej strony
+  suggestedMatches = computed(() => {
+    const start = this.currentSuggestionPage() * 3;
+    return this.allSuggestedMatches().slice(start, start + 3);
+  });
 
   // Oblicza, którzy gracze ROZEGRALI jakikolwiek mecz w aktualnej kolejce
   playersWithMatchesInWeek = computed(() => {
@@ -427,6 +440,10 @@ export class SeasonComponent implements OnInit {
     this.resetForm();
     this.showMatchForm.set(true);
 
+    // NOWE: Czyścimy stare sugestie przy otwieraniu nowego meczu
+    this.allSuggestedMatches.set([]);
+    this.currentSuggestionPage.set(0);
+
     // Tukej wołomy zaro po liste obecności z aktywnyj kolyjki!
     this.loadAttendanceForWeek(this.activeMatchweek());
 
@@ -520,7 +537,7 @@ export class SeasonComponent implements OnInit {
   }
   protected readonly Math = Math;
 
-  sortKey = signal<string>('points');
+  sortKey = signal<string>('winRatio');
   sortDirection = signal<'asc' | 'desc'>('desc');
 
   sortedTable = computed(() => {
@@ -545,7 +562,7 @@ export class SeasonComponent implements OnInit {
   }
 
   currentPage = signal(1);
-  pageSize = 10;
+  pageSize = 7;
   paginatedMatches = computed(() => {
     const startIndex = (this.currentPage() - 1) * this.pageSize;
     return this.matches().slice(startIndex, startIndex + this.pageSize);
@@ -571,6 +588,17 @@ export class SeasonComponent implements OnInit {
     this.matchweekService
       .updateAttendance(this.seasonId()!, this.activeMatchweek(), this.presentPlayerIds())
       .subscribe({
+        next: () => {
+          // ZMIANA: Usunięto blokadę (this.allSuggestedMatches().length > 0).
+          // Teraz po każdej zmianie obecności, jeśli jest min. 4 graczy,
+          // system od razu generuje nowe pary.
+          if (this.presentPlayerIds().length >= 4) {
+            this.generateSuggestions();
+          } else {
+            // Jeśli spadnie poniżej 4 graczy, czyścimy sugestie
+            this.allSuggestedMatches.set([]);
+          }
+        },
         error: (err) => console.error('Błąd cichego zapisu obecności: ', err),
       });
   }
@@ -587,11 +615,54 @@ export class SeasonComponent implements OnInit {
     this.saveAttendanceHidden();
   }
 
-  generateSuggestionsMock() {
-    alert(
-      'Tutaj uderzymy do API Matchmakingu! Szukamy najlepszych meczów z ' +
-        this.presentPlayerIds().length +
-        ' graczy.',
-    );
+  generateSuggestions() {
+    if (!this.seasonId()) return;
+
+    this.isSuggesting.set(true);
+    this.matchmakingService
+      .suggestMatches({
+        seasonId: this.seasonId()!,
+        matchweek: this.activeMatchweek(),
+      })
+      .subscribe({
+        next: (suggestions) => {
+          this.allSuggestedMatches.set(suggestions);
+          this.currentSuggestionPage.set(0); // Zawsze resetuj do strony pierwszej
+          this.isSuggesting.set(false);
+        },
+        error: (err) => {
+          console.error('Błąd pobierania sugestii', err);
+          alert('Nie udało się wygenerować propozycji. Sprawdź konsole.');
+          this.isSuggesting.set(false);
+        },
+      });
+  }
+
+  // Funkcja "Pokaż następne" z wytycznych
+  nextSuggestions() {
+    const maxPage = Math.floor((this.allSuggestedMatches().length - 1) / 3);
+    if (this.currentSuggestionPage() < maxPage) {
+      this.currentSuggestionPage.update((p) => p + 1);
+    } else {
+      this.currentSuggestionPage.set(0); // Zapętl do początku, jeśli kliknie na ostatniej stronie
+    }
+  }
+
+  applySuggestion(suggestion: any) {
+    // 1. Czyścimy obecne składy w formularzu
+    this.newMatch.homeSide.players = [];
+    this.newMatch.awaySide.players = [];
+
+    // 2. Dodajemy wybraną czwórkę (symulując ręczne dodawanie)
+    suggestion.homePlayers.forEach((p: any) => {
+      this.addPlayerToSide('home', { id: p.playerId, alias: p.alias });
+    });
+
+    suggestion.awayPlayers.forEach((p: any) => {
+      this.addPlayerToSide('away', { id: p.playerId, alias: p.alias });
+    });
+
+    // 3. Wymuszamy odświeżenie UI
+    this.matchStateTrigger.update((v) => v + 1);
   }
 }

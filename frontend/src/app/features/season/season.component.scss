@@ -680,8 +680,9 @@
 
 .suggestion-card {
   flex: 1;
-  min-width: 260px; /* Minimalna szerokość kafelka, żeby nie był za chudy na telefonie */
-  padding: 15px;
+  min-width: 200px; /* Minimalna szerokość kafelka, żeby nie był za chudy na telefonie */
+  padding: 5px;
+  margin: 2px;
   background: #f8fafc;
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
@@ -696,5 +697,77 @@
     align-items: center;
     justify-content: center;
     min-height: 60px;
+  }
+}
+
+/* --- Nowe style dla prawdziwych kafelków sugestii --- */
+.suggestion-card {
+  /* Zabezpieczenie przed ściśnięciem długich ksywek */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  &.active-card {
+    cursor: pointer;
+    background: white;
+    border: 1px solid #cbd5e1;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+
+    &:hover {
+      border-color: var(--beer-gold);
+      box-shadow: 0 6px 12px rgba(245, 158, 11, 0.2);
+      transform: translateY(-2px);
+    }
+  }
+
+  .s-score-badge {
+    align-self: flex-end;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: white;
+    background: var(--beer-gold);
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+  }
+
+  .s-matchup {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 15px;
+
+    .s-team {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+
+      .s-player {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 4px;
+      }
+    }
+
+    .s-vs {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+  }
+
+  .s-reason {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-style: italic;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 8px;
   }
 }

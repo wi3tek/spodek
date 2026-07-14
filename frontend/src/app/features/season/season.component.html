@@ -28,7 +28,7 @@
         <h2>{{ editingMatch() ? 'Edytuj Mecz' : 'Nowy Mecz' }}</h2>
         <button class="btn-close" (click)="closeForm()">✕</button>
       </div>
-
+      @if (!editingMatch()) {
       <div class="form-section-kanapa">
         <div class="kanapa-header">
           <h3>🛋️ Kanapa (Obecni na Kolejce {{ activeMatchweek() }})</h3>
@@ -87,16 +87,50 @@
       <div class="form-section-suggestions">
         <div class="suggestions-header">
           <h3>✨ Algorytm Proponuje</h3>
-          <button class="btn-magic btn-sm" (click)="generateSuggestionsMock()">Zaproponuj</button>
+
+          <div style="display: flex; gap: 10px;">
+            @if (allSuggestedMatches().length > 3) {
+              <button class="btn-secondary btn-sm" (click)="nextSuggestions()">Pokaż następne 🔄</button>
+            }
+            <button class="btn-magic btn-sm"
+                    (click)="generateSuggestions()"
+                    [disabled]="isSuggesting() || presentPlayerIds().length < 4">
+              {{ isSuggesting() ? 'Myślę...' : 'Zaproponuj' }}
+            </button>
+          </div>
         </div>
 
         <div class="suggestions-cards">
-          <div class="suggestion-card placeholder">
-            <div class="s-teams">Kliknij "Zaproponuj", aby algorytm dobrał pary z "Kanapy" ↑</div>
-          </div>
+
+          @if (allSuggestedMatches().length === 0) {
+            <div class="suggestion-card placeholder">
+              <div class="s-teams">Kliknij "Zaproponuj", aby algorytm dobrał pary z "Kanapy" ↑<br><small>(Wymagane min. 4 osoby)</small></div>
+            </div>
+          } @else {
+            @for (s of suggestedMatches(); track $index) {
+              <div class="suggestion-card active-card" (click)="applySuggestion(s)">
+
+                <div class="s-score-badge" [style.background]="s.matchScore <= 0 ? '#22c55e' : 'var(--beer-gold)'">
+                  {{ s.matchScore <= 0 ? '🏆 Perfekcyjny Match' : 'Punkty Karne: ' + (s.matchScore | number:'1.0-0') }}
+                </div>
+
+                <div class="s-matchup">
+                  <div class="s-team home">
+                    @for (p of s.homePlayers; track p.playerId) { <span class="s-player">{{ p.alias }}</span> }
+                  </div>
+                  <div class="s-vs">vs</div>
+                  <div class="s-team away">
+                    @for (p of s.awayPlayers; track p.playerId) { <span class="s-player">{{ p.alias }}</span> }
+                  </div>
+                </div>
+
+                <div class="s-reason">{{ s.matchReason }}</div>
+              </div>
+            }
+          }
         </div>
       </div>
-
+      }
       <div class="match-form-layout">
 
         <div class="teams-score-row">
@@ -451,6 +485,9 @@
           <th (click)="toggleSort('redCards')" class="sortable center">
             🟥 @if(sortKey() === 'redCards'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
           </th>
+          <th (click)="toggleSort('currentElo')" class="sortable center highlight">
+            RATING @if(sortKey() === 'currentElo'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+          </th>
           <th (click)="toggleSort('winRatio')" class="sortable highlight">
             WSP.W @if(sortKey() === 'winRatio'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
           </th>
@@ -473,6 +510,18 @@
               </td>
               <td>{{row.yellowCards}}</td>
               <td>{{row.redCards}}</td>
+
+              <td class="center" style="font-weight: 700;">
+                <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                  <span style="color: var(--primary-brown);">{{ (row.currentElo || 1000) | number:'1.0-0' }}</span>
+                  @if (row.eloDifference !== 0) {
+                    <small [style.color]="row.eloDifference > 0 ? '#22c55e' : '#ef4444'" style="font-size: 0.65rem;">
+                      {{ row.eloDifference > 0 ? '+' : '' }}{{ row.eloDifference | number:'1.0-0' }}
+                    </small>
+                  }
+                </div>
+              </td>
+
               <td class="highlight-val">{{ row.winRatio | number:'1.2-2' }}</td>
             </tr>
           }

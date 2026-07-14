@@ -24,4 +24,6 @@ public class SeasonTableEntryDTO {
     private int redCards;
     private int assists;
     private BigDecimal winRatio;
+    private BigDecimal currentElo;
+    private BigDecimal eloDifference;
 }

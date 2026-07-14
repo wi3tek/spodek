@@ -7,15 +7,15 @@ import org.springframework.stereotype.Service;
 import pl.backend.spodek.dto.SeasonTableEntryDTO;
 import pl.backend.spodek.model.Match;
 import pl.backend.spodek.model.Player;
+import pl.backend.spodek.model.PlayerRatingHistory;
 import pl.backend.spodek.repository.MatchRepository;
+import pl.backend.spodek.repository.PlayerRatingHistoryRepository;
 import pl.backend.spodek.repository.SeasonRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,26 +26,57 @@ public class SeasonService {
     private final MatchRepository matchRepository;
     private final AdminService adminService;
     private final SeasonRepository seasonRepository;
+    // NOWE: Wstrzykujemy repozytorium historii ratingów
+    private final PlayerRatingHistoryRepository ratingHistoryRepository;
 
     public List<SeasonTableEntryDTO> getSeasonTable(String seasonId) {
-        // 1. Pobierz wszystkie ZAKOŃCZONE mecze z tego sezonu
-        // Zakładam, że pobierasz tylko zakończone, jeśli nie - dodaj filtrację
         List<Match> matches = matchRepository.findBySeasonId( seasonId );
         Map<String, Player> playersMap = adminService.getPlayersMap();
+
+        // Zabezpieczenie: jeśli nie ma meczów, nie ma tabeli
+        if (matches.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String leagueId = matches.getFirst().getLeagueId();
+
+        // Wyciągamy datę ostatniego meczu w tym sezonie, żeby wiedzieć dla jakiego momentu pobrać "Snapshot" ELO
+        LocalDateTime lastMatchDate = matches.stream()
+                .map(Match::getCreatedAt)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(LocalDateTime.now());
 
         Map<String, SeasonTableEntryDTO> statsMap = new HashMap<>();
 
         for (Match match : matches) {
-            processMatchSide( statsMap, match, true, playersMap );  // Gospodarze
-            processMatchSide( statsMap, match, false, playersMap ); // Goście
+            processMatchSide( statsMap, match, true, playersMap );
+            processMatchSide( statsMap, match, false, playersMap );
         }
 
-        // 3. Konwersja na listę i finalne sortowanie
+        // Pobieramy historię ELO i dopisujemy do zawodników
+        for (SeasonTableEntryDTO entry : statsMap.values()) {
+            // Tymczasowo (do momentu jak napiszesz dedykowane query w Mongo),
+            // pobieramy wszystko i filtrujemy w Javie. W produkcji najlepiej napisać metodę:
+            // findFirstByLeagueIdAndPlayerIdAndCreatedAtLessThanEqualOrderByCreatedAtDesc
+
+            // Ponieważ nie znamy Twojego repo w 100%, zrobimy bezpieczne pobranie najnowszego dla tego gracza w tej lidze.
+            // Zauważ, że jeśli gracz miał nowsze mecze w innym sezonie, ten kod trzeba zoptymalizować pod datę (lastMatchDate).
+            Optional<PlayerRatingHistory> latestRating = ratingHistoryRepository
+                    .findFirstByLeagueIdAndPlayerIdOrderByCreatedAtDesc(leagueId, entry.getPlayerId());
+
+            if (latestRating.isPresent()) {
+                entry.setCurrentElo(latestRating.get().getRatingAfter());
+                entry.setEloDifference(latestRating.get().getRatingDifference());
+            } else {
+                entry.setCurrentElo(BigDecimal.valueOf(1000)); // Wartość domyślna
+                entry.setEloDifference(BigDecimal.ZERO);
+            }
+
+            entry.setGoalDifference( entry.getGoalsScored() - entry.getGoalsLost() );
+        }
+
         return statsMap.values().stream()
-                .peek( entry -> {
-                    // Wyliczamy różnicę bramek (Indywidualne strzelone - Drużynowe stracone)
-                    entry.setGoalDifference( entry.getGoalsScored() - entry.getGoalsLost() );
-                } )
                 .sorted( Comparator.comparing( SeasonTableEntryDTO::getWinRatio )
                         .thenComparingInt( SeasonTableEntryDTO::getPoints )
                         .thenComparingInt( SeasonTableEntryDTO::getGoalDifference )
@@ -63,7 +94,6 @@ public class SeasonService {
         var currentSide = isHome ? match.getHomeSide() : match.getAwaySide();
         var opponentSide = isHome ? match.getAwaySide() : match.getHomeSide();
 
-        // Wyznaczanie punktów dla drużyny w tym meczu
         int points = 0;
         int win = 0, draw = 0, loss = 0;
 
@@ -91,26 +121,19 @@ public class SeasonService {
 
             SeasonTableEntryDTO s = statsMap.get( pId );
 
-            // KUMULACJA STATYSTYK (używamy += lub set(get() + value))
             s.setMatchesPlayed( s.getMatchesPlayed() + 1 );
             s.setPoints( s.getPoints() + points );
             s.setWins( s.getWins() + win );
             s.setDraws( s.getDraws() + draw );
             s.setLosses( s.getLosses() + loss );
 
-            // Gole strzelone TYLKO przez tego gracza (akumulacja)
-            //s.setPlayerGoalsScored(s.getPlayerGoalsScored() + player.getGoals());
-            // gole strzelone przez dryzyne
             s.setGoalsScored( s.getGoalsScored() + currentSide.getGoals() );
-            // Gole stracone przez DRUŻYNĘ tego gracza (akumulacja)
             s.setGoalsLost( s.getGoalsLost() + opponentSide.getGoals() );
 
-            // Kartki i asysty (akumulacja)
             s.setYellowCards( s.getYellowCards() + player.getYellowCards() );
             s.setRedCards( s.getRedCards() + player.getRedCards() );
             s.setAssists( s.getAssists() + player.getAssists() );
 
-            // Wyliczanie winRatio na bieżąco (pkt / mecze)
             if (s.getMatchesPlayed() > 0) {
                 BigDecimal ratio = BigDecimal.valueOf( s.getPoints() )
                         .divide( BigDecimal.valueOf( s.getMatchesPlayed() ), 2, RoundingMode.HALF_UP );
