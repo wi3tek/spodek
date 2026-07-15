@@ -8,6 +8,7 @@ import pl.backend.spodek.dto.SeasonTableEntryDTO;
 import pl.backend.spodek.model.Match;
 import pl.backend.spodek.model.Player;
 import pl.backend.spodek.model.PlayerRatingHistory;
+import pl.backend.spodek.repository.LeagueIdProjection;
 import pl.backend.spodek.repository.MatchRepository;
 import pl.backend.spodek.repository.PlayerRatingHistoryRepository;
 import pl.backend.spodek.repository.SeasonRepository;
@@ -37,7 +38,7 @@ public class SeasonService {
         if (matches.isEmpty()) {
             return Collections.emptyList();
         }
-
+// TODO poprawic w matches leagueId
         String leagueId = matches.getFirst().getLeagueId();
 
         // Wyciągamy datę ostatniego meczu w tym sezonie, żeby wiedzieć dla jakiego momentu pobrać "Snapshot" ELO
@@ -145,6 +146,7 @@ public class SeasonService {
     @Cacheable("leagueIdBySeason")
     public String getLeagueIdBySeason(String seasonId) {
         log.info( "⚠️ [CACHE MISS] Pobieram id ligi dla sezonu: " + seasonId );
-        return seasonRepository.findLeagueIdById( seasonId );
+        LeagueIdProjection projection = seasonRepository.findLeagueIdById( seasonId );
+        return projection != null ? projection.getLeagueId() : null;
     }
 }

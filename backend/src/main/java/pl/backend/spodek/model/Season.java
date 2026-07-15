@@ -5,6 +5,8 @@ import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
+
 // pl.backend.spodek.model.Season
 @Document(collection = "seasons")
 @Data
@@ -16,5 +18,13 @@ public class Season extends BaseDocument {
     private String name;     // np. "Wiosna 2026", "Edycja Kawalerska"
     private String leagueId; // Klucz do ligi
     private String status;   // ACTIVE, FINISHED
+
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+
+    private String image; // dawniej IMAGE (URL / nazwa pliku)
     private boolean uniqueTeams;
+
+    private Integer minPlayerMatchAmount; // NOWE: Minimalna liczba meczów
+    private Integer leagueSeasonCount;
 }

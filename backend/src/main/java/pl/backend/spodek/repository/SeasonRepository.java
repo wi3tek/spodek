@@ -10,7 +10,6 @@ public interface SeasonRepository extends MongoRepository<Season, String> {
 
     List<Season> findByLeagueId(String leagueId);
 
-    // Pobiera z bazy tylko pole 'leagueId' dla podanego ID sezonu
     @Query(value = "{ '_id': ?0 }", fields = "{ 'leagueId' : 1, '_id' : 0 }")
-    String findLeagueIdById(String seasonId);
+    LeagueIdProjection findLeagueIdById(String seasonId);
 }

@@ -1,0 +1,67 @@
+.stats-container {
+  padding:20px;
+  border-radius: 20px;
+  margin-top: 30px;
+  background: white;
+
+  .panel-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; h2 { border: none; padding: 0; margin: 0; color: var(--primary-brown); font-size: 1.4rem; } }
+  .tabs { display: flex; background: #f1f5f9; padding: 4px; border-radius: 8px; .tab-btn { background: transparent; border: none; padding: 6px 16px; border-radius: 6px; font-weight: 700; color: #64748b; cursor: pointer; transition: all 0.2s; &.active { background: white; color: var(--primary-brown); box-shadow: 0 2px 4px rgba(0,0,0,0.05); } } }
+}
+
+.section-title { font-size: 1.15rem; color: #475569; border-bottom: 2px dashed #f1f5f9; padding-bottom: 10px; margin-bottom: 20px; }
+
+/* 1. CIEKAWOSTKI */
+.fun-facts-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 40px;
+  .fun-fact-card { display: flex; align-items: flex-start; gap: 15px; background: linear-gradient(145deg, #fffcf5, #fff); border: 1px solid #fde68a; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.05); transition: transform 0.2s; &:hover { transform: translateY(-3px); border-color: var(--beer-gold); } .fact-icon { font-size: 2.2rem; line-height: 1; } .fact-text { h4 { margin: 0 0 5px 0; color: var(--beer-gold); font-size: 1.05rem; } p { margin: 0; font-size: 0.85rem; color: #475569; line-height: 1.5; font-weight: 500; } } }
+}
+
+/* 2. UKŁAD DÓŁ (H2H + FORMA) */
+.stats-split-layout {
+  display: grid; grid-template-columns: 2fr 1fr; gap: 30px;
+  @media (max-width: 1000px) { grid-template-columns: 1fr; }
+}
+
+/* H2H (HEAD TO HEAD) */
+.h2h-section {
+  .h2h-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed #f1f5f9; padding-bottom: 10px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; .section-title { border: none; margin: 0; padding: 0; } }
+  .player-selector { padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold; color: var(--primary-brown); outline: none; &:focus { border-color: var(--beer-gold); } }
+
+  .relations-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; @media (max-width: 700px) { grid-template-columns: 1fr; } }
+  .relation-block {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px;
+    .rel-title { margin: 0 0 15px 0; font-size: 0.95rem; color: #64748b; text-transform: uppercase; text-align: center; }
+  }
+
+  .rel-table {
+    width: 100%; border-collapse: collapse;
+    th { text-align: left; font-size: 0.75rem; color: #94a3b8; border-bottom: 1px solid #cbd5e1; padding: 8px 5px; }
+    td { padding: 8px 5px; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; color: var(--text-dark); &.center { text-align: center; } &.win-ratio { font-weight: 800; color: var(--beer-gold); } &.avg { font-weight: bold; color: #64748b; } }
+  }
+}
+
+/* FORMA */
+.forms-grid {
+  display: flex; flex-direction: column; gap: 10px;
+  .form-row { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+  .player-info { display: flex; flex-direction: column; gap: 2px; .player-name { font-weight: 700; font-size: 0.95rem; color: var(--text-dark); } .player-elo { font-size: 0.75rem; color: var(--primary-brown); font-weight: bold; } }
+  .badges-wrapper { display: flex; gap: 4px; }
+  .result-badge { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; color: white; &.win { background: #22c55e; } &.draw { background: #94a3b8; } &.loss { background: #ef4444; } }
+}
+
+.loader-wrapper { display: flex; justify-content: center; padding: 40px; }
+.empty-state { text-align: center; color: #94a3b8; padding: 20px; font-style: italic; }
+
+.chart-section {
+  margin-bottom: 40px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+
+  .chart-wrapper {
+    position: relative;
+    height: 350px; // Stała wysokość wykresu
+    width: 100%;
+  }
+}

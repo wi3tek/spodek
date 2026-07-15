@@ -20,5 +20,8 @@ public class League extends BaseDocument {
     private String id;
     private String name;
     private String status;
+    private String description;
+    private String type; // np. "SEASON"
+    private String logoUrl; // Nazwa pliku graficznego
 
 }

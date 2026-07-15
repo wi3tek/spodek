@@ -1,0 +1,125 @@
+<div class="stats-container card">
+  <div class="panel-header">
+    <h2>📈 Centrum Analityczne (Wszech Czasów)</h2>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loader-wrapper"><app-fifa-loader></app-fifa-loader></div>
+  } @else if (statsData()) {
+    <div class="stats-content animate-in">
+
+      <h3 class="section-title">🏆 Wyróżnienia (Ciekawostki)</h3>
+      @if (statsData()!.funFacts.length > 0) {
+        <div class="fun-facts-grid">
+          @for (fact of statsData()!.funFacts; track fact.title) {
+            <div class="fun-fact-card">
+              <div class="fact-icon">{{ fact.icon }}</div>
+              <div class="fact-text">
+                <h4>{{ fact.title }}</h4>
+                <p>{{ fact.description }}</p>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">Rozegraj więcej meczów, aby odblokować osiągnięcia.</div>
+      }
+      <div class="stats-section chart-section">
+        <h3 class="section-title">📉 Wykres ELO (Krzywa Formy)</h3>
+        <div class="chart-wrapper">
+          <canvas #eloChartCanvas></canvas>
+        </div>
+      </div>
+      <div class="stats-split-layout">
+
+        <div class="stats-section h2h-section">
+          <div class="h2h-header">
+            <h3 class="section-title">🤝 Head-to-Head (Analiza relacji)</h3>
+            <select class="player-selector" [ngModel]="selectedPlayerId()" (ngModelChange)="selectedPlayerId.set($event)">
+              @for (rel of statsData()!.relations; track rel.playerId) {
+                <option [value]="rel.playerId">Wybrany gracz: {{ rel.alias }}</option>
+              }
+            </select>
+          </div>
+
+          @if (selectedPlayerRelations(); as rels) {
+            <div class="relations-grid">
+              <div class="relation-block">
+                <h4 class="rel-title">Z kim gram w parze (Partnerzy)</h4>
+                <table class="rel-table">
+                  <thead>
+                  <tr>
+                    <th>Gracz</th><th>Mecze</th><th>W%</th><th>Śr. ⚽ (Zdobyte)</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of rels.playedWith; track p.opponentOrPartnerAlias) {
+                      <tr>
+                        <td><strong>{{ p.opponentOrPartnerAlias }}</strong></td>
+                        <td class="center">{{ p.matches }}</td>
+                        <td class="center win-ratio">{{ (p.wins / p.matches * 100) | number:'1.0-0' }}%</td>
+                        <td class="center avg">{{ (p.goalsScoredForTeam / p.matches) | number:'1.1-1' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="relation-block">
+                <h4 class="rel-title">Z kim gram przeciwko (Rywale)</h4>
+                <table class="rel-table">
+                  <thead>
+                  <tr>
+                    <th>Gracz</th><th>Mecze</th><th>W%</th><th>Śr. ⚽ (Stracone)</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of rels.playedAgainst; track p.opponentOrPartnerAlias) {
+                      <tr>
+                        <td><strong>{{ p.opponentOrPartnerAlias }}</strong></td>
+                        <td class="center">{{ p.matches }}</td>
+                        <td class="center win-ratio">{{ (p.wins / p.matches * 100) | number:'1.0-0' }}%</td>
+                        <td class="center avg">{{ (p.goalsLostForTeam / p.matches) | number:'1.1-1' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          } @else {
+            <div class="empty-state">Brak relacji do wyświetlenia.</div>
+          }
+        </div>
+
+        <div class="stats-section form-section">
+          <h3 class="section-title">🔥 Forma (Ostatnie 5 meczów)</h3>
+          <div class="forms-grid">
+            @for (player of statsData()!.forms; track player.playerId) {
+              <div class="form-row">
+                <div class="player-info">
+                  <span class="player-name">{{ player.alias }}</span>
+                  <span class="player-elo">⚡ {{ player.currentElo | number:'1.0-0' }}</span>
+                </div>
+                <div class="badges-wrapper">
+                  @for (res of player.lastMatches; track $index) {
+                    <span class="result-badge"
+                          [class.win]="res === 'W'"
+                          [class.draw]="res === 'D'"
+                          [class.loss]="res === 'L'">
+                      {{ res }}
+                    </span>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-state">Brak danych o formie.</div>
+            }
+          </div>
+        </div>
+
+      </div>
+    </div>
+  } @else {
+    <div class="empty-state">Brak danych statystycznych.</div>
+  }
+</div>

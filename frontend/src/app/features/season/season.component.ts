@@ -8,12 +8,13 @@ import { AdminService } from '../../core/services/admin.service';
 import { MatchweekService } from '../../core/services/matchweek.service';
 import {debounceTime, distinctUntilChanged, Subject} from 'rxjs'; // NOWE
 import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
-import { MatchmakingService } from '../../core/services/matchmaking.service'; // NOWE
+import { MatchmakingService } from '../../core/services/matchmaking.service';
+import { StatsComponent } from '../stats/stats.component'; // NOWE
 
 @Component({
   selector: 'app-season',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, FifaLoaderComponent],
+  imports: [CommonModule, RouterLink, FormsModule, FifaLoaderComponent, StatsComponent],
   templateUrl: './season.component.html',
   styleUrls: ['./season.component.scss'],
 })
@@ -54,6 +55,8 @@ export class SeasonComponent implements OnInit {
   private matchweekSubject = new Subject<number>();
 
   isLoadingAttendance = signal(false); // NOWA FLAGA
+
+  statsRefreshTrigger = signal(0);
 
   // --- ZMIANY W STANIE SUGEROWANYCH MECZÓW (PAGINACJA) ---
   allSuggestedMatches = signal<any[]>([]);
@@ -421,6 +424,7 @@ export class SeasonComponent implements OnInit {
       next: () => {
         this.loadSeasonData(this.seasonId()!);
         this.closeForm();
+        this.statsRefreshTrigger.update((v) => v + 1);
       },
       error: (err) => alert('Błąd zapisu: ' + (err.error?.message || 'Nieznany błąd serwera')),
     });
@@ -464,6 +468,8 @@ export class SeasonComponent implements OnInit {
     this.matchStateTrigger.update((v) => v + 1);
     this.showMatchForm.set(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    this.statsRefreshTrigger.update((v) => v + 1);
   }
 
   closeForm() {
@@ -527,6 +533,8 @@ export class SeasonComponent implements OnInit {
         this.loadSeasonData(this.seasonId()!);
         this.matchStateTrigger.update((v) => v + 1);
         if (this.editingMatch()?.id === matchId) this.closeForm();
+
+        this.statsRefreshTrigger.update((v) => v + 1);
       });
     }
   }

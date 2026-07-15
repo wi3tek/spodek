@@ -529,6 +529,14 @@
       </table>
     </section>
   </div>
+
+  @if (season()?.leagueId) {
+  <app-stats
+    [leagueId]="season()?.leagueId"
+    [refreshTrigger]="statsRefreshTrigger()">
+  </app-stats>
+  }
+
 </div>
 
 @if (viewingMatch()) {

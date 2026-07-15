@@ -21,4 +21,6 @@ public interface MatchRepository extends MongoRepository<Match, String> {
     List<Match> findByLeagueIdAndFinishedAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(String league, boolean finished, LocalDateTime changeTime);
 
     List<Match> findBySeasonIdAndMatchweek(String s, int matchweek);
+
+    List<Match> findByLeagueIdAndFinished(String leagueId, boolean finished);
 }

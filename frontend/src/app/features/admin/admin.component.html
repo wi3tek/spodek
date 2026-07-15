@@ -84,7 +84,7 @@
                 <input [(ngModel)]="team.alias" class="sm-input" placeholder="Wyświetlana nazwa">
               } @else {
                 <div class="info">
-                  <strong>{{ team.alias || team.name }}</strong>
+                  <strong>{{ team.alias || team.name }} ID={{team.assetId}}</strong>
                 </div>
               }
             </div>
