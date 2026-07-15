@@ -55,7 +55,7 @@ export class StatsService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/stats`;
 
-  getStats(leagueId: string): Observable<StatsResponse> {
-    return this.http.get<StatsResponse>(`${this.apiUrl}/${leagueId}`);
+  getStats(leagueId: string, seasonId: string): Observable<StatsResponse> {
+    return this.http.get<StatsResponse>(`${this.apiUrl}/${leagueId}?seasonId=${seasonId}`);
   }
 }

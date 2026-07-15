@@ -15,6 +15,7 @@ import pl.backend.spodek.repository.TeamRepository;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -25,22 +26,34 @@ public class StatsService {
     private final PlayerRatingHistoryRepository ratingHistoryRepository;
     private final TeamRepository teamRepository;
 
-    public StatsDto.Response generateFullStats(String leagueId) {
+    public StatsDto.Response generateFullStats(String leagueId, String seasonId) {
         Map<String, Player> playersMap = playerRepository.findAll().stream()
                 .collect(Collectors.toMap(Player::getId, p -> p));
         Map<String, String> teamsMap = teamRepository.findAll().stream()
                 .collect(Collectors.toMap(Team::getId, t -> t.getAlias() != null ? t.getAlias() : t.getName()));
 
-        // Pobieramy TYLKO mecze ligowe
+        // Pobieramy TYLKO mecze ligowe - do pełnej historii
         List<Match> leagueMatches = matchRepository.findByLeagueIdAndFinished(leagueId, true);
         List<PlayerRatingHistory> ratingHistory = ratingHistoryRepository.findByLeagueIdOrderByCreatedAtAsc(leagueId);
 
-        // Wywołujemy naszą prywatną metodę (zwraca teraz StatsDto.Response)
-        return buildScopeStats(leagueMatches, playersMap, teamsMap, ratingHistory);
+        // Pobieramy mecze z obecnego sezonu, aby wyodrębnić graczy w nim uczestniczących
+        List<Match> seasonMatches = matchRepository.findBySeasonIdAndFinished(seasonId, true);
+
+        Set<String> activePlayerIds = seasonMatches.stream()
+                .flatMap(m -> {
+                    List<Match.PlayerStats> homePlayers = m.getHomeSide() != null && m.getHomeSide().getPlayers() != null ? m.getHomeSide().getPlayers() : List.of();
+                    List<Match.PlayerStats> awayPlayers = m.getAwaySide() != null && m.getAwaySide().getPlayers() != null ? m.getAwaySide().getPlayers() : List.of();
+                    return Stream.concat(homePlayers.stream(), awayPlayers.stream());
+                })
+                .map(Match.PlayerStats::getPlayerId)
+                .collect(Collectors.toSet());
+
+        return buildScopeStats(leagueMatches, playersMap, teamsMap, ratingHistory, activePlayerIds);
     }
 
     private StatsDto.Response buildScopeStats(List<Match> matches, Map<String, Player> playersMap,
-                                              Map<String, String> teamsMap, List<PlayerRatingHistory> ratingHistory) {
+                                              Map<String, String> teamsMap, List<PlayerRatingHistory> ratingHistory,
+                                              Set<String> activePlayerIds) {
         if (matches.isEmpty()) {
             return new StatsDto.Response(List.of(), List.of(), List.of(), List.of());
         }
@@ -50,7 +63,6 @@ public class StatsService {
         Map<String, Integer> assistsMap = new HashMap<>();
         Map<String, Integer> cardsMap = new HashMap<>();
 
-        // Dodatkowe mapy do ciekawostek
         Map<String, Map<String, MatchTracker>> clubPerformanceMap = new HashMap<>();
         Map<String, MatchTracker> playerTotalTracker = new HashMap<>();
 
@@ -59,12 +71,13 @@ public class StatsService {
                 .toList();
 
         for (Match m : sortedMatches) {
-            // Przekazujemy teamsMap do processMatchForFormAndStats
             processMatchForFormAndStats(m, m.getHomeSide(), m.getAwaySide(), formMap, goalsMap, assistsMap, cardsMap, clubPerformanceMap, playerTotalTracker, teamsMap);
             processMatchForFormAndStats(m, m.getAwaySide(), m.getHomeSide(), formMap, goalsMap, assistsMap, cardsMap, clubPerformanceMap, playerTotalTracker, teamsMap);
         }
 
+        // Filtrujemy by zwracać formę tylko dla aktywnych graczy
         List<StatsDto.PlayerForm> forms = playersMap.values().stream()
+                .filter(p -> activePlayerIds.contains(p.getId()))
                 .map(p -> {
                     List<String> rawForm = formMap.getOrDefault(p.getId(), List.of());
                     List<String> last5 = rawForm.stream().limit(5).collect(Collectors.toList());
@@ -81,7 +94,9 @@ public class StatsService {
                 .filter(f -> !f.lastMatches().isEmpty())
                 .toList();
 
+        // Filtrujemy by zwracać wykresy ELO tylko dla aktywnych graczy
         List<StatsDto.EloChartLine> eloChart = playersMap.values().stream()
+                .filter(p -> activePlayerIds.contains(p.getId()))
                 .map(p -> {
                     List<StatsDto.EloPoint> points = ratingHistory.stream()
                             .filter(rh -> rh.getPlayerId().equals(p.getId()))
@@ -103,18 +118,21 @@ public class StatsService {
             extractRelations(m.getAwaySide(), m.getHomeSide(), m.getHomeSide(), playedAgainst, false);
         }
 
+        // Filtrujemy relacje - interesują nas zestawienia z perspektywy aktywnych graczy
         List<StatsDto.PlayerRelations> relations = playersMap.keySet().stream()
+                .filter(activePlayerIds::contains)
                 .map(pId -> new StatsDto.PlayerRelations(
                         pId,
                         playersMap.get(pId).getAlias(),
-                        convertTrackerToRelations(playedWith.getOrDefault(pId, Map.of()), playersMap),
-                        convertTrackerToRelations(playedAgainst.getOrDefault(pId, Map.of()), playersMap)
+                        // TUTAJ DODANO activePlayerIds:
+                        convertTrackerToRelations(playedWith.getOrDefault(pId, Map.of()), playersMap, activePlayerIds),
+                        convertTrackerToRelations(playedAgainst.getOrDefault(pId, Map.of()), playersMap, activePlayerIds)
                 ))
                 .filter(r -> !r.playedWith().isEmpty() || !r.playedAgainst().isEmpty())
                 .sorted(Comparator.comparing(StatsDto.PlayerRelations::alias))
                 .toList();
 
-        List<StatsDto.FunFact> funFacts = generateFunFacts(playedWith, playedAgainst, cardsMap, assistsMap, clubPerformanceMap, playerTotalTracker, playersMap);
+        List<StatsDto.FunFact> funFacts = generateFunFacts(playedWith, playedAgainst, cardsMap, assistsMap, clubPerformanceMap, playerTotalTracker, playersMap, activePlayerIds);
 
         return new StatsDto.Response(forms, eloChart, relations, funFacts);
     }
@@ -167,8 +185,9 @@ public class StatsService {
         }
     }
 
-    private List<StatsDto.Relation> convertTrackerToRelations(Map<String, MatchTracker> map, Map<String, Player> playersMap) {
+    private List<StatsDto.Relation> convertTrackerToRelations(Map<String, MatchTracker> map, Map<String, Player> playersMap, Set<String> activePlayerIds) {
         return map.entrySet().stream()
+                .filter(e -> activePlayerIds.contains(e.getKey())) // NOWY FILTR: Odrzucamy graczy nieaktywnych w sezonie
                 .map(e -> {
                     String alias = playersMap.containsKey(e.getKey()) ? playersMap.get(e.getKey()).getAlias() : "Nieznany";
                     MatchTracker tr = e.getValue();
@@ -185,26 +204,27 @@ public class StatsService {
             Map<String, Integer> assistsMap,
             Map<String, Map<String, MatchTracker>> clubPerformanceMap,
             Map<String, MatchTracker> playerTotalTracker,
-            Map<String, Player> playersMap) {
+            Map<String, Player> playersMap,
+            Set<String> activePlayerIds) {
 
         List<StatsDto.FunFact> facts = new ArrayList<>();
 
         // 1. Złoty Duet
-        findBestRelation(playedWith, 3, true).ifPresent(r ->
+        findBestRelation(playedWith, 3, true, activePlayerIds).ifPresent(r ->
                 facts.add(new StatsDto.FunFact("Złoty Duet",
                         playersMap.get(r.p1).getAlias() + " & " + playersMap.get(r.p2).getAlias() +
                                 " wygrywają " + Math.round(r.ratio * 100) + "% wspólnych meczów.", "🤝"))
         );
 
-        // 2. Koszmar (Nemesis) - Gracz A ma najgorsze staty grając przeciwko B
-        findBestRelation(playedAgainst, 3, false).ifPresent(r ->
+        // 2. Koszmar (Nemesis)
+        findBestRelation(playedAgainst, 3, false, activePlayerIds).ifPresent(r ->
                 facts.add(new StatsDto.FunFact("Koszmar z boiska",
                         playersMap.get(r.p2).getAlias() + " to nemesis dla " + playersMap.get(r.p1).getAlias() +
                                 " (wygrywa " + Math.round((1.0 - r.ratio) * 100) + "% starć).", "🔪"))
         );
 
-        // 3. Darmowy Win - Gracz A ma najlepsze staty grając przeciwko B
-        findBestRelation(playedAgainst, 3, true).ifPresent(r ->
+        // 3. Darmowy Win
+        findBestRelation(playedAgainst, 3, true, activePlayerIds).ifPresent(r ->
                 facts.add(new StatsDto.FunFact("Darmowy Win",
                         playersMap.get(r.p1).getAlias() + " ma " + playersMap.get(r.p2).getAlias() +
                                 " w kieszeni (wygrywa " + Math.round(r.ratio * 100) + "% starć).", "🎯"))
@@ -215,8 +235,10 @@ public class StatsService {
         String loyalPlayer = null;
         String loyalClub = null;
         for (var entry : clubPerformanceMap.entrySet()) {
+            if (!activePlayerIds.contains(entry.getKey())) continue; // Gracz musi być w obecnym sezonie
+
             for (var clubEntry : entry.getValue().entrySet()) {
-                if (clubEntry.getValue().matches >= 4) { // min 4 mecze klubem
+                if (clubEntry.getValue().matches >= 4) {
                     double wr = (double) clubEntry.getValue().wins / clubEntry.getValue().matches;
                     if (wr > bestClubWr) {
                         bestClubWr = wr; loyalPlayer = entry.getKey(); loyalClub = clubEntry.getKey();
@@ -230,10 +252,12 @@ public class StatsService {
                             " (" + Math.round(bestClubWr * 100) + "% wygranych).", "🛡️"));
         }
 
-        // 5. Murarz (Najmniej straconych bramek na mecz)
+        // 5. Murarz
         double bestDef = 999.0;
         String brickWall = null;
         for (var entry : playerTotalTracker.entrySet()) {
+            if (!activePlayerIds.contains(entry.getKey())) continue;
+
             if (entry.getValue().matches >= 5) {
                 double avgLost = (double) entry.getValue().goalsAgainst / entry.getValue().matches;
                 if (avgLost < bestDef) { bestDef = avgLost; brickWall = entry.getKey(); }
@@ -245,10 +269,12 @@ public class StatsService {
                             String.format("%.1f", bestDef) + " goli/mecz.", "🧱"));
         }
 
-        // 6. Talizman (Najlepszy bilans bramkowy na mecz)
+        // 6. Talizman
         double bestDiff = -999.0;
         String talisman = null;
         for (var entry : playerTotalTracker.entrySet()) {
+            if (!activePlayerIds.contains(entry.getKey())) continue;
+
             if (entry.getValue().matches >= 5) {
                 double avgDiff = (double) (entry.getValue().goalsFor - entry.getValue().goalsAgainst) / entry.getValue().matches;
                 if (avgDiff > bestDiff) { bestDiff = avgDiff; talisman = entry.getKey(); }
@@ -261,33 +287,42 @@ public class StatsService {
         }
 
         // 7. Rzeźnik
-        cardsMap.entrySet().stream().max(Map.Entry.comparingByValue()).ifPresent(e -> {
-            if (e.getValue() > 0 && playersMap.containsKey(e.getKey())) {
-                facts.add(new StatsDto.FunFact("Rzeźnik",
-                        playersMap.get(e.getKey()).getAlias() + " ma już " + e.getValue() + " kartek na koncie.", "🟨"));
-            }
-        });
+        cardsMap.entrySet().stream()
+                .filter(e -> activePlayerIds.contains(e.getKey()))
+                .max(Map.Entry.comparingByValue())
+                .ifPresent(e -> {
+                    if (e.getValue() > 0 && playersMap.containsKey(e.getKey())) {
+                        facts.add(new StatsDto.FunFact("Rzeźnik",
+                                playersMap.get(e.getKey()).getAlias() + " ma już " + e.getValue() + " kartek na koncie.", "🟨"));
+                    }
+                });
 
         // 8. Złota Piłka
-        assistsMap.entrySet().stream().max(Map.Entry.comparingByValue()).ifPresent(e -> {
-            if (e.getValue() > 0 && playersMap.containsKey(e.getKey())) {
-                facts.add(new StatsDto.FunFact("Złota Piłka",
-                        playersMap.get(e.getKey()).getAlias() + " rozdał najwięcej asyst (" + e.getValue() + ").", "👑"));
-            }
-        });
+        assistsMap.entrySet().stream()
+                .filter(e -> activePlayerIds.contains(e.getKey()))
+                .max(Map.Entry.comparingByValue())
+                .ifPresent(e -> {
+                    if (e.getValue() > 0 && playersMap.containsKey(e.getKey())) {
+                        facts.add(new StatsDto.FunFact("Złota Piłka",
+                                playersMap.get(e.getKey()).getAlias() + " rozdał najwięcej asyst (" + e.getValue() + ").", "👑"));
+                    }
+                });
 
         return facts;
     }
 
-    // Klasa pomocnicza dla relacji (Złoty Duet, Nemesis)
-    private record RelationResult(String p1, String p2, double ratio) {}
-
-    private Optional<RelationResult> findBestRelation(Map<String, Map<String, MatchTracker>> relationsMap, int minMatches, boolean findMax) {
+    private Optional<RelationResult> findBestRelation(Map<String, Map<String, MatchTracker>> relationsMap, int minMatches, boolean findMax, Set<String> activePlayerIds) {
         double bestWr = findMax ? -1.0 : 1.1;
         String p1 = null, p2 = null;
 
         for (var p1Entry : relationsMap.entrySet()) {
+            // Główny gracz musi być aktywny
+            if (!activePlayerIds.contains(p1Entry.getKey())) continue;
+
             for (var p2Entry : p1Entry.getValue().entrySet()) {
+                // DRUGI gracz w relacji również musi być aktywny w tym sezonie
+                if (!activePlayerIds.contains(p2Entry.getKey())) continue;
+
                 MatchTracker tr = p2Entry.getValue();
                 if (tr.matches >= minMatches) {
                     double wr = (double) tr.wins / tr.matches;
@@ -313,4 +348,6 @@ public class StatsService {
             this.goalsAgainst += ga;
         }
     }
+
+    private record RelationResult(String p1, String p2, double ratio) {}
 }

@@ -32,6 +32,7 @@ Chart.register(...registerables);
 })
 export class StatsComponent implements OnChanges {
   @Input() leagueId?: string | null;
+  @Input() seasonId?: string | null; // POPRAWKA: Teraz to jest @Input() i reaguje na zmiany!
   @Input() refreshTrigger: number = 0;
 
   @ViewChild('eloChartCanvas') eloChartCanvas!: ElementRef<HTMLCanvasElement>;
@@ -57,9 +58,12 @@ export class StatsComponent implements OnChanges {
   }
 
   loadStats() {
-    if (!this.leagueId) return;
+    if (!this.leagueId || !this.seasonId) {
+      console.log('leagueId: ', this.leagueId, ', seasonId:' + this.seasonId);
+      return;
+    }
     this.isLoading.set(true);
-    this.statsService.getStats(this.leagueId).subscribe({
+    this.statsService.getStats(this.leagueId, this.seasonId).subscribe({
       next: (data) => {
         this.statsData.set(data);
         if (!this.selectedPlayerId() && data.relations.length > 0) {
@@ -82,15 +86,32 @@ export class StatsComponent implements OnChanges {
     }
 
     if (this.chart) {
-      this.chart.destroy(); // Niszczymy stary wykres, by uniknąć glitchy graficznych
+      this.chart.destroy();
     }
 
-    // Generowanie osi X (numery kolejnych meczów lub daty)
-    // Pobieramy najdłuższą historię meczów u dowolnego gracza, by ustalić etykiety osi X
-    const maxPoints = Math.max(...stats.eloChart.map((line) => line.history.length));
-    const labels = Array.from({ length: maxPoints }, (_, i) => `Mecz ${i + 1}`);
+    // 1. Zbieramy wszystkie UNIKALNE daty meczów z historii wszystkich graczy
+    const allDates = new Set<number>();
+    stats.eloChart.forEach((line) => {
+      line.history.forEach((pt: any) => {
+        // Zapisujemy datę jako timestamp (w milisekundach), żeby łatwo ją posortować
+        allDates.add(new Date(pt.date).getTime());
+      });
+    });
 
-    // Kolory dla graczy (możemy zdefiniować stałą paletę)
+    // 2. Sortujemy daty chronologicznie
+    const sortedTimestamps = Array.from(allDates).sort((a, b) => a - b);
+
+    // Formujemy etykiety osi X (np. "12 paź 18:30" lub krócej)
+    const labels = sortedTimestamps.map((ts) => {
+      const d = new Date(ts);
+      return d.toLocaleDateString('pl-PL', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    });
+
     const colors = [
       '#f59e0b',
       '#3b82f6',
@@ -102,15 +123,37 @@ export class StatsComponent implements OnChanges {
       '#6366f1',
     ];
 
+    // 3. Budujemy zestawy danych w oparciu o wspólną oś czasu
     const datasets = stats.eloChart.map((line, idx) => {
+      const dataPoints: number[] = [];
+      let currentElo = 1000; // Zakładamy domyślne startowe ELO przed pierwszym meczem
+
+      for (const timestamp of sortedTimestamps) {
+        // Szukamy, czy gracz miał zmianę ELO w tym konkretnym momencie
+        const matchPoint = line.history.find(
+          (pt: any) => new Date(pt.date).getTime() === timestamp,
+        );
+
+        if (matchPoint) {
+          // Gracz grał mecz -> aktualizujemy jego ELO
+          currentElo = matchPoint.elo;
+        }
+
+        // Niezależnie czy grał, czy nie, na osi X musi pojawić się punkt.
+        // Jeśli nie grał, dodajemy jego 'stare' ELO.
+        dataPoints.push(currentElo);
+      }
+
       return {
         label: line.alias,
-        data: line.history.map((pt: any) => pt.elo),
+        data: dataPoints,
         borderColor: colors[idx % colors.length],
-        backgroundColor: colors[idx % colors.length] + '20', // Dodanie 12% przezroczystości
-        borderWidth: 3,
-        tension: 0.3, // Lekkie zaokrąglenie linii
-        pointRadius: 4,
+        backgroundColor: colors[idx % colors.length] + '20',
+        borderWidth: 2,
+        // stepped: 'before' sprawia, że linia nie biegnie ukośnie (jak temperatura),
+        // ale skacze gwałtownie do nowej wartości w momencie rozegrania meczu.
+        stepped: 'before' as const,
+        pointRadius: 1, // Mniejsze kropki, bo na wspólnej osi może być ich bardzo dużo
         pointHoverRadius: 6,
       };
     });
@@ -127,7 +170,7 @@ export class StatsComponent implements OnChanges {
             labels: { font: { weight: 'bold' } },
           },
           tooltip: {
-            mode: 'index',
+            mode: 'index', // Po najechaniu zobaczysz ranking wszystkich graczy w danym momencie!
             intersect: false,
           },
         },
@@ -138,6 +181,8 @@ export class StatsComponent implements OnChanges {
             title: { display: true, text: 'Punkty ELO', font: { weight: 'bold' } },
           },
           x: {
+            // Opcjonalnie: jeśli dat jest bardzo dużo, Chart.js może je mądrze ukrywać
+            ticks: { autoSkip: true, maxTicksLimit: 15 },
             grid: { display: false },
           },
         },

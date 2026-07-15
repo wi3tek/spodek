@@ -533,6 +533,7 @@
   @if (season()?.leagueId) {
   <app-stats
     [leagueId]="season()?.leagueId"
+    [seasonId]="seasonId()"
     [refreshTrigger]="statsRefreshTrigger()">
   </app-stats>
   }

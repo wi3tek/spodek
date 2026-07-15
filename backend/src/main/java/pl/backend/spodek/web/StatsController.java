@@ -14,7 +14,9 @@ public class StatsController {
     private final StatsService statsService;
 
     @GetMapping("/{leagueId}")
-    public ResponseEntity<StatsDto.Response> getStats(@PathVariable String leagueId) {
-        return ResponseEntity.ok(statsService.generateFullStats(leagueId));
+    public ResponseEntity<StatsDto.Response> getStats(
+            @PathVariable String leagueId,
+            @RequestParam String seasonId) { // Pobieramy seasonId z frontendu
+        return ResponseEntity.ok(statsService.generateFullStats(leagueId, seasonId));
     }
 }
