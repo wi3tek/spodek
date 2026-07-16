@@ -113,7 +113,7 @@ export class StatsComponent implements OnChanges {
           }
         }
 
-        setTimeout(() => this.updateChart(), 0);
+        setTimeout(() => this.updateChart(), 100);
       },
       error: () => this.isLoading.set(false),
     });

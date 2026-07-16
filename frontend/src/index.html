@@ -7,11 +7,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/png" href="/logo.png?v=2">
   <style>
+    /* Usunięto stałe tło, dodano płynne przejście */
     body, html {
       margin: 0;
       padding: 0;
-      height: 100%;
-      background-color: #fffbeb; /* Twój kremowy z var(--cream-bg) */
+      min-height: 100%;
     }
 
     .splash-screen {
@@ -63,19 +63,12 @@
     }
 
     @keyframes logo-pulse {
-      0% { transform: scale(0.95); }
-      100% { transform: scale(1.05); }
+      0% { transform: scale(0.9); opacity: 0.8; }
+      100% { transform: scale(1.1); opacity: 1; }
     }
   </style>
 </head>
 <body>
-<app-root>
-  <div class="splash-screen">
-    <div class="fifa-loader">
-      <div class="xbox-ring"></div>
-      <img src="logo.png" alt="Ładowanie..." class="loader-logo" width="45" height="45">
-    </div>
-  </div>
-</app-root>
+<app-root></app-root>
 </body>
 </html>

@@ -15,9 +15,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TeamStatsService {
 
+    public static final int LIMIT = 10;
     private final MatchRepository matchRepository;
     private final TeamRepository teamRepository;
-    private static final int MIN_MATCHES = 2; // Minimalna liczba spotkań
+    private static final int MIN_MATCHES = 5; // Minimalna liczba spotkań
 
     public TeamStatsDto.Response generateTeamStats(String leagueId, String seasonId) {
         Map<String, Team> teamsMap = teamRepository.findAll().stream()
@@ -56,13 +57,13 @@ public class TeamStatsService {
                 .toList();
 
         TeamStatsDto.TeamLeaderboards leaderboards = new TeamStatsDto.TeamLeaderboards(
-                qualified.stream().sorted(Comparator.comparingDouble(TeamStatsDto.TeamStatEntry::winRatio).reversed()).limit(5).toList(),
-                qualified.stream().sorted(Comparator.comparingDouble(TeamStatsDto.TeamStatEntry::winRatio)).limit(5).toList(),
-                qualified.stream().sorted(Comparator.comparingDouble(TeamStatsDto.TeamStatEntry::avgScored).reversed()).limit(5).toList(),
-                qualified.stream().sorted(Comparator.comparingDouble(TeamStatsDto.TeamStatEntry::avgConceded).reversed()).limit(5).toList(),
-                qualified.stream().sorted(Comparator.comparingDouble(TeamStatsDto.TeamStatEntry::avgConceded)).limit(5).toList(),
-                qualified.stream().sorted(Comparator.comparingInt(TeamStatsDto.TeamStatEntry::draws).reversed()).limit(5).toList(),
-                allTeamsStats.stream().sorted(Comparator.comparingInt(TeamStatsDto.TeamStatEntry::matches).reversed()).limit(5).toList() // Tutaj lądują wszystkie zespoły - kto grał najczęściej
+                qualified.stream().sorted(Comparator.comparingDouble(TeamStatsDto.TeamStatEntry::winRatio).reversed()).limit( LIMIT ).toList(),
+                qualified.stream().sorted(Comparator.comparingDouble(TeamStatsDto.TeamStatEntry::winRatio)).limit( LIMIT ).toList(),
+                qualified.stream().sorted(Comparator.comparingDouble(TeamStatsDto.TeamStatEntry::avgScored).reversed()).limit( LIMIT ).toList(),
+                qualified.stream().sorted(Comparator.comparingDouble(TeamStatsDto.TeamStatEntry::avgConceded).reversed()).limit( LIMIT ).toList(),
+                qualified.stream().sorted(Comparator.comparingDouble(TeamStatsDto.TeamStatEntry::avgConceded)).limit( LIMIT ).toList(),
+                qualified.stream().sorted(Comparator.comparingInt(TeamStatsDto.TeamStatEntry::draws).reversed()).limit( LIMIT ).toList(),
+                allTeamsStats.stream().sorted(Comparator.comparingInt(TeamStatsDto.TeamStatEntry::matches).reversed()).limit( LIMIT ).toList() // Tutaj lądują wszystkie zespoły - kto grał najczęściej
         );
 
         // Punkty na mapę

@@ -50,8 +50,8 @@
 
 .section-title {
   font-size: 1.15rem;
-  color: #475569;
-  border-bottom: 2px dashed #f1f5f9;
+  color: var(--text-dark);
+  border-bottom: 2px dashed var(--border-color);
   padding-bottom: 10px;
   margin-bottom: 20px;
 }
@@ -195,8 +195,8 @@
 
   /* POJEDYNCZY KAFELEK Z TABELĄ */
   .relation-block {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--surface-bg); /* zamiast #f8fafc */
+    border: 1px solid var(--border-color); /* zamiast #e2e8f0 */
     border-radius: 12px;
     padding: 15px;
     display: flex;
@@ -205,16 +205,16 @@
     .rel-title {
       margin: 0 0 15px 0;
       font-size: 0.95rem;
-      color: #475569;
+      color: var(--text-dark);
       text-transform: uppercase;
       text-align: center;
-      border-bottom: 1px dashed #cbd5e1;
+      border-bottom: 1px dashed var(--border-color);
       padding-bottom: 10px;
     }
 
     /* KONTENER ZE SCROLLEM */
     .table-container {
-      max-height: 400px;
+      max-height: 300px;
       overflow-y: auto;
       flex-grow: 1;
 
@@ -228,10 +228,14 @@
       width: 100%;
       border-collapse: collapse;
 
+      thead {
+        background: var(--surface-bg); /* zamiast #f8fafc */
+      }
+
       th {
         position: sticky;
         top: 0;
-        background: #f8fafc;
+        background: var(--surface-bg); /* <-- TUTAJ ZMIEŃ Z #f8fafc NA ZMIENNĄ */
         z-index: 2;
         text-align: left;
         font-size: 0.75rem;
@@ -257,8 +261,8 @@
       td {
         padding: 8px 4px;
         font-size: 0.85rem;
-        border-bottom: 1px solid #f1f5f9;
         color: var(--text-dark);
+        border-bottom: 1px solid var(--border-color);
 
         &.center { text-align: center; }
 
@@ -279,14 +283,24 @@
   flex-direction: column;
   gap: 10px;
 
+  /* DODANO: Scrollowanie listy z maksymalną wysokością 500px */
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 6px; /* Margines, żeby pasek przewijania nie nachodził na treść */
+
+  /* Ładny pasek przewijania (scrollbar) - spójny z resztą tabel */
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
   .form-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #f8fafc;
+    background: var(--surface-bg); /* Zmieniono z #f8fafc na zmienną motywu */
     padding: 12px;
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color); /* Zmieniono z #e2e8f0 na zmienną motywu */
   }
 
   .player-info {
@@ -303,14 +317,14 @@
     .player-name {
       font-weight: 700;
       font-size: 0.95rem;
-      color: var(--text-dark);
+      color: var(--text-dark); /* Kolor czcionki dopasowany do motywu */
     }
 
     .player-elo {
       font-size: 0.8rem;
       color: var(--primary-brown);
       font-weight: bold;
-      background: #fef3c7;
+      background: #fef3c7; /* Delikatne żółte/złote tło ładnie tu wygląda w obu motywach */
       padding: 2px 6px;
       border-radius: 4px;
     }
@@ -319,14 +333,14 @@
       display: flex;
       gap: 15px;
       font-size: 0.75rem;
-      color: #64748b;
+      color: var(--text-muted); /* Zmieniono z #64748b */
 
       .max-elo {
         color: #16a34a;
         font-weight: 600;
 
         small {
-          color: #94a3b8;
+          color: var(--text-muted);
           font-weight: normal;
         }
       }
@@ -336,7 +350,7 @@
         font-weight: 600;
 
         small {
-          color: #94a3b8;
+          color: var(--text-muted);
           font-weight: normal;
         }
       }
@@ -388,8 +402,8 @@
 
 .chart-section {
   margin-bottom: 40px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--surface-bg); /* <-- Zamiana z #f8fafc */
+  border: 1px solid var(--border-color); /* <-- Zamiana z #e2e8f0 */
   border-radius: 12px;
   padding: 20px;
 
@@ -418,18 +432,18 @@
   }
 
   .leaderboard-block {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--surface-bg); /* zamiast #f8fafc */
+    border: 1px solid var(--border-color); /* zamiast #e2e8f0 */
     border-radius: 12px;
     padding: 15px;
 
     .board-title {
       margin: 0 0 15px 0;
       font-size: 0.95rem;
-      color: #475569;
+      color: var(--text-dark);
       text-transform: uppercase;
       text-align: center;
-      border-bottom: 1px dashed #cbd5e1;
+      border-bottom: 1px dashed var(--border-color);
       padding-bottom: 10px;
     }
 
@@ -458,9 +472,9 @@
         display: flex;
         align-items: center;
         padding: 8px 5px;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 0.9rem;
         color: var(--text-dark);
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.9rem;
 
         &:last-child {
           border-bottom: none;

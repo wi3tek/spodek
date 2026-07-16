@@ -11,11 +11,11 @@
   justify-content: space-between;
   align-items: center;
   padding: 15px 25px;
-  background: white;
   border-radius: var(--border-radius);
   margin-bottom: 30px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f1f5f9;
+  background: var(--card-bg); /* zamiast white */
+  border: 1px solid var(--border-color); /* zamiast #f1f5f9 */
 
   /* Lewa strona z logo */
   .brand {
@@ -56,14 +56,26 @@
 
     /* Wyjątkowy styl dla przycisku wyloguj - mniej "krzykliwy" niż czerwony */
     .btn-logout {
-      background: #e2e8f0;
-      color: var(--text-dark);
-      box-shadow: none;
-      border: 1px solid #cbd5e1;
+      background-color: var(--surface-bg);
+      color: var(--sash-red);
+      border: 1px solid var(--border-color);
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 
       &:hover {
-        background: #cbd5e1;
-        box-shadow: none;
+        background-color: var(--sash-red);
+        color: white;
+        border-color: var(--sash-red);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(226, 29, 37, 0.15);
+      }
+
+      &:active {
         transform: translateY(0);
       }
     }
@@ -199,11 +211,11 @@
 
   li {
     padding: 12px 0;
-    border-bottom: 1px solid #f1f5f9;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     color: var(--text-dark);
+    border-bottom: 1px solid var(--border-color);
     font-size: 0.95rem;
 
     &:last-child {
@@ -212,57 +224,12 @@
 
     .time {
       font-size: 0.8rem;
-      color: #888;
+      color: var(--text-muted); /* zamiast #888 */
       white-space: nowrap;
       margin-left: 15px;
     }
   }
 }
-
-.user-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-
-  .top-nav {
-    display: flex;
-    gap: 10px;
-  }
-
-  .btn-nav {
-    background: transparent;
-    border: none;
-    color: var(--text-dark);
-    font-weight: 600;
-    padding: 8px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-
-    &:hover {
-      background: rgba(var(--primary-brown-rgb), 0.1);
-    }
-
-    &.active {
-      background: var(--beer-gold);
-      color: var(--primary-brown);
-    }
-
-    @media (max-width: 600px) {
-      .nav-text { display: none; } // Na małych telefonach tylko ikony
-    }
-  }
-
-  .divider {
-    width: 1px;
-    height: 24px;
-    background: #e2e8f0;
-  }
-}
-
 
 .title-group {
   display: flex;
@@ -293,8 +260,8 @@
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 20px;
-  background: #e2e8f0;
-  color: #64748b;
+  background: var(--app-bg); /* zamiast #e2e8f0 */
+  color: var(--text-muted); /* zamiast #64748b */
 
   &.active {
     background: #dcfce7;
@@ -318,7 +285,9 @@
 
   .full-input {
     padding: 10px;
-    border: 1px solid #cbd5e1;
+    background-color: var(--app-bg); /* Ciemne tło w trybie dark */
+    color: var(--text-dark); /* Jasny tekst w trybie dark */
+    border: 1px solid var(--border-color);
     border-radius: 6px;
     font-size: 1rem;
     &:focus { outline: none; border-color: var(--beer-gold); }
@@ -392,7 +361,9 @@
 
   .edit-input {
     padding: 8px;
-    border: 2px solid var(--beer-gold);
+    background-color: var(--app-bg); /* Ciemne tło w trybie dark */
+    color: var(--text-dark); /* Jasny tekst w trybie dark */
+    border: 1px solid var(--border-color);
     border-radius: 6px;
     font-weight: bold;
     width: 100%;
@@ -417,9 +388,9 @@
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 20px;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  background: var(--app-bg);
+  color: var(--text-dark);
+  border: 1px solid var(--border-color);
 }
 
 /* --- CUSTOM TOGGLE SWITCH --- */

@@ -16,12 +16,13 @@
       }
 
       <div class="stats-section leaderboards-section">
-        <h3 class="section-title">📊 Klasyfikacje Drużyn (Min. 2 mecze w lidze)</h3>
+        <h3 class="section-title">📊 Klasyfikacje Drużyn (Min. 5 meczów w lidze)</h3>
 
         <div class="leaderboards-grid">
 
           <div class="leaderboard-block">
-            <h4 class="board-title">🏆 Najwyższe Win Ratio</h4>
+            <h4 class="board-title">✅ KS Wygrywy  </h4>
+            <div class="subtitle">Najwięcej wygranych %</div>
             <ul class="leaderboard-list">
               @for (t of statsData()!.leaderboards.highestWinRatio; track t.teamId; let i = $index) {
                 <li [class.top-three]="i < 3">
@@ -35,7 +36,8 @@
           </div>
 
           <div class="leaderboard-block">
-            <h4 class="board-title">😭 Najczęściej Ogrywane</h4>
+            <h4 class="board-title">❌ KS Przegrywy</h4>
+            <div class="subtitle">Najmniej wygranych %</div>
             <ul class="leaderboard-list">
               @for (t of statsData()!.leaderboards.lowestWinRatio; track t.teamId; let i = $index) {
                 <li [class.top-three]="i < 3">
@@ -49,7 +51,7 @@
           </div>
 
           <div class="leaderboard-block">
-            <h4 class="board-title">💥 Potęga Ofensywy</h4>
+            <h4 class="board-title">⚽Do przodka</h4>
             <div class="subtitle">Średnia Goli Strzelonych</div>
             <ul class="leaderboard-list">
               @for (t of statsData()!.leaderboards.highestAvgScored; track t.teamId; let i = $index) {
@@ -64,8 +66,8 @@
           </div>
 
           <div class="leaderboard-block">
-            <h4 class="board-title">🧱 Mur Berliński</h4>
-            <div class="subtitle">Średnia Goli Straconych (Najmniej)</div>
+            <h4 class="board-title">🥅 Do tyłka</h4>
+            <div class="subtitle">Średnia Goli Straconych</div>
             <ul class="leaderboard-list">
               @for (t of statsData()!.leaderboards.lowestAvgConceded; track t.teamId; let i = $index) {
                 <li>
@@ -79,8 +81,8 @@
           </div>
 
           <div class="leaderboard-block">
-            <h4 class="board-title">🧀 Dziurawe Rękawice</h4>
-            <div class="subtitle">Średnia Goli Straconych (Najwięcej)</div>
+            <h4 class="board-title">🧤 Top ręczniki</h4>
+            <div class="subtitle">Średnia Goli Straconych</div>
             <ul class="leaderboard-list">
               @for (t of statsData()!.leaderboards.highestAvgConceded; track t.teamId; let i = $index) {
                 <li>
@@ -94,7 +96,7 @@
           </div>
 
           <div class="leaderboard-block">
-            <h4 class="board-title">🤝 Zawsze Remis</h4>
+            <h4 class="board-title">🤝 Gramy na remis</h4>
             <div class="subtitle">Najwięcej Remisów</div>
             <ul class="leaderboard-list">
               @for (t of statsData()!.leaderboards.mostDraws; track t.teamId; let i = $index) {
@@ -109,8 +111,8 @@
           </div>
 
           <div class="leaderboard-block">
-            <h4 class="board-title">❤️ Lojalność Zespołowa</h4>
-            <div class="subtitle">Najczęściej Wybierani Zagrajmerzy</div>
+            <h4 class="board-title">❤️ Własne drużyny </h4>
+            <div class="subtitle">Najczęściej wybierane zespoły</div>
             <ul class="leaderboard-list">
               @for (t of statsData()!.leaderboards.mostPlayed; track t.teamId; let i = $index) {
                 <li>

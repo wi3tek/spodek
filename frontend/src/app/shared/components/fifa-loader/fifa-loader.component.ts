@@ -42,21 +42,16 @@ import { Component } from '@angular/core';
         position: absolute;
         width: 100%;
         height: 100%;
-        /* Pogrubiony pierścień (5px) */
         border: 5px solid transparent;
 
-        /* Główny kolor logo */
-        border-top-color: #33291f;
-        /* Średni odcień dla efektu smugi (30% krycia) */
-        border-right-color: rgba(51, 41, 31, 0.3);
-        /* Bardzo jasny odcień zamykający smugę (10% krycia) */
-        border-bottom-color: rgba(51, 41, 31, 0.1);
+        /* POPRAWKA: Dynamiczne kolory loadera dostosowane do motywu */
+        border-top-color: var(--sash-red);
+        border-right-color: rgba(42, 57, 141, 0.4); /* Półprzezroczysty Hermes */
+        border-bottom-color: rgba(42, 57, 141, 0.1);
 
         border-radius: 50%;
         animation: xbox-spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-
-        /* Cień również dopasowany do nowego koloru */
-        box-shadow: 0 0 12px rgba(51, 41, 31, 0.25);
+        box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
       }
 
       .loader-logo {
@@ -77,10 +72,12 @@ import { Component } from '@angular/core';
 
       @keyframes logo-pulse {
         0% {
-          transform: scale(0.95);
+          transform: scale(0.9);
+          opacity: 0.8;
         }
         100% {
-          transform: scale(1.05);
+          transform: scale(1.1);
+          opacity: 1;
         }
       }
 

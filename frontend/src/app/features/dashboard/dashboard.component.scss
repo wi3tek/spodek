@@ -11,11 +11,11 @@
   justify-content: space-between;
   align-items: center;
   padding: 15px 25px;
-  background: white;
+  background: var(--card-bg); /* zamiast white */
+  border: 1px solid var(--border-color); /* zamiast #f1f5f9 */
   border-radius: var(--border-radius);
   margin-bottom: 30px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f1f5f9;
 
   /* Lewa strona z logo */
   .brand {
@@ -153,8 +153,8 @@
       font-weight: 600;
       padding: 4px 10px;
       border-radius: 20px;
-      background: #e2e8f0;
-      color: #64748b;
+      background: var(--app-bg);
+      color: var(--text-muted);
 
       &.active {
         background: #dcfce7;
@@ -199,11 +199,11 @@
 
   li {
     padding: 12px 0;
-    border-bottom: 1px solid #f1f5f9;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     color: var(--text-dark);
+    border-bottom: 1px solid var(--border-color);
     font-size: 0.95rem;
 
     &:last-child {
@@ -212,7 +212,7 @@
 
     .time {
       font-size: 0.8rem;
-      color: #888;
+      color: var(--text-muted);
       white-space: nowrap;
       margin-left: 15px;
     }

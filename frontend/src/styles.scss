@@ -1,23 +1,102 @@
-/* --- NOWA PALETA: NIEDŹWIADEK KAWALERSKI --- */
+/* ==========================================================================
+   SEMANTRYCZNE ZMIENNE I MOTYWY
+   ========================================================================== */
+
+/* --- DOMYŚLNY MOTYW: JASKINIA NIEDŹWIEDZIA (Jasny, Kremowy) --- */
 :root {
   --primary-brown: #6b4423;    /* Kolor futra */
-  --sash-red: #c1442a;         /* Czerwona szarfa - idealna na przyciski */
+  --sash-red: #c1442a;         /* Czerwona szarfa */
   --beer-gold: #f59e0b;        /* Złoty kolor trunku */
-  --cream-bg: #fffbeb;         /* Kremowe tło z obrazka */
-  --text-dark: #1e293b;
-  --border-radius: 16px;       /* Bardziej zaokrąglone dla "przyjaznego" UI */
+  --app-bg: #fffbeb;           /* Kremowe tło aplikacji (zewnętrzne) */
+  --card-bg: #ffffff;          /* Białe tło dla paneli/kart */
+  --surface-bg: #f8fafc;       /* Szare tło dla tabel i list (zamiast beżu!) */
+  --text-dark: #1e293b;        /* Główny ciemny tekst */
+  --text-muted: #64748b;       /* Pomocniczy szary tekst */
+  --border-color: #f1f5f9;     /* Jasne ramki */
+  --border-radius: 16px;
 }
 
-body {
-  background-color: var(--cream-bg);
+/* --- JASNY MOTYW: MUNDIAL FIFA 2026 (Oficjalne Kolory + Jasne tło) --- */
+body.theme-worldcup {
+  --primary-brown: #2A398D;    /* Hermes Blue (Główny) */
+  --sash-red: #E61D25;         /* Torch Red (Przyciski) */
+  --beer-gold: #3CAC3B;        /* Average Green (Statystyki) */
+  --app-bg: #e2e8f0;           /* Chłodny, jasnoszary kolor tła aplikacji */
+  --card-bg: #ffffff;          /* Czysta biel kart */
+  --surface-bg: #f1f5f9;       /* Delikatnie szare tło wnętrza tabel */
+
+  /* UWAGA: Wracamy do CZYTELNEGO, ciemnego tekstu! */
+  --text-dark: #0f172a;
+  --text-muted: #475569;
+  --border-color: #cbd5e1;
+}
+
+/* GLOBALNE ZASTOSOWANIE TŁA I TEKSTÓW */
+html, body {
+  background-color: var(--app-bg);
   color: var(--text-dark);
   font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.card {
+  background: var(--card-bg) !important;
+  border-radius: var(--border-radius, 10px);
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-color) !important;
+}
+
+/* NAPRAWA INPUTÓW (M.IN. DODAWANIE MECZU) */
+input, select, .edit-input, .search-input {
+  background-color: var(--card-bg);
+  color: var(--text-dark);
+  border: 1px solid var(--border-color);
+
+  &:focus {
+    outline: none;
+    border-color: var(--beer-gold);
+  }
 }
 
 /* ==========================================================================
-   SYSTEM PRZYCISKÓW (LEKKI I SPÓJNY)
+   PŁYWAJĄCY PRZEŁĄCZNIK TEMATÓW (Zawsze na wierzchu)
    ========================================================================== */
+.global-theme-switcher {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  z-index: 99999;
 
+  .theme-toggle-btn {
+    background: var(--sash-red);
+    color: white;
+    border: 2px solid white;
+    padding: 4px 8px;
+    border-radius: 30px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease-in-out;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+}
+
+/* ==========================================================================
+   PRZYCISKI (DOPASOWANE DO MOTYWÓW)
+   ========================================================================== */
 button {
   font-family: 'Inter', sans-serif;
   transition: all 0.2s ease-in-out;
@@ -25,64 +104,31 @@ button {
   border: none;
 }
 
-/* --- GŁÓWNY PRZYCISK (Akcja wiodąca) --- */
 .btn-primary {
   background-color: var(--sash-red);
   color: white;
   border: 1px solid var(--sash-red);
-  border-radius: 8px; /* Nieco mniejszy promień dla lepszych proporcji */
+  border-radius: 8px;
   font-weight: 700;
   padding: 10px 20px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 4px 12px rgba(193, 68, 42, 0.25); /* Lekki, nowoczesny cień zamiast klocka */
+  box-shadow: 0 4px 12px rgba(230, 29, 37, 0.15);
 
   &:hover:not(:disabled) {
-    background-color: #a33923;
-    border-color: #a33923;
+    filter: brightness(1.1);
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(193, 68, 42, 0.35);
   }
 
   &:active:not(:disabled) {
     transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(193, 68, 42, 0.25);
   }
 
   &:disabled {
-    background-color: #cbd5e1;
-    border-color: #cbd5e1;
-    color: white;
+    background-color: var(--border-color);
+    border-color: var(--border-color);
+    color: var(--text-muted);
     cursor: not-allowed;
     box-shadow: none;
   }
-}
-
-/* --- PRZYCISK DRUGORZĘDNY (Anuluj, Zmień, Obecność) --- */
-.btn-secondary {
-  background-color: transparent; /* Lekki styl "outline" */
-  color: var(--text-dark);
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-weight: 600;
-  padding: 10px 20px;
-  letter-spacing: 0.5px;
-
-  &:hover {
-    background-color: white;
-    border-color: var(--primary-brown);
-    color: var(--primary-brown);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  }
-
-  &:active {
-    transform: translateY(1px);
-    box-shadow: none;
-  }
-}
-
-/* --- MODYFIKATOR ROZMIARU (Mniejsze przyciski w nagłówkach) --- */
-.btn-sm {
-  padding: 7px 14px;
-  font-size: 0.85rem;
 }
