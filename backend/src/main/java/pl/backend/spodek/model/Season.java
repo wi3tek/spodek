@@ -3,6 +3,7 @@ package pl.backend.spodek.model;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ public class Season extends BaseDocument {
     @Id
     private String id;
     private String name;     // np. "Wiosna 2026", "Edycja Kawalerska"
+    @Indexed
     private String leagueId; // Klucz do ligi
     private String status;   // ACTIVE, FINISHED
 

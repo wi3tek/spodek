@@ -536,6 +536,11 @@
     [seasonId]="seasonId()"
     [refreshTrigger]="statsRefreshTrigger()">
   </app-stats>
+    <app-team-stats
+      [leagueId]="season()?.leagueId"
+      [seasonId]="seasonId()"
+      [refreshTrigger]="statsRefreshTrigger()">
+    </app-team-stats>
   }
 
 </div>

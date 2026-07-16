@@ -35,7 +35,7 @@ public class SecurityConfig {
                 .sessionManagement( session -> session.sessionCreationPolicy( SessionCreationPolicy.STATELESS ) )
                 .authorizeHttpRequests( auth -> auth
                         .requestMatchers( "/api/auth/**" ).permitAll()
-                        .requestMatchers( "/api/migration/run" ).permitAll() //TODO wywalić tę linię
+                        .requestMatchers( "/api/migration/**" ).permitAll() //TODO wywalić tę linię
                         .anyRequest().authenticated()
                 )
                 .formLogin( AbstractHttpConfigurer::disable )

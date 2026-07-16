@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.backend.spodek.dto.StatsDto;
-import pl.backend.spodek.service.StatsService;
+import pl.backend.spodek.service.stats.StatsService;
 
 @RestController
 @RequestMapping("/api/stats")

@@ -3,6 +3,7 @@ package pl.backend.spodek.model;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 // pl.backend.spodek.model.Team
@@ -12,6 +13,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Team extends BaseDocument {
     @Id
     private String id;
+    @Indexed(unique = true, sparse = true)
     private Integer assetId;
     private String name;
     private String alias;

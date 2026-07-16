@@ -16,7 +16,15 @@
               <div class="fact-icon">{{ fact.icon }}</div>
               <div class="fact-text">
                 <h4>{{ fact.title }}</h4>
-                <p>{{ fact.description }}</p>
+                <p class="fact-desc">{{ fact.description }}</p>
+                <ul class="fact-items-list">
+                  @for (item of fact.items; track item.label) {
+                    <li>
+                      <span class="item-label">{{ item.label }}</span>
+                      <span class="item-value">{{ item.value }}</span>
+                    </li>
+                  }
+                </ul>
               </div>
             </div>
           }
@@ -24,6 +32,82 @@
       } @else {
         <div class="empty-state">Rozegraj więcej meczów, aby odblokować osiągnięcia.</div>
       }
+
+      <div class="stats-section leaderboards-section">
+        <h3 class="section-title">⭐ Klasyfikacje Indywidualne</h3>
+
+        <div class="leaderboards-grid">
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">⚽ Najlepsi Strzelcy</h4>
+            @if (statsData()!.leaderboards.topScorers.length > 0) {
+              <ul class="leaderboard-list">
+                @for (entry of statsData()!.leaderboards.topScorers; track entry.alias; let i = $index) {
+                  <li [class.top-three]="i < 3">
+                    <span class="rank">{{ i + 1 }}.</span>
+                    <span class="name">{{ entry.alias }}</span>
+                    <span class="value">{{ entry.value }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <div class="empty-state">Brak strzelonych bramek.</div>
+            }
+          </div>
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">🎯 Najlepsi Asystenci</h4>
+            @if (statsData()!.leaderboards.topAssists.length > 0) {
+              <ul class="leaderboard-list">
+                @for (entry of statsData()!.leaderboards.topAssists; track entry.alias; let i = $index) {
+                  <li [class.top-three]="i < 3">
+                    <span class="rank">{{ i + 1 }}.</span>
+                    <span class="name">{{ entry.alias }}</span>
+                    <span class="value">{{ entry.value }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <div class="empty-state">Brak asyst.</div>
+            }
+          </div>
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">🟨 Żółte Kartki</h4>
+            @if (statsData()!.leaderboards.yellowCards.length > 0) {
+              <ul class="leaderboard-list">
+                @for (entry of statsData()!.leaderboards.yellowCards; track entry.alias; let i = $index) {
+                  <li>
+                    <span class="rank">{{ i + 1 }}.</span>
+                    <span class="name">{{ entry.alias }}</span>
+                    <span class="value">{{ entry.value }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <div class="empty-state">Wszyscy grają czysto!</div>
+            }
+          </div>
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">🟥 Czerwone Kartki</h4>
+            @if (statsData()!.leaderboards.redCards.length > 0) {
+              <ul class="leaderboard-list">
+                @for (entry of statsData()!.leaderboards.redCards; track entry.alias; let i = $index) {
+                  <li>
+                    <span class="rank">{{ i + 1 }}.</span>
+                    <span class="name">{{ entry.alias }}</span>
+                    <span class="value red-alert">{{ entry.value }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <div class="empty-state">Brak wykluczeń.</div>
+            }
+          </div>
+
+        </div>
+      </div>
       <div class="stats-section chart-section">
         <h3 class="section-title">📉 Wykres ELO (Krzywa Formy)</h3>
         <div class="chart-wrapper">
@@ -32,62 +116,158 @@
       </div>
       <div class="stats-split-layout">
 
-        <div class="stats-section h2h-section">
-          <div class="h2h-header">
-            <h3 class="section-title">🤝 Head-to-Head (Analiza relacji)</h3>
-            <select class="player-selector" [ngModel]="selectedPlayerId()" (ngModelChange)="selectedPlayerId.set($event)">
-              @for (rel of statsData()!.relations; track rel.playerId) {
-                <option [value]="rel.playerId">Wybrany gracz: {{ rel.alias }}</option>
+        <div class="stats-section relations-section">
+
+          <h3 class="section-title">⚔️ Head-to-Head</h3>
+
+          <div class="player-selector-wrapper">
+            <label for="player-select" class="selector-label">Filtruj gracza:</label>
+            <select
+              id="player-select"
+              [ngModel]="selectedPlayerId()"
+              (ngModelChange)="selectedPlayerId.set($event)"
+              class="player-select-dropdown">
+              @for (rel of statsData()?.relations; track rel.playerId) {
+                <option [value]="rel.playerId">{{ rel.alias }}</option>
               }
             </select>
           </div>
 
-          @if (selectedPlayerRelations(); as rels) {
+          @if (selectedPlayerRelations()) {
             <div class="relations-grid">
+
               <div class="relation-block">
-                <h4 class="rel-title">Z kim gram w parze (Partnerzy)</h4>
-                <table class="rel-table">
-                  <thead>
-                  <tr>
-                    <th>Gracz</th><th>Mecze</th><th>W%</th><th>Śr. ⚽ (Zdobyte)</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                    @for (p of rels.playedWith; track p.opponentOrPartnerAlias) {
-                      <tr>
-                        <td><strong>{{ p.opponentOrPartnerAlias }}</strong></td>
-                        <td class="center">{{ p.matches }}</td>
-                        <td class="center win-ratio">{{ (p.wins / p.matches * 100) | number:'1.0-0' }}%</td>
-                        <td class="center avg">{{ (p.goalsScoredForTeam / p.matches) | number:'1.1-1' }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
+                <h4 class="rel-title">W parze</h4>
+                <div class="table-container">
+                  <table class="rel-table">
+                    <thead>
+                    <tr>
+                      <th>Gracz</th>
+                      <th class="center sortable" (click)="togglePartnerSort('matches')" title="Mecze">
+                        M{{ partnerSort().key === 'matches' ? (partnerSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="togglePartnerSort('winRatio')" title="Zwycięstwa">
+                        W%{{ partnerSort().key === 'winRatio' ? (partnerSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="togglePartnerSort('drawRatio')" title="Remisy">
+                        R%{{ partnerSort().key === 'drawRatio' ? (partnerSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="togglePartnerSort('lossRatio')" title="Porażki">
+                        P%{{ partnerSort().key === 'lossRatio' ? (partnerSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="togglePartnerSort('avgScored')" title="Śr. goli strzelonych">
+                        ⚽+{{ partnerSort().key === 'avgScored' ? (partnerSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="togglePartnerSort('avgConceded')" title="Śr. goli straconych">
+                        ⚽-{{ partnerSort().key === 'avgConceded' ? (partnerSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of sortedPlayedWith(); track p.opponentOrPartnerAlias) {
+                        <tr>
+                          <td><strong>{{ p.opponentOrPartnerAlias }}</strong></td>
+                          <td class="center">{{ p.matches }}</td>
+                          <td class="center win-color">{{ (p.wins / p.matches * 100) | number:'1.0-0' }}%</td>
+                          <td class="center draw-color">{{ (p.draws / p.matches * 100) | number:'1.0-0' }}%</td>
+                          <td class="center loss-color">{{ (p.losses / p.matches * 100) | number:'1.0-0' }}%</td>
+                          <td class="center avg">{{ (p.goalsScoredForTeam / p.matches) | number:'1.1-1' }}</td>
+                          <td class="center avg-lost">{{ (p.goalsLostForTeam / p.matches) | number:'1.1-1' }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <div class="relation-block">
-                <h4 class="rel-title">Z kim gram przeciwko (Rywale)</h4>
-                <table class="rel-table">
-                  <thead>
-                  <tr>
-                    <th>Gracz</th><th>Mecze</th><th>W%</th><th>Śr. ⚽ (Stracone)</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                    @for (p of rels.playedAgainst; track p.opponentOrPartnerAlias) {
-                      <tr>
-                        <td><strong>{{ p.opponentOrPartnerAlias }}</strong></td>
-                        <td class="center">{{ p.matches }}</td>
-                        <td class="center win-ratio">{{ (p.wins / p.matches * 100) | number:'1.0-0' }}%</td>
-                        <td class="center avg">{{ (p.goalsLostForTeam / p.matches) | number:'1.1-1' }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
+                <h4 class="rel-title">Przeciwko</h4>
+                <div class="table-container">
+                  <table class="rel-table">
+                    <thead>
+                    <tr>
+                      <th>Gracz</th>
+                      <th class="center sortable" (click)="toggleAgainstSort('matches')" title="Mecze">
+                        M{{ againstSort().key === 'matches' ? (againstSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="toggleAgainstSort('winRatio')" title="Zwycięstwa">
+                        W%{{ againstSort().key === 'winRatio' ? (againstSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="toggleAgainstSort('drawRatio')" title="Remisy">
+                        R%{{ againstSort().key === 'drawRatio' ? (againstSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="toggleAgainstSort('lossRatio')" title="Porażki">
+                        P%{{ againstSort().key === 'lossRatio' ? (againstSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="toggleAgainstSort('avgScored')" title="Śr. goli strzelonych">
+                        ⚽+{{ againstSort().key === 'avgScored' ? (againstSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="toggleAgainstSort('avgConceded')" title="Śr. goli straconych">
+                        ⚽-{{ againstSort().key === 'avgConceded' ? (againstSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of sortedPlayedAgainst(); track p.opponentOrPartnerAlias) {
+                        <tr>
+                          <td><strong>{{ p.opponentOrPartnerAlias }}</strong></td>
+                          <td class="center">{{ p.matches }}</td>
+                          <td class="center win-color">{{ (p.wins / p.matches * 100) | number:'1.0-0' }}%</td>
+                          <td class="center draw-color">{{ (p.draws / p.matches * 100) | number:'1.0-0' }}%</td>
+                          <td class="center loss-color">{{ (p.losses / p.matches * 100) | number:'1.0-0' }}%</td>
+                          <td class="center avg">{{ (p.goalsScoredForTeam / p.matches) | number:'1.1-1' }}</td>
+                          <td class="center avg-lost">{{ (p.goalsLostForTeam / p.matches) | number:'1.1-1' }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               </div>
+
+              <div class="relation-block">
+                <h4 class="rel-title">Ulubione drużyny</h4>
+                <div class="table-container">
+                  <table class="rel-table">
+                    <thead>
+                    <tr>
+                      <th>Klub</th>
+                      <th class="center sortable" (click)="toggleTeamSort('matches')" title="Mecze">
+                        M{{ teamSort().key === 'matches' ? (teamSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="toggleTeamSort('winRatio')" title="Zwycięstwa">
+                        W%{{ teamSort().key === 'winRatio' ? (teamSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="toggleTeamSort('avgScored')" title="Śr. goli strzelonych">
+                        ⚽+{{ teamSort().key === 'avgScored' ? (teamSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                      <th class="center sortable" (click)="toggleTeamSort('avgConceded')" title="Śr. goli straconych">
+                        ⚽-{{ teamSort().key === 'avgConceded' ? (teamSort().asc ? '▲' : '▼') : '' }}
+                      </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                      @for (team of sortedFavoriteTeams(); track team.teamName) {
+                        <tr>
+                          <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                              <img [src]="'/logos/light/' + (team.assetId || 'default') + '.png'" width="20" style="object-fit: contain;">
+                              <strong>{{ team.teamName }}</strong>
+                            </div>
+                          </td>
+                          <td class="center">{{ team.matches }}</td>
+                          <td class="center win-color">{{ (team.wins / team.matches * 100) | number:'1.0-0' }}%</td>
+                          <td class="center avg">{{ (team.goalsScored / team.matches) | number:'1.1-1' }}</td>
+                          <td class="center avg-lost">{{ (team.goalsConceded / team.matches) | number:'1.1-1' }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
             </div>
           } @else {
-            <div class="empty-state">Brak relacji do wyświetlenia.</div>
+            <div class="empty-state">Wybierz gracza z listy powyżej, aby zobaczyć statystyki H2H.</div>
           }
         </div>
 
@@ -97,8 +277,20 @@
             @for (player of statsData()!.forms; track player.playerId) {
               <div class="form-row">
                 <div class="player-info">
-                  <span class="player-name">{{ player.alias }}</span>
-                  <span class="player-elo">⚡ {{ player.currentElo | number:'1.0-0' }}</span>
+                  <div class="player-header-row">
+                    <span class="player-name">{{ player.alias }}</span>
+                    <span class="player-elo">⚡ {{ player.currentElo | number:'1.0-0' }}</span>
+                  </div>
+                  <div class="player-elo-history">
+                    <span class="max-elo">
+                      Max: {{ player.maxElo | number:'1.0-0' }}
+                      @if(player.maxEloDate) { <small>({{ player.maxEloDate | date:'dd.MM.yyyy' }})</small> }
+                    </span>
+                    <span class="min-elo">
+                      Min: {{ player.minElo | number:'1.0-0' }}
+                      @if(player.minEloDate) { <small>({{ player.minEloDate | date:'dd.MM.yyyy' }})</small> }
+                    </span>
+                  </div>
                 </div>
                 <div class="badges-wrapper">
                   @for (res of player.lastMatches; track $index) {

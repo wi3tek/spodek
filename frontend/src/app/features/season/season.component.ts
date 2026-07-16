@@ -10,11 +10,19 @@ import {debounceTime, distinctUntilChanged, Subject} from 'rxjs'; // NOWE
 import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
 import { MatchmakingService } from '../../core/services/matchmaking.service';
 import { StatsComponent } from '../stats/stats.component'; // NOWE
+import { TeamStatsComponent } from '../team-stats/team-stats.component'; // NOWY IMPORT
 
 @Component({
   selector: 'app-season',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, FifaLoaderComponent, StatsComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    FormsModule,
+    FifaLoaderComponent,
+    StatsComponent,
+    TeamStatsComponent,
+  ],
   templateUrl: './season.component.html',
   styleUrls: ['./season.component.scss'],
 })

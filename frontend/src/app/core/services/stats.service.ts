@@ -2,11 +2,11 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-
 export interface FunFact {
   title: string;
   description: string;
   icon: string;
+  items: FunFactItem[]; // NOWE POLE
 }
 
 export interface PlayerForm {
@@ -14,12 +14,18 @@ export interface PlayerForm {
   alias: string;
   lastMatches: string[];
   currentElo: number;
+  maxElo: number; // NOWE
+  maxEloDate: string; // NOWE
+  minElo: number; // NOWE
+  minEloDate: string; // NOWE
 }
 
 export interface Relation {
   opponentOrPartnerAlias: string;
   matches: number;
   wins: number;
+  draws: number; // NOWE
+  losses: number; // NOWE
   goalsScoredForTeam: number;
   goalsLostForTeam: number;
 }
@@ -31,23 +37,62 @@ export interface PlayerRelations {
   playedAgainst: Relation[];
 }
 
-export interface ScopeStats {
-  forms: PlayerForm[];
-  eloChart: any[]; // Wykres możemy rozbudować później
-  relations: PlayerRelations[];
-  funFacts: FunFact[];
+// ----------------------------------------------------
+// NOWE INTERFEJSY DO WYKRESU ELO (Rozwiązanie błędu)
+// ----------------------------------------------------
+export interface EloPoint {
+  date: string;
+  elo: number;
 }
 
-export interface StatsResponse {
-  season: ScopeStats;
-  league: ScopeStats;
+export interface EloChartLine {
+  alias: string;
+  history: EloPoint[];
 }
 
+export interface LeaderboardEntry {
+  alias: string;
+  value: number;
+}
+
+export interface Leaderboards {
+  topScorers: LeaderboardEntry[];
+  topAssists: LeaderboardEntry[];
+  yellowCards: LeaderboardEntry[];
+  redCards: LeaderboardEntry[];
+}
+
+export interface FavoriteTeam {
+  teamName: string;
+  assetId: number;
+  matches: number;
+  wins: number;
+  goalsScored: number;
+  goalsConceded: number; // NOWE POLE
+}
+
+export interface PlayerRelations {
+  playerId: string;
+  alias: string;
+  playedWith: Relation[];
+  playedAgainst: Relation[];
+  favoriteTeams: FavoriteTeam[]; // NOWE
+}
+
+export interface FunFactItem {
+  label: string;
+  value: string;
+}
+
+// ----------------------------------------------------
+// JEDNA WŁAŚCIWA WERSJA STATS RESPONSE:
+// ----------------------------------------------------
 export interface StatsResponse {
   forms: PlayerForm[];
-  eloChart: any[];
+  eloChart: EloChartLine[];
   relations: PlayerRelations[];
   funFacts: FunFact[];
+  leaderboards: Leaderboards;
 }
 
 @Injectable({ providedIn: 'root' })

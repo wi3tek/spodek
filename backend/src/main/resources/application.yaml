@@ -58,6 +58,7 @@ spring:
       host: localhost
       port: 27017
       database: spodek_dev
+      auto-index-creation: true
 server:
   port: 8999
 app:
@@ -75,6 +76,7 @@ spring:
   data:
     mongodb:
       uri: ${MONGO_URI}
+      auto-index-creation: true
 server:
   port: ${PORT:8080}
 app:

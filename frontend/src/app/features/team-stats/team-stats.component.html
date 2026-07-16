@@ -1,0 +1,132 @@
+<div class="stats-container card">
+  <div class="panel-header">
+    <h2>🛡️ Analityka Klubowa (Z Całej Ligi)</h2>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loader-wrapper"><app-fifa-loader></app-fifa-loader></div>
+  } @else if (statsData()) {
+    <div class="stats-content animate-in">
+
+      @if (statsData()!.mapPoints.length > 0) {
+        <div class="stats-section map-section">
+          <h3 class="section-title">🌍 Mapa Klubów</h3>
+          <div class="map-wrapper" #mapContainer></div>
+        </div>
+      }
+
+      <div class="stats-section leaderboards-section">
+        <h3 class="section-title">📊 Klasyfikacje Drużyn (Min. 2 mecze w lidze)</h3>
+
+        <div class="leaderboards-grid">
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">🏆 Najwyższe Win Ratio</h4>
+            <ul class="leaderboard-list">
+              @for (t of statsData()!.leaderboards.highestWinRatio; track t.teamId; let i = $index) {
+                <li [class.top-three]="i < 3">
+                  <span class="rank">{{ i + 1 }}.</span>
+                  <img class="crest" [src]="getTeamCrest(t.assetId)" />
+                  <span class="name">{{ t.alias }}</span>
+                  <span class="value win-color">{{ (t.winRatio * 100) | number:'1.0-0' }}%</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">😭 Najczęściej Ogrywane</h4>
+            <ul class="leaderboard-list">
+              @for (t of statsData()!.leaderboards.lowestWinRatio; track t.teamId; let i = $index) {
+                <li [class.top-three]="i < 3">
+                  <span class="rank">{{ i + 1 }}.</span>
+                  <img class="crest" [src]="getTeamCrest(t.assetId)" />
+                  <span class="name">{{ t.alias }}</span>
+                  <span class="value lose-color">{{ (t.winRatio * 100) | number:'1.0-0' }}%</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">💥 Potęga Ofensywy</h4>
+            <div class="subtitle">Średnia Goli Strzelonych</div>
+            <ul class="leaderboard-list">
+              @for (t of statsData()!.leaderboards.highestAvgScored; track t.teamId; let i = $index) {
+                <li>
+                  <span class="rank">{{ i + 1 }}.</span>
+                  <img class="crest" [src]="getTeamCrest(t.assetId)" />
+                  <span class="name">{{ t.alias }}</span>
+                  <span class="value">{{ t.avgScored | number:'1.1-1' }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">🧱 Mur Berliński</h4>
+            <div class="subtitle">Średnia Goli Straconych (Najmniej)</div>
+            <ul class="leaderboard-list">
+              @for (t of statsData()!.leaderboards.lowestAvgConceded; track t.teamId; let i = $index) {
+                <li>
+                  <span class="rank">{{ i + 1 }}.</span>
+                  <img class="crest" [src]="getTeamCrest(t.assetId)" />
+                  <span class="name">{{ t.alias }}</span>
+                  <span class="value">{{ t.avgConceded | number:'1.1-1' }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">🧀 Dziurawe Rękawice</h4>
+            <div class="subtitle">Średnia Goli Straconych (Najwięcej)</div>
+            <ul class="leaderboard-list">
+              @for (t of statsData()!.leaderboards.highestAvgConceded; track t.teamId; let i = $index) {
+                <li>
+                  <span class="rank">{{ i + 1 }}.</span>
+                  <img class="crest" [src]="getTeamCrest(t.assetId)" />
+                  <span class="name">{{ t.alias }}</span>
+                  <span class="value">{{ t.avgConceded | number:'1.1-1' }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">🤝 Zawsze Remis</h4>
+            <div class="subtitle">Najwięcej Remisów</div>
+            <ul class="leaderboard-list">
+              @for (t of statsData()!.leaderboards.mostDraws; track t.teamId; let i = $index) {
+                <li>
+                  <span class="rank">{{ i + 1 }}.</span>
+                  <img class="crest" [src]="getTeamCrest(t.assetId)" />
+                  <span class="name">{{ t.alias }}</span>
+                  <span class="value">{{ t.draws }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="leaderboard-block">
+            <h4 class="board-title">❤️ Lojalność Zespołowa</h4>
+            <div class="subtitle">Najczęściej Wybierani Zagrajmerzy</div>
+            <ul class="leaderboard-list">
+              @for (t of statsData()!.leaderboards.mostPlayed; track t.teamId; let i = $index) {
+                <li>
+                  <span class="rank">{{ i + 1 }}.</span>
+                  <img class="crest" [src]="getTeamCrest(t.assetId)" />
+                  <span class="name">{{ t.alias }}</span>
+                  <span class="value">{{ t.matches }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="empty-state">Brak danych drużynowych.</div>
+  }
+</div>
