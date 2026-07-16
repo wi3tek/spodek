@@ -9,6 +9,9 @@ import java.util.Optional;
 
 @Component
 public class TalismanFunFact implements FunFactService {
+
+    private static final String TITLE = "Geniusz piłki nożnej";
+
     @Override
     public Optional<FunFact> generateFact(FunFactInput input) {
         double bestDiff = -999.0;
@@ -23,12 +26,12 @@ public class TalismanFunFact implements FunFactService {
             }
         }
         if (talisman != null && input.getPlayersMap().containsKey(talisman)) {
-            String description = "Jego obecność na wirtualnej murawie robi największą różnicę.";
+            String description = "Co formek";
             var item = new FunFact.FunFactItem(
                     input.getPlayersMap().get(talisman).getAlias(),
                     "gwarantuje bilans " + (bestDiff > 0 ? "+" : "") + String.format("%.1f", bestDiff) + " goli na mecz"
             );
-            return Optional.of(new FunFact("Talizman", description, "🍀", List.of(item)));
+            return Optional.of(new FunFact( TITLE, description, "🐐", List.of(item)));
         }
 
         return Optional.empty();

@@ -16,7 +16,7 @@ public class GoldenDuoFunFact implements FunFactService {
     public Optional<FunFact> generateFact(FunFactInput input) {
         return findBestRelation(input.getPlayedWith(), 3, true, input.getActivePlayerIds())
                 .map(r -> {
-                    String description = "Duet, który na boisku rozumie się wręcz bez słów.";
+                    String description = "Bardzo dobre synki";
                     var item = new FunFact.FunFactItem(
                             input.getPlayersMap().get(r.p1()).getAlias() + " & " + input.getPlayersMap().get(r.p2()).getAlias(),
                             Math.round(r.ratio() * 100) + "% wygranych meczów"

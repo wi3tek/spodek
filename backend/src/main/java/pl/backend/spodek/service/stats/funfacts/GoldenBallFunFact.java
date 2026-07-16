@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 public class GoldenBallFunFact implements FunFactService {
@@ -70,7 +69,7 @@ public class GoldenBallFunFact implements FunFactService {
         // 4. Budujemy odpowiedni komunikat
         if (topPlayers.isEmpty()) return Optional.empty();
 
-        String description = "Liderzy klasyfikacji kanadyjskiej (gole + asysty):";
+        String description = "Liderzy klasyfikacji kanadyjskiej:";
         List<FunFact.FunFactItem> items = topPlayers.stream()
                 .map(b -> new FunFact.FunFactItem(
                         b.alias(),

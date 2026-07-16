@@ -54,6 +54,9 @@ export class StatsComponent implements OnChanges {
   statsData = signal<StatsResponse | null>(null);
   selectedPlayerId = signal<string>('');
 
+  // 1. Określamy domyślny okres wykresu na 2 lata ('2')
+  selectedChartPeriod = signal<string>('all');
+
   // Niezależne stany sortowania dla każdej z 3 tabel w H2H
   partnerSort = signal<{ key: PartnerSortKey; asc: boolean }>({ key: 'matches', asc: false });
   againstSort = signal<{ key: PartnerSortKey; asc: boolean }>({ key: 'matches', asc: false });
@@ -66,7 +69,7 @@ export class StatsComponent implements OnChanges {
     return data.relations.find((r) => r.playerId === id) || null;
   });
 
-  // 1. Zoptymalizowana tabela: Z kim gram w parze
+  // Zoptymalizowana tabela: Z kim gram w parze
   sortedPlayedWith = computed<Relation[]>(() => {
     const rels = this.selectedPlayerRelations();
     if (!rels) return [];
@@ -74,7 +77,7 @@ export class StatsComponent implements OnChanges {
     return [...rels.playedWith].sort((a, b) => this.compareRelations(a, b, sort.key, sort.asc));
   });
 
-  // 2. Zoptymalizowana tabela: Przeciwko komu gram
+  // Zoptymalizowana tabela: Przeciwko komu gram
   sortedPlayedAgainst = computed<Relation[]>(() => {
     const rels = this.selectedPlayerRelations();
     if (!rels) return [];
@@ -82,7 +85,7 @@ export class StatsComponent implements OnChanges {
     return [...rels.playedAgainst].sort((a, b) => this.compareRelations(a, b, sort.key, sort.asc));
   });
 
-  // 3. Zoptymalizowana tabela: Moje ulubione kluby (ze wsparciem dla bramek straconych)
+  // Zoptymalizowana tabela: Moje ulubione kluby
   sortedFavoriteTeams = computed<FavoriteTeam[]>(() => {
     const rels = this.selectedPlayerRelations();
     if (!rels) return [];
@@ -119,7 +122,12 @@ export class StatsComponent implements OnChanges {
     });
   }
 
-  // Funkcje do przełączania kierunku i kolumny sortowania
+  // Funkcja wywoływana przy zmianie okresu na dropdownie
+  onPeriodChange(period: string) {
+    this.selectedChartPeriod.set(period);
+    this.updateChart(); // Odświeżamy wykres w locie
+  }
+
   togglePartnerSort(key: PartnerSortKey) {
     this.partnerSort.update((s) => ({ key, asc: s.key === key ? !s.asc : false }));
   }
@@ -132,7 +140,6 @@ export class StatsComponent implements OnChanges {
     this.teamSort.update((s) => ({ key, asc: s.key === key ? !s.asc : false }));
   }
 
-  // Komparatory pomocnicze realizujące matematykę sortowania
   private compareRelations(a: Relation, b: Relation, key: PartnerSortKey, asc: boolean): number {
     let valA = 0;
     let valB = 0;
@@ -186,6 +193,7 @@ export class StatsComponent implements OnChanges {
     if (!stats || !stats.eloChart || stats.eloChart.length === 0 || !this.eloChartCanvas) return;
     if (this.chart) this.chart.destroy();
 
+    // 1. Zbieramy absolutnie wszystkie unikalne dni z bazy danych
     const allDaysStr = new Set<string>();
     stats.eloChart.forEach((line) =>
       line.history.forEach((pt: any) => {
@@ -195,13 +203,26 @@ export class StatsComponent implements OnChanges {
         );
       }),
     );
-
     const sortedDays = Array.from(allDaysStr).sort(
       (a, b) => new Date(a).getTime() - new Date(b).getTime(),
     );
+
+    // 2. NOWE FILTROWANIE: Pobieramy ostatnie X kolejek (dni)
+    const period = this.selectedChartPeriod();
+    let filteredDays = sortedDays;
+
+    if (period !== 'all') {
+      const matchdaysCount = parseInt(period, 10);
+      // Pobieramy tylko X ostatnich elementów (kolejek) z końca osi czasu
+      filteredDays = sortedDays.slice(-matchdaysCount);
+    }
+
+    // Pobieramy znacznik czasu pierwszego dnia na przefiltrowanym wykresie
+    const firstFilteredDayTime = filteredDays.length > 0 ? new Date(filteredDays[0]).getTime() : 0;
+
     const labels = [
       'Start',
-      ...sortedDays.map((dayStr) =>
+      ...filteredDays.map((dayStr) =>
         new Date(dayStr).toLocaleDateString('pl-PL', {
           year: 'numeric',
           month: 'short',
@@ -223,9 +244,24 @@ export class StatsComponent implements OnChanges {
     ];
 
     const datasets = stats.eloChart.map((line, idx) => {
-      const dataPoints: number[] = [1000];
-      let currentElo = 1000;
-      for (const dayStr of sortedDays) {
+      // Domyślny start to 1000 ELO
+      let startingElo = 1000;
+
+      // 3. Matematyka początkowego ELO pozostaje bez zmian (zadziała idealnie!)
+      if (firstFilteredDayTime > 0) {
+        const pastHistory = line.history
+          .filter((pt: any) => new Date(pt.date).getTime() < firstFilteredDayTime)
+          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        if (pastHistory.length > 0) {
+          startingElo = pastHistory[pastHistory.length - 1].elo;
+        }
+      }
+
+      const dataPoints: number[] = [startingElo];
+      let currentElo = startingElo;
+
+      for (const dayStr of filteredDays) {
         const matchesThatDay = line.history.filter((pt: any) => {
           const d = new Date(pt.date);
           return (
@@ -241,6 +277,7 @@ export class StatsComponent implements OnChanges {
         }
         dataPoints.push(currentElo);
       }
+
       const color = colors[idx % colors.length];
       return {
         label: line.alias,

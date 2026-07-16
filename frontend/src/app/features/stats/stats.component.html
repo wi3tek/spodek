@@ -1,6 +1,6 @@
 <div class="stats-container card">
   <div class="panel-header">
-    <h2>📈 Centrum Analityczne (Wszech Czasów)</h2>
+    <h2>🧑‍🌾 Chłopskie statystyki</h2>
   </div>
 
   @if (isLoading()) {
@@ -8,7 +8,7 @@
   } @else if (statsData()) {
     <div class="stats-content animate-in">
 
-      <h3 class="section-title">🏆 Wyróżnienia (Ciekawostki)</h3>
+      <h3 class="section-title">🏆 Ciekawostki</h3>
       @if (statsData()!.funFacts.length > 0) {
         <div class="fun-facts-grid">
           @for (fact of statsData()!.funFacts; track fact.title) {
@@ -109,7 +109,27 @@
         </div>
       </div>
       <div class="stats-section chart-section">
-        <h3 class="section-title">📉 Wykres ELO (Krzywa Formy)</h3>
+
+        <div class="chart-header">
+          <h3 class="section-title">📈 Historia Rankingu (ELO)</h3>
+
+          <div class="period-selector-wrapper">
+            <label for="period-select" class="selector-label">Okres:</label>
+            <select
+              id="period-select"
+              [ngModel]="selectedChartPeriod()"
+              (ngModelChange)="onPeriodChange($event)"
+              class="period-select-dropdown">
+              <option value="10">Ostatnie 10 kolejek</option>
+              <option value="20">Ostatnie 20 kolejek</option>
+              <option value="30">Ostatnie 30 kolejek</option>
+              <option value="50">Ostatnie 50 kolejek</option>
+              <option value="100">Ostatnie 100 kolejek</option>
+              <option value="all">Cała historia</option>
+            </select>
+          </div>
+        </div>
+
         <div class="chart-wrapper">
           <canvas #eloChartCanvas></canvas>
         </div>

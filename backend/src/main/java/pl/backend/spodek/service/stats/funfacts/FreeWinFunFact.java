@@ -14,7 +14,7 @@ public class FreeWinFunFact implements FunFactService {
     public Optional<FunFact> generateFact(FunFactInput input) {
         return findBestRelation(input.getPlayedAgainst(), 3, true, input.getActivePlayerIds())
                 .map(r -> {
-                    String description = "Najbardziej jednostronne pojedynki w lidze.";
+                    String description = "Najbardziej jednostronne #meczewlidze.";
                     var item = new FunFact.FunFactItem(
                             input.getPlayersMap().get(r.p1()).getAlias() + " vs " + input.getPlayersMap().get(r.p2()).getAlias(),
                             input.getPlayersMap().get(r.p1()).getAlias() + " ma " + Math.round(r.ratio() * 100) +" wygranych pojedynków"

@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TeamStatsService {
 
-    public static final int LIMIT = 10;
+    public static final int LIMIT = 1000;
     private final MatchRepository matchRepository;
     private final TeamRepository teamRepository;
     private static final int MIN_MATCHES = 5; // Minimalna liczba spotkań
@@ -52,8 +52,14 @@ public class TeamStatsService {
                 .toList();
 
         // Filtrujemy tylko te z progiem minimum meczów do rankingów średnich (Win Ratio, Średnia Brmek)
+
+        int matches =
+                allTeamsStats.stream().mapToInt( TeamStatsDto.TeamStatEntry::matches ).max().orElse( 0 ) < MIN_MATCHES
+                ? 0
+                : MIN_MATCHES;
+
         List<TeamStatsDto.TeamStatEntry> qualified = allTeamsStats.stream()
-                .filter(t -> t.matches() >= MIN_MATCHES)
+                .filter(t -> t.matches() >= matches)
                 .toList();
 
         TeamStatsDto.TeamLeaderboards leaderboards = new TeamStatsDto.TeamLeaderboards(

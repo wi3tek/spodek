@@ -1,6 +1,6 @@
 <div class="stats-container card">
   <div class="panel-header">
-    <h2>🛡️ Analityka Klubowa (Z Całej Ligi)</h2>
+    <h2>🛡️ Statystyki drużyn (cała liga)</h2>
   </div>
 
   @if (isLoading()) {
@@ -16,7 +16,8 @@
       }
 
       <div class="stats-section leaderboards-section">
-        <h3 class="section-title">📊 Klasyfikacje Drużyn (Min. 5 meczów w lidze)</h3>
+        <h3 class="section-title">📊 Klasyfikacje Drużyn (Min. 5 meczów w lidze... no chyba, że nikt nie ma 5 to
+          wtedy nie)</h3>
 
         <div class="leaderboards-grid">
 
@@ -28,7 +29,9 @@
                 <li [class.top-three]="i < 3">
                   <span class="rank">{{ i + 1 }}.</span>
                   <img class="crest" [src]="getTeamCrest(t.assetId)" />
-                  <span class="name">{{ t.alias }}</span>
+                 <span class="name" [title]="t.alias">
+  {{ t.alias.length > 20 ? (t.alias | slice:0:20) + '...' : t.alias }} ({{ t.matches }})
+</span>
                   <span class="value win-color">{{ (t.winRatio * 100) | number:'1.0-0' }}%</span>
                 </li>
               }
@@ -43,7 +46,9 @@
                 <li [class.top-three]="i < 3">
                   <span class="rank">{{ i + 1 }}.</span>
                   <img class="crest" [src]="getTeamCrest(t.assetId)" />
-                  <span class="name">{{ t.alias }}</span>
+                 <span class="name" [title]="t.alias">
+  {{ t.alias.length > 20 ? (t.alias | slice:0:20) + '...' : t.alias }} ({{ t.matches }})
+</span>
                   <span class="value lose-color">{{ (t.winRatio * 100) | number:'1.0-0' }}%</span>
                 </li>
               }
@@ -58,7 +63,9 @@
                 <li>
                   <span class="rank">{{ i + 1 }}.</span>
                   <img class="crest" [src]="getTeamCrest(t.assetId)" />
-                  <span class="name">{{ t.alias }}</span>
+                 <span class="name" [title]="t.alias">
+  {{ t.alias.length > 20 ? (t.alias | slice:0:20) + '...' : t.alias }} ({{ t.matches }})
+</span>
                   <span class="value">{{ t.avgScored | number:'1.1-1' }}</span>
                 </li>
               }
@@ -73,7 +80,9 @@
                 <li>
                   <span class="rank">{{ i + 1 }}.</span>
                   <img class="crest" [src]="getTeamCrest(t.assetId)" />
-                  <span class="name">{{ t.alias }}</span>
+                 <span class="name" [title]="t.alias">
+  {{ t.alias.length > 20 ? (t.alias | slice:0:20) + '...' : t.alias }} ({{ t.matches }})
+</span>
                   <span class="value">{{ t.avgConceded | number:'1.1-1' }}</span>
                 </li>
               }
@@ -88,7 +97,9 @@
                 <li>
                   <span class="rank">{{ i + 1 }}.</span>
                   <img class="crest" [src]="getTeamCrest(t.assetId)" />
-                  <span class="name">{{ t.alias }}</span>
+                 <span class="name" [title]="t.alias">
+  {{ t.alias.length > 20 ? (t.alias | slice:0:20) + '...' : t.alias }} ({{ t.matches }})
+</span>
                   <span class="value">{{ t.avgConceded | number:'1.1-1' }}</span>
                 </li>
               }
@@ -103,7 +114,9 @@
                 <li>
                   <span class="rank">{{ i + 1 }}.</span>
                   <img class="crest" [src]="getTeamCrest(t.assetId)" />
-                  <span class="name">{{ t.alias }}</span>
+                 <span class="name" [title]="t.alias">
+  {{ t.alias.length > 20 ? (t.alias | slice:0:20) + '...' : t.alias }} ({{ t.matches }})
+</span>
                   <span class="value">{{ t.draws }}</span>
                 </li>
               }
@@ -118,7 +131,9 @@
                 <li>
                   <span class="rank">{{ i + 1 }}.</span>
                   <img class="crest" [src]="getTeamCrest(t.assetId)" />
-                  <span class="name">{{ t.alias }}</span>
+                 <span class="name" [title]="t.alias">
+  {{ t.alias.length > 20 ? (t.alias | slice:0:20) + '...' : t.alias }} ({{ t.matches }})
+</span>
                   <span class="value">{{ t.matches }}</span>
                 </li>
               }
