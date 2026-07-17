@@ -42,4 +42,26 @@ export class HeaderComponent {
     localStorage.removeItem('spodek_token');
     this.router.navigate(['/login']);
   }
+
+  // Zmienna przechowująca zdarzenie instalacji
+  installPrompt: any;
+
+  // Nasłuchiwanie na zgłoszenie gotowości do instalacji PWA
+  @HostListener('window:beforeinstallprompt', ['$event'])
+  onBeforeInstallPrompt(event: Event) {
+    event.preventDefault(); // Zablokuj domyślne zachowanie przeglądarki
+    this.installPrompt = event; // Zapisz zdarzenie, by wyświetlić przycisk
+  }
+
+  installPWA() {
+    if (!this.installPrompt) return;
+
+    this.installPrompt.prompt();
+    this.installPrompt.userChoice.then((choiceResult: any) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('Aplikacja została zainstalowana.');
+      }
+      this.installPrompt = null; // Ukryj przycisk po reakcji użytkownika
+    });
+  }
 }

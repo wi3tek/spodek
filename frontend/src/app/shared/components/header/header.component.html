@@ -21,6 +21,16 @@
         </button>
       </nav>
       <div class="divider"></div>
+
+      <!-- NOWE: Przycisk instalacji PWA (Pokaże się tylko, jeśli apka nie jest zainstalowana) -->
+      @if (installPrompt) {
+        <button class="btn-install-pwa" (click)="installPWA()">
+          <span class="install-icon">📱</span>
+          <span class="install-text">Zainstaluj</span>
+        </button>
+        <div class="divider"></div>
+      }
+
       <button class="btn-theme" (click)="themeService.toggleTheme()">
         {{ themeService.isWorldCupTheme() ? 'Motyw ₊✧' : 'Motyw 🏆' }}
       </button>
@@ -57,6 +67,13 @@
     <button class="drawer-link" routerLink="/admin" routerLinkActive="active" (click)="closeMobileMenu()">⚙️ Ustawienia</button>
 
     <div class="drawer-divider"></div>
+
+    @if (installPrompt) {
+      <button class="drawer-link install-link" (click)="installPWA(); closeMobileMenu()">
+        📱 Zainstaluj aplikację
+      </button>
+      <div class="drawer-divider"></div>
+    }
 
     <!-- NOWE: Sekcja z czasem sesji w menu mobilnym -->
     @if (authService.sessionTimeLeft() !== null) {

@@ -130,6 +130,66 @@
       transition: all 0.2s;
       &:hover { background: var(--sash-red); color: white; }
     }
+
+    /* --- NOWE: ROZWIJANY PRZYCISK INSTALACJI (DESKTOP) --- */
+    .btn-install-pwa {
+      display: flex;
+      align-items: center;
+      background: var(--surface-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-dark);
+      padding: 6px; /* Wąski padding, ukrywający tekst */
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.8rem;
+      height: 30px;
+      box-sizing: border-box;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      .install-icon {
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px; /* Sztywna szerokość ikony */
+        transition: transform 0.3s ease;
+      }
+
+      .install-text {
+        max-width: 0;
+        opacity: 0;
+        margin-left: 0;
+        /* Płynnie powiększa kontener i odsłania tekst */
+        transition: max-width 0.3s ease, opacity 0.3s ease, margin-left 0.3s ease;
+      }
+
+      /* AKCJA PO NAJECHANIU */
+      &:hover {
+        background: var(--primary-brown); /* Użycie głównego koloru motywu */
+        color: white;
+        border-color: var(--primary-brown);
+        padding: 6px 14px; /* Zwiększenie przestrzeni na tekst */
+
+        .install-icon {
+          transform: scale(1.1); /* Lekkie uwydatnienie ikony */
+        }
+
+        .install-text {
+          max-width: 100px; /* Limit szerokości ujawnionego tekstu */
+          opacity: 1;
+          margin-left: 6px;
+        }
+      }
+    }
+
+    /* --- NOWE: STYL PRZYCISKU W MENU BOCZNYM (MOBILE) --- */
+    .install-link {
+      color: var(--primary-brown) !important; /* Wyróżnienie akcji instalacji */
+      background: rgba(0, 0, 0, 0.02) !important;
+    }
   }
 }
 
