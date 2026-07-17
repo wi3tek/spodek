@@ -46,7 +46,11 @@
                          [checked]="presentPlayerIds().includes(p.id)"
                          (change)="togglePlayerPresenceAndSave(p.id)">
 
-                  <span class="player-alias">{{ p.alias }}</span>
+                  <app-player-avatar
+                    [alias]="p.alias"
+                    [imageUrl]="p.imageUrl"
+                    fontSize="0.85rem">
+                  </app-player-avatar>
                 </label>
               } @empty {
                 <div class="empty-state-mini">Brak graczy. Wyszukaj i dodaj obok!</div>
@@ -104,11 +108,19 @@
 
                 <div class="s-matchup">
                   <div class="s-team home">
-                    @for (p of s.homePlayers; track p.playerId) { <span class="s-player">{{ p.alias }}</span> }
+                    @for (p of s.homePlayers; track p.playerId) { <span class="s-player"><app-player-avatar
+                      [alias]="p.alias"
+                      [imageUrl]="p.imageUrl"
+                      fontSize="0.85rem">
+                        </app-player-avatar></span> }
                   </div>
                   <div class="s-vs">vs</div>
                   <div class="s-team away">
-                    @for (p of s.awayPlayers; track p.playerId) { <span class="s-player">{{ p.alias }}</span> }
+                    @for (p of s.awayPlayers; track p.playerId) { <span class="s-player"><app-player-avatar
+                      [alias]="p.alias"
+                      [imageUrl]="p.imageUrl"
+                      fontSize="0.85rem">
+                        </app-player-avatar></span> }
                   </div>
                 </div>
 
@@ -157,7 +169,10 @@
               @for (p of newMatch.homeSide.players; track p.playerId) {
                 <div class="player-card-edit">
                   <div class="player-header">
-                    <strong>{{ p.alias }}</strong>
+                    <app-player-avatar
+                      [alias]="p.alias"
+                      [imageUrl]="p.imageUrl">
+                    </app-player-avatar>
                     <span class="remove-btn" (click)="removePlayer('home', p.playerId)">✕</span>
                   </div>
                   <div class="player-stats-inputs">
@@ -254,7 +269,10 @@
               @for (p of newMatch.awaySide.players; track p.playerId) {
                 <div class="player-card-edit">
                   <div class="player-header">
-                    <strong>{{ p.alias }}</strong>
+                    <app-player-avatar
+                      [alias]="p.alias"
+                      [imageUrl]="p.imageUrl">
+                    </app-player-avatar>
                     <span class="remove-btn" (click)="removePlayer('away', p.playerId)">✕</span>
                   </div>
                   <div class="player-stats-inputs">
@@ -498,18 +516,11 @@
 
               <!-- ZAKTUALIZOWANA KOMÓRKA Z AVATAREM I ALIASEM -->
               <td>
-                <div style="display: flex; align-items: center; gap: 0.4em; font-size: inherit;">
-                  @if (row.imageUrl) {
-                    <img [src]="row.imageUrl"
-                         alt="Avatar"
-                         style="width: 1.8em; height: 1.8em; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid #e2e8f0;">
-                  } @else {
-                    <div style="width: 1.8em; height: 1.8em; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 1.2em; flex-shrink: 0; border: 1px solid #e2e8f0;">
-                      👤
-                    </div>
-                  }
-                  <strong style="font-size: 1em;">{{ row.alias }}</strong>
-                </div>
+                <app-player-avatar
+                  [alias]="row.alias"
+                  [imageUrl]="row.imageUrl"
+                  fontSize="0.95rem">
+                </app-player-avatar>
               </td>
               <!-- KONIEC ZAKTUALIZOWANEJ KOMÓRKI -->
 

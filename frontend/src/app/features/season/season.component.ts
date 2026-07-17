@@ -11,7 +11,8 @@ import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-lo
 import { MatchmakingService } from '../../core/services/matchmaking.service';
 import { StatsComponent } from '../stats/stats.component'; // NOWE
 import { TeamStatsComponent } from '../team-stats/team-stats.component';
-import { HeaderComponent } from '../../shared/components/header/header.component'; // NOWY IMPORT
+import { HeaderComponent } from '../../shared/components/header/header.component';
+import { PlayerAvatarComponent } from '../../shared/components/player-avatar/player-avatar.component'; // NOWY IMPORT
 
 @Component({
   selector: 'app-season',
@@ -23,6 +24,7 @@ import { HeaderComponent } from '../../shared/components/header/header.component
     StatsComponent,
     TeamStatsComponent,
     HeaderComponent,
+    PlayerAvatarComponent
   ],
   templateUrl: './season.component.html',
   styleUrls: ['./season.component.scss'],

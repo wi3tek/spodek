@@ -1008,42 +1008,62 @@
 }
 
 /* ==========================================================================
-   MODAL SZCZEGÓŁÓW MECZU (NOWE)
+   MODAL SZCZEGÓŁÓW MECZU (POPRAWIONY DLA RWD)
    ========================================================================== */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0; /* Zamiast width: 100% używamy sztywnych krawędzi */
-  bottom: 0; /* Zamiast height: 100% */
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: center; /* Na desktopie centrujemy */
   z-index: 9999;
-  padding: 15px;
+  padding: 20px; /* Minimalny odstęp od krawędzi ekranu na desktopie */
+
+  /* Ważne dla urządzeń Apple / Safari */
+  -webkit-overflow-scrolling: touch;
 
   @media (max-width: 600px) {
-    /* Na telefonie ustawiamy od góry, co zapobiega zniknięciu u dołu okna */
-    align-items: flex-start;
-    padding-top: 5vh;
+    /* NA TELEFONIE: Modal zaczyna się od samej góry i pozwala na pełne przewijanie */
+    align-items: flex-start; /* Przylepienie do góry */
+    padding: 0; /* Usuwamy padding na overlayu - modal będzie dotykał krawędzi */
+    overflow-y: auto; /* Pozwala scrolować cały overlay, jeśli modal jest bardzo długi */
   }
 }
-
 .modal-content {
   background: white;
   border-radius: var(--border-radius);
   width: 100%;
   max-width: 600px;
-
-  /* Ograniczamy wysokość całości modala, zmuszając tylko body do scrolla */
-  max-height: 100vh;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 
-  box-sizing: border-box;
-  margin: 0; /* Usunięty margin z mobilki (zastępujemy go paddingiem na overlay) */
+  /* Wymuszamy ograniczenie wysokości, aby wewnętrzny scroll działał (desktop) */
+  max-height: calc(100vh - 40px);
+  margin: auto; /* Pomaga w centrowaniu */
+
+  @media (max-width: 600px) {
+    /* NA TELEFONIE: Modal zdejmuje zaokrąglenia i przykleja się do brzegów */
+    border-radius: 0;
+    margin: 0; /* Brak marginesu, pełna szerokość i wysokość od góry */
+    min-height: 100vh; /* Rozciągamy na całą wysokość ekranu jak osobną stronę */
+    max-height: none; /* Zdejmujemy blokadę wysokości */
+  }
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto; /* Wewnętrzny scroll dla desktopów */
+  flex: 1; /* Pozwala body zająć dostępną przestrzeń */
+
+  @media (max-width: 600px) {
+    overflow-y: visible; /* Na telefonie scrolluje się cała "strona" modala, nie tylko środek */
+  }
 }
 
 @keyframes modalFadeIn {
