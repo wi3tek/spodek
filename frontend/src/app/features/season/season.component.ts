@@ -10,18 +10,19 @@ import {debounceTime, distinctUntilChanged, Subject} from 'rxjs'; // NOWE
 import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
 import { MatchmakingService } from '../../core/services/matchmaking.service';
 import { StatsComponent } from '../stats/stats.component'; // NOWE
-import { TeamStatsComponent } from '../team-stats/team-stats.component'; // NOWY IMPORT
+import { TeamStatsComponent } from '../team-stats/team-stats.component';
+import { HeaderComponent } from '../../shared/components/header/header.component'; // NOWY IMPORT
 
 @Component({
   selector: 'app-season',
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,
     FormsModule,
     FifaLoaderComponent,
     StatsComponent,
     TeamStatsComponent,
+    HeaderComponent,
   ],
   templateUrl: './season.component.html',
   styleUrls: ['./season.component.scss'],
@@ -49,6 +50,7 @@ export class SeasonComponent implements OnInit {
   searchHomeTeam = signal('');
   searchAwayTeam = signal('');
   searchPlayerQuery = signal('');
+  newCommentText = signal(''); // <--- NOWE
   matchStateTrigger = signal(0);
   tableData = signal<any[]>([]);
 
@@ -150,6 +152,7 @@ export class SeasonComponent implements OnInit {
     homeSide: { teamId: '', assetId: '', teamName: '', goals: 0, players: [] },
     awaySide: { teamId: '', assetId: '', teamName: '', goals: 0, players: [] },
     finished: false,
+    comments: [],
   };
 
   // ... (Wszystkie Twoje computed() zostają BEZ ZMIAN)
@@ -420,10 +423,16 @@ export class SeasonComponent implements OnInit {
     this.newMatch.homeSide.goals = this.homeGoals;
     this.newMatch.awaySide.goals = this.awayGoals;
 
-    // NOWE: Gwarancja przypisania poprawnej kolejki ze zsynchronizowanego nagłówka "Kanapy"
+    // Gwarancja przypisania poprawnej kolejki ze zsynchronizowanego nagłówka "Kanapy"
     this.newMatch.matchweek = this.activeMatchweek();
 
-    const payload = { ...this.newMatch, seasonId: this.seasonId() };
+    // ZMIANA: Jawne dodanie tablicy `comments` do payloadu wysyłanego na backend
+    const payload = {
+      ...this.newMatch,
+      seasonId: this.seasonId(),
+      comments: this.newMatch.comments || [], // Upewniamy się, że zawsze wysyłamy chociaż pustą tablicę
+    };
+
     const request = this.editingMatch()
       ? this.matchService.updateMatch(this.editingMatch().id, payload)
       : this.matchService.createMatch(payload);
@@ -436,6 +445,19 @@ export class SeasonComponent implements OnInit {
       },
       error: (err) => alert('Błąd zapisu: ' + (err.error?.message || 'Nieznany błąd serwera')),
     });
+  }
+
+  addComment() {
+    const text = this.newCommentText().trim();
+    if (text) {
+      if (!this.newMatch.comments) this.newMatch.comments = [];
+      this.newMatch.comments.push(text);
+      this.newCommentText.set('');
+    }
+  }
+
+  removeComment(idx: number) {
+    this.newMatch.comments.splice(idx, 1);
   }
 
   isFormValid(): boolean {
@@ -494,6 +516,7 @@ export class SeasonComponent implements OnInit {
       homeSide: { assetId: '', goals: 0, players: [] },
       awaySide: { assetId: '', goals: 0, players: [] },
       finished: false,
+      comments: [], // <--- NOWE
     };
   }
 
@@ -673,12 +696,27 @@ export class SeasonComponent implements OnInit {
     suggestion.homePlayers.forEach((p: any) => {
       this.addPlayerToSide('home', { id: p.playerId, alias: p.alias });
     });
-
     suggestion.awayPlayers.forEach((p: any) => {
       this.addPlayerToSide('away', { id: p.playerId, alias: p.alias });
     });
 
-    // 3. Wymuszamy odświeżenie UI
+    // PRZYWRÓCONE: Wymuszenie aktualizacji stanu triggera
     this.matchStateTrigger.update((v) => v + 1);
+
+    // Automatyczny, płynny scroll do sekcji formularza meczowego
+    setTimeout(() => {
+      const formElement = document.querySelector('.match-form-layout');
+      if (formElement) {
+        // Zdefiniuj wysokość swojego headera + trochę luzu (np. 100px)
+        const headerOffset = 100;
+        const elementPosition = formElement.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - headerOffset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth',
+        });
+      }
+    }, 60);
   }
 }

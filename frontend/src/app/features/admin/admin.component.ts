@@ -2,15 +2,15 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../core/services/admin.service';
-import { RouterLink } from '@angular/router'; // Dodany Router
+import { HeaderComponent } from '../../shared/components/header/header.component'; // Dodany Router
 
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule,RouterLink],
+  imports: [CommonModule, FormsModule, HeaderComponent],
   templateUrl: './admin.component.html',
-  styleUrls: ['./admin.component.scss']
+  styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent implements OnInit {
   public adminService = inject(AdminService);
@@ -26,9 +26,9 @@ export class AdminComponent implements OnInit {
 
   filteredPlayers = computed(() => {
     const term = this.playerSearchTerm().toLowerCase();
-    return this.adminService.players().filter(p =>
-      p.name.toLowerCase().includes(term) || p.alias.toLowerCase().includes(term)
-    );
+    return this.adminService
+      .players()
+      .filter((p) => p.name.toLowerCase().includes(term) || p.alias.toLowerCase().includes(term));
   });
 
   paginatedPlayers = computed(() => {
@@ -36,7 +36,9 @@ export class AdminComponent implements OnInit {
     return this.filteredPlayers().slice(start, start + this.pageSizePlayers);
   });
 
-  totalPlayerPages = computed(() => Math.ceil(this.filteredPlayers().length / this.pageSizePlayers));
+  totalPlayerPages = computed(() =>
+    Math.ceil(this.filteredPlayers().length / this.pageSizePlayers),
+  );
 
   // --- SEKCJA: DRUŻYNY ---
   teamSearchTerm = signal('');
@@ -45,9 +47,12 @@ export class AdminComponent implements OnInit {
 
   filteredTeams = computed(() => {
     const term = this.teamSearchTerm().toLowerCase();
-    return this.adminService.teams().filter(t =>
-      t.name.toLowerCase().includes(term) || (t.alias && t.alias.toLowerCase().includes(term))
-    );
+    return this.adminService
+      .teams()
+      .filter(
+        (t) =>
+          t.name.toLowerCase().includes(term) || (t.alias && t.alias.toLowerCase().includes(term)),
+      );
   });
 
   paginatedTeams = computed(() => {
@@ -64,9 +69,9 @@ export class AdminComponent implements OnInit {
 
   // --- LOGIKA GRACZY ---
   isAliasUnique(alias: string, excludeId?: string): boolean {
-    return !this.adminService.players().some(p =>
-      p.alias.toLowerCase() === alias.toLowerCase() && p.id !== excludeId
-    );
+    return !this.adminService
+      .players()
+      .some((p) => p.alias.toLowerCase() === alias.toLowerCase() && p.id !== excludeId);
   }
 
   saveNewPlayer() {
@@ -90,11 +95,15 @@ export class AdminComponent implements OnInit {
     if (type === 'team') {
       if (!isNaN(target) && target >= 1 && target <= this.totalTeamPages()) {
         this.teamCurrentPage.set(target);
-      } else { event.target.value = this.teamCurrentPage(); }
+      } else {
+        event.target.value = this.teamCurrentPage();
+      }
     } else {
       if (!isNaN(target) && target >= 1 && target <= this.totalPlayerPages()) {
         this.playerCurrentPage.set(target);
-      } else { event.target.value = this.playerCurrentPage(); }
+      } else {
+        event.target.value = this.playerCurrentPage();
+      }
     }
   }
 
@@ -121,9 +130,12 @@ export class AdminComponent implements OnInit {
         },
         error: (err) => {
           // Jeśli backend wysłał IllegalStateException, komunikat będzie tutaj
-          const msg = typeof err.error === 'string' ? err.error : 'Nie można usunąć gracza (prawdopodobnie grał już w meczach).';
+          const msg =
+            typeof err.error === 'string'
+              ? err.error
+              : 'Nie można usunąć gracza (prawdopodobnie grał już w meczach).';
           alert('🚫 Błąd: ' + msg);
-        }
+        },
       });
     }
   }

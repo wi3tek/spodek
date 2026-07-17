@@ -1,0 +1,54 @@
+<header class="main-header" [class.scrolled]="isScrolled()">
+  <div class="header-inner">
+
+    <div class="brand">
+      <img src="/logo.png" alt="Logo" class="app-logo">
+      <div class="title-group">
+        @if (backLink && backText) {
+          <button class="btn-back-link" [routerLink]="backLink">{{ backText }}</button>
+        }
+        <h1 class="app-title">{{ title }}</h1>
+      </div>
+    </div>
+
+    <div class="user-actions desktop-only">
+      <nav class="top-nav">
+        <button class="btn-nav" routerLink="/dashboard" routerLinkActive="active">
+          🏠 <span class="nav-text">Dashboard</span>
+        </button>
+        <button class="btn-nav" routerLink="/admin" routerLinkActive="active">
+          ⚙️ <span class="nav-text">Ustawienia</span>
+        </button>
+      </nav>
+      <div class="divider"></div>
+      <button class="btn-theme" (click)="themeService.toggleTheme()">
+        {{ themeService.isWorldCupTheme() ? 'Motyw ₊✧' : 'Motyw 🏆' }}
+      </button>
+      <button class="btn-secondary btn-sm btn-logout" (click)="logout()">Wyloguj</button>
+    </div>
+
+    <button class="hamburger-btn mobile-only" (click)="toggleMobileMenu()">
+      ☰
+    </button>
+
+  </div>
+</header>
+
+@if (isMobileMenuOpen()) {
+  <div class="mobile-overlay" (click)="closeMobileMenu()"></div>
+}
+<div class="side-drawer" [class.open]="isMobileMenuOpen()">
+  <div class="drawer-header">
+    <h3>Menu</h3>
+    <button class="close-btn" (click)="closeMobileMenu()">✕</button>
+  </div>
+  <div class="drawer-content">
+    <button class="drawer-link" routerLink="/dashboard" routerLinkActive="active" (click)="closeMobileMenu()">🏠 Dashboard</button>
+    <button class="drawer-link" routerLink="/admin" routerLinkActive="active" (click)="closeMobileMenu()">⚙️ Ustawienia</button>
+    <div class="drawer-divider"></div>
+    <button class="drawer-link theme-link" (click)="themeService.toggleTheme(); closeMobileMenu()">
+      🎨 Zmień motyw {{ themeService.isWorldCupTheme() ? '₊✧' : '🏆' }}
+    </button>
+    <button class="drawer-link logout-link" (click)="logout()">🚪 Wyloguj</button>
+  </div>
+</div>

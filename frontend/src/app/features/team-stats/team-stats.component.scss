@@ -53,21 +53,25 @@
 
 .leaderboards-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  /* ZŁOTA ZASADA: Zmieniamy 1fr na minmax(0, 1fr) */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 
   @media (max-width: 1100px) {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   @media (max-width: 600px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .leaderboard-block {
-    background: var(--surface-bg); /* zamiast #f8fafc */
-    border: 1px solid var(--border-color); /* zamiast #e2e8f0 */
+    background: var(--surface-bg);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 15px;
+
+    min-width: 0;
+    overflow: hidden;
 
 
     .board-title {
@@ -135,6 +139,7 @@
 
         .name {
           flex: 1;
+          min-width: 0;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;

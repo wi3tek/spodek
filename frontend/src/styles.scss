@@ -33,6 +33,8 @@ body.theme-worldcup {
 
 /* GLOBALNE ZASTOSOWANIE TŁA I TEKSTÓW */
 html, body {
+  overflow-x: clip; /* Odcina wszystko, co wychodzi poza szerokość telefonu */
+  width: 100%;
   background-color: var(--app-bg);
   color: var(--text-dark);
   font-family: 'Inter', sans-serif;
@@ -42,10 +44,22 @@ html, body {
 
 .card {
   background: var(--card-bg) !important;
-  border-radius: var(--border-radius, 10px);
+  border-radius: var(--border-radius, 16px);
   padding: 24px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
   border: 1px solid var(--border-color) !important;
+
+  @media (max-width: 900px) {
+    border-radius: 0; /* Skoro dotykamy ekranu, usuwamy zaokrąglenia */
+    border-left: none !important;
+    border-right: none !important;
+    padding: 15px 10px; /* Zmniejszamy też wewnętrzne puste miejsce na mobile */
+  }
+
+  .stats-panel {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* NAPRAWA INPUTÓW (M.IN. DODAWANIE MECZU) */
@@ -57,40 +71,6 @@ input, select, .edit-input, .search-input {
   &:focus {
     outline: none;
     border-color: var(--beer-gold);
-  }
-}
-
-/* ==========================================================================
-   PŁYWAJĄCY PRZEŁĄCZNIK TEMATÓW (Zawsze na wierzchu)
-   ========================================================================== */
-.global-theme-switcher {
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  z-index: 99999;
-
-  .theme-toggle-btn {
-    background: var(--sash-red);
-    color: white;
-    border: 2px solid white;
-    padding: 4px 8px;
-    border-radius: 30px;
-    font-size: 0.6rem;
-    font-weight: 800;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease-in-out;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-
-    &:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-    }
-
-    &:active {
-      transform: scale(0.98);
-    }
   }
 }
 
@@ -130,5 +110,18 @@ button {
     color: var(--text-muted);
     cursor: not-allowed;
     box-shadow: none;
+  }
+}
+
+/* --- ZAKTUALIZOWANA KLASA W styles.scss --- */
+.dashboard-container {
+  /* Górny padding (90px) spycha zawartość w dół, robiąc miejsce dla nagłówka! */
+  padding: 90px 20px 20px 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  /* Na telefonach zabieramy lewy i prawy margines, a górny odrobinę zmniejszamy */
+  @media (max-width: 900px) {
+    padding: 75px 0 10px 0;
   }
 }

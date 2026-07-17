@@ -76,7 +76,7 @@ spring:
   data:
     mongodb:
       uri: ${MONGO_URI}
-      auto-index-creation: true
+#      auto-index-creation: true
 server:
   port: ${PORT:8080}
 app:

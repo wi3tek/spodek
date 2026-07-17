@@ -1,101 +1,3 @@
-/* Kontener główny - zapewnia odpowiednie odstępy od krawędzi ekranu */
-.dashboard-container {
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-/* --- NAGŁÓWEK --- */
-.main-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 25px;
-  border-radius: var(--border-radius);
-  margin-bottom: 30px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-  background: var(--card-bg); /* zamiast white */
-  border: 1px solid var(--border-color); /* zamiast #f1f5f9 */
-
-  /* Lewa strona z logo */
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-
-    .app-logo {
-      object-fit: cover; /* Na wypadek gdyby logo nie było idealnym kwadratem */
-      padding: 2px; /* Lekki margines wewnątrz ramki */
-    }
-
-    .app-title {
-      margin: 0;
-      font-size: 1.5rem;
-      color: var(--primary-brown);
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-  }
-
-  /* Prawa strona z przyciskiem */
-  .user-actions {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-
-    .admin-badge {
-      background: var(--beer-gold);
-      color: white;
-      font-size: 0.75rem;
-      font-weight: bold;
-      padding: 4px 10px;
-      border-radius: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    /* Wyjątkowy styl dla przycisku wyloguj - mniej "krzykliwy" niż czerwony */
-    .btn-logout {
-      background-color: var(--surface-bg);
-      color: var(--sash-red);
-      border: 1px solid var(--border-color);
-      padding: 8px 18px;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-
-      &:hover {
-        background-color: var(--sash-red);
-        color: white;
-        border-color: var(--sash-red);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(226, 29, 37, 0.15);
-      }
-
-      &:active {
-        transform: translateY(0);
-      }
-    }
-  }
-}
-
-/* Responsywność dla małych ekranów (np. telefony pionowo) */
-@media (max-width: 600px) {
-  .main-header {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
-
-    .brand {
-      flex-direction: column;
-      gap: 10px;
-    }
-  }
-}
-
 /* Układ całego dashboardu (Panele obok siebie) */
 .grid-layout {
   display: grid;
@@ -429,4 +331,53 @@
   input:checked + .slider::after { transform: translateX(16px); }
 
   .label-text { font-size: 0.85rem; color: #64748b; font-weight: 600; }
+}
+
+/* --- NOWE STYLE INTERAKCJI DLA SEZONÓW --- */
+.season-item {
+  transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+
+  &.clickable {
+    cursor: pointer;
+
+    &:hover {
+      background: var(--surface-bg, #f1f5f9) !important;
+      border-left-color: var(--primary-brown) !important; /* Zmiana akcentu bocznego przy najechaniu */
+      transform: translateX(4px); /* Subtelne, eleganckie wysunięcie wiersza */
+    }
+  }
+
+  /* RWD: Zabezpieczenie dla bardzo małych smartfonów */
+  @media (max-width: 500px) {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+    padding: 12px 16px;
+
+    .league-info {
+      width: 100%;
+
+      .view-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
+      }
+
+      .input-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+
+        .sm-input {
+          max-width: 100% !important;
+        }
+      }
+    }
+
+    .league-actions {
+      align-self: flex-end; /* Przyciski akcji (ołowek/ptaszek) trafiają w prawy dolny róg wiersza */
+      margin-top: -5px;
+    }
+  }
 }

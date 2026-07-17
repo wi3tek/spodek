@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Document(collection = "matches")
@@ -39,6 +40,7 @@ public class Match extends BaseDocument {
     private MatchSide homeSide;
     private MatchSide awaySide;
     private boolean finished;
+    private List<String> comments = new ArrayList<>();
 
     @Data
     public static class MatchSide {
@@ -49,7 +51,6 @@ public class Match extends BaseDocument {
 
     @Data
     public static class PlayerStats {
-        @Indexed
         private String playerId;
         private int yellowCards;
         private int redCards;

@@ -21,5 +21,6 @@ export interface Match {
   createdAt: string; // Wykorzystamy to jako godzinę meczu
   updatedAt: string; // Wykorzystamy to jako godzinę meczu
   finished: boolean;
+  comments?: string[]; // <--- Upewnij się, że to tu jest!
 
 }

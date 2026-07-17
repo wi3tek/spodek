@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core'; // Dodaj OnInit
 import { Router, RouterLink } from '@angular/router'; // Dodaj RouterLink i RouterLinkActive
 import { LeagueService } from '../../core/services/league.service';
 import { League } from '../../core/models/league.model';
+import { HeaderComponent } from '../../shared/components/header/header.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true, // Upewnij się, że to masz
-  imports: [RouterLink], // <-- TO JEST KLUCZ!
+  imports: [RouterLink, HeaderComponent], // <-- TO JEST KLUCZ!
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })

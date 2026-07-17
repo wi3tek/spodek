@@ -5,11 +5,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SeasonService } from '../../core/services/season.service';
 import { Season } from '../../core/models/season.model';
+import { HeaderComponent } from '../../shared/components/header/header.component';
 
 @Component({
   selector: 'app-league-seasons',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, HeaderComponent],
   templateUrl: './league-seasons.component.html',
   styleUrls: ['./league-seasons.component.scss']
 })
@@ -39,7 +40,15 @@ export class LeagueSeasonsComponent implements OnInit {
 
   loadData(id: string) {
     this.leagueService.getLeagueById(id).subscribe(l => this.league.set(l));
-    this.seasonService.getSeasonsByLeague(id).subscribe(s => this.seasons.set(s));
+    this.seasonService.getSeasonsByLeague(id).subscribe(s => {
+      // Sortowanie: od najnowszego startDate (góra) do najstarszego (dół)
+      const sortedSeasons = [...s].sort((a, b) => {
+        const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+        const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+        return dateB - dateA; // Najnowsze daty dadzą najwyższy wynik, więc będą pierwsze
+      });
+      this.seasons.set(sortedSeasons);
+    });
   }
 
   saveSeason() {

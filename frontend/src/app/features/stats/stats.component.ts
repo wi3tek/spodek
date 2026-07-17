@@ -45,7 +45,16 @@ export class StatsComponent implements OnChanges {
   @Input() seasonId?: string | null;
   @Input() refreshTrigger: number = 0;
 
-  @ViewChild('eloChartCanvas') eloChartCanvas!: ElementRef<HTMLCanvasElement>;
+  private _eloChartCanvas!: ElementRef<HTMLCanvasElement>;
+
+  // Kiedy Angular wreszcie wyrenderuje <canvas> w HTMLu, natychmiast wywoła tę metodę
+  @ViewChild('eloChartCanvas') set eloChartCanvas(content: ElementRef<HTMLCanvasElement>) {
+    if (content) {
+      this._eloChartCanvas = content;
+      // Odpalamy wykres w ułamku sekundy po tym, jak płótno faktycznie zaistnieje w przeglądarce!
+      this.updateChart();
+    }
+  }
 
   private statsService = inject(StatsService);
   private chart: Chart | null = null;
@@ -116,7 +125,6 @@ export class StatsComponent implements OnChanges {
           }
         }
 
-        setTimeout(() => this.updateChart(), 100);
       },
       error: () => this.isLoading.set(false),
     });
@@ -190,7 +198,7 @@ export class StatsComponent implements OnChanges {
 
   updateChart() {
     const stats = this.statsData();
-    if (!stats || !stats.eloChart || stats.eloChart.length === 0 || !this.eloChartCanvas) return;
+    if (!stats || !stats.eloChart || stats.eloChart.length === 0 || !this._eloChartCanvas) return;
     if (this.chart) this.chart.destroy();
 
     // 1. Zbieramy absolutnie wszystkie unikalne dni z bazy danych
@@ -346,7 +354,7 @@ export class StatsComponent implements OnChanges {
         },
       },
     };
-    const ctx = this.eloChartCanvas.nativeElement.getContext('2d');
+    const ctx = this._eloChartCanvas.nativeElement.getContext('2d');
     if (ctx) this.chart = new Chart(ctx, config);
   }
 }
