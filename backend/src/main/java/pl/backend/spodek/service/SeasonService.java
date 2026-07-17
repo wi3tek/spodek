@@ -116,6 +116,7 @@ public class SeasonService {
                 dto.setPlayerId( id );
                 Player p = playersMap.get( id );
                 dto.setAlias( p != null ? p.getAlias() : "Nieznany" );
+                dto.setImageUrl( p.getImageUrl() );
                 dto.setWinRatio( BigDecimal.ZERO );
                 return dto;
             } );

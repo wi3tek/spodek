@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class SeasonTableEntryDTO {
     private String playerId;
+    private String imageUrl;
     private String alias;
     private int matchesPlayed;
     private int points;

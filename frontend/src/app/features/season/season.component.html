@@ -498,13 +498,17 @@
 
               <!-- ZAKTUALIZOWANA KOMÓRKA Z AVATAREM I ALIASEM -->
               <td>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 0.4em; font-size: inherit;">
                   @if (row.imageUrl) {
-                    <img [src]="row.imageUrl" class="player-avatar-img" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                    <img [src]="row.imageUrl"
+                         alt="Avatar"
+                         style="width: 1.8em; height: 1.8em; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid #e2e8f0;">
                   } @else {
-                    <span class="player-avatar" style="font-size: 1.2rem;">👤</span>
+                    <div style="width: 1.8em; height: 1.8em; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 1.2em; flex-shrink: 0; border: 1px solid #e2e8f0;">
+                      👤
+                    </div>
                   }
-                  <strong>{{ row.alias }}</strong>
+                  <strong style="font-size: 1em;">{{ row.alias }}</strong>
                 </div>
               </td>
               <!-- KONIEC ZAKTUALIZOWANEJ KOMÓRKI -->

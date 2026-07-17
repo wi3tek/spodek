@@ -1,5 +1,6 @@
 export interface SeasonTableEntry {
   playerId: string;
+  imageUrl: string;
   alias: string;
   matchesPlayed: number;
   points: number;
