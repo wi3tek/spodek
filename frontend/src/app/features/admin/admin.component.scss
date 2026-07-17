@@ -1,22 +1,83 @@
+/* ==========================================================================
+   KLASYCZNE ZAKŁADKI (Folder Tabs)
+   ========================================================================== */
+
 .admin-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  padding: 20px;
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
+  /* ZMIANA: Usunięto przerwę! Zakładki muszą dotykać białego panelu */
+  gap: 0;
+}
+
+.tabs-container {
+  display: flex;
+  justify-content: flex-start; /* Zakładki uciekają do lewej krawędzi */
+  margin-bottom: 0;
+  position: relative;
+  z-index: 2; /* Zakładki muszą być o jedno piętro wyżej niż panel, by przykryć jego ramkę */
+}
+
+.tabs {
+  display: flex;
+  gap: 4px; /* Minimalny odstęp między sąsiadującymi zakładkami */
+  background: transparent;
+  padding: 0;
+
+  /* TRIK: Przesuwamy zakładki 1 piksel w dół, żeby najechały na ramkę panelu .admin-section */
+  margin-bottom: -1px;
+
+  .tab-btn {
+    background: var(--app-bg); /* Lekko szare tło dla NIEAKTYWNEJ zakładki */
+    border: 1px solid var(--border-color);
+    border-bottom: none; /* Zakładki nigdy nie mają ramki od dołu */
+    padding: 12px 24px;
+    border-radius: 12px 12px 0 0; /* Zaokrąglenie TYLKO na górnych rogach! */
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-size: 1rem;
+    box-shadow: none;
+
+    /* Aktywna zakładka zlewa się z panelem poniżej */
+    &.active {
+      background: var(--card-bg); /* Śnieżnobiałe tło, identyczne jak w .admin-section */
+      color: var(--primary-brown);
+      border-bottom: 1px solid var(--card-bg); /* Ten 1px zakrywa i "zamazuje" ramkę głównego panelu */
+    }
+
+    &:hover:not(.active) {
+      background: #f8fafc;
+    }
+  }
+
+  /* RWD: Na telefonach zakładki dzielą się na równe połowy, dla łatwego trafienia palcem */
+  @media (max-width: 600px) {
+    width: 100%;
+    .tab-btn {
+      flex: 1;
+      padding: 12px 10px;
+      text-align: center;
+    }
   }
 }
 
 .admin-section {
   background: var(--card-bg);
-  border-radius: 12px;
+
+  /* KLASYCZNY FOLDER: Zdejmujemy zaokrąglenie lewego górnego rogu, żeby zakładka gładko zeszła do rogu panelu! */
+  border-radius: 0 12px 12px 12px;
+
   padding: 20px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color); /* Ramka zamykająca teczkę */
+  position: relative;
+  z-index: 1;
 
+  /* Reszta bez zmian */
   h2 {
-    color: var(--primary-brown); /* zamiast #5d4037 */
-    border-bottom: 2px solid var(--border-color); /* zamiast #f0f0f0 */
+    color: var(--primary-brown);
+    border-bottom: 2px solid var(--border-color);
     padding-bottom: 12px;
     margin-top: 0;
   }
@@ -30,8 +91,8 @@
 
   .search-input {
     padding: 7px 15px;
-    background-color: var(--app-bg); /* Ciemne tło w trybie dark */
-    color: var(--text-dark); /* Jasny tekst w trybie dark */
+    background-color: var(--app-bg);
+    color: var(--text-dark);
     border: 1px solid var(--border-color);
     border-radius: 20px;
     font-size: 13px;
@@ -39,10 +100,188 @@
     outline: none;
 
     &:focus {
-      border-color: #d4a017;
+      border-color: var(--beer-gold);
     }
   }
 }
+
+.add-card {
+  background: var(--app-bg);
+  border: 1px solid var(--border-color);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+
+  h3 {
+    font-size: 14px;
+    margin: 0 0 10px 0;
+    color: #777;
+  }
+
+  /* ZMIANA: Na mobilkach wejścia zejdą jedno pod drugie */
+  .input-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    input {
+      flex: 1;
+      min-width: 140px;
+      padding: 8px;
+      background-color: var(--app-bg);
+      color: var(--text-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    button {
+      flex-shrink: 0;
+    }
+  }
+}
+
+/* NOWY AWATAR ZE ZDJĘCIEM */
+.player-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--beer-gold);
+  flex-shrink: 0;
+}
+
+.team-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #f8f8f8;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #fcfcfc;
+  }
+
+  &.editing {
+    background: #fffbeb;
+  }
+
+  .team-left-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+
+    .logo-small {
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+    }
+
+    .player-avatar {
+      font-size: 18px;
+      background: #e2e8f0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .team-names {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+
+      .info {
+        strong {
+          font-size: 14px;
+          color: var(--text-dark);
+        }
+        small {
+          font-size: 11px;
+          color: var(--text-muted);
+        }
+      }
+
+      .sm-input {
+        width: 100%;
+        max-width: 250px;
+        padding: 6px;
+        background-color: var(--app-bg);
+        color: var(--text-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 12px;
+      }
+
+      .asset-id {
+        font-size: 9px;
+        color: #bbb;
+        font-weight: bold;
+      }
+    }
+  }
+
+  .team-right-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .ratings {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      background: #f1f5f9;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+  }
+}
+
+/* =======================================================
+   WIDOK MOBILNY (Naprawa ucinania paneli edycji)
+   ======================================================= */
+@media (max-width: 600px) {
+  .team-header-flex {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+
+    .search-input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  .team-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+
+    .team-left-group {
+      width: 100%;
+      .team-names .sm-input { max-width: 100%; }
+    }
+
+    .team-right-group {
+      width: 100%;
+      justify-content: flex-end; /* Wyrównanie przycisków na prawo */
+      padding-top: 10px;
+      border-top: 1px dashed var(--border-color);
+    }
+  }
+
+  .add-card .input-row {
+    flex-direction: column;
+    button { width: 100%; }
+  }
+}
+
+/* ... (resztę pliku np. przyciski .btn-save-sm zostaw bez zmian) */
 
 .add-card {
   background: var(--app-bg); /* zamiast #fdfdfd */

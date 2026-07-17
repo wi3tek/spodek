@@ -24,7 +24,7 @@ export class AdminService {
   }
 
   // Używamy tap(), aby po sukcesie na serwerze odświeżyć lokalną listę (cache UI)
-  addPlayer(player: any): Observable<any> {
+  addPlayer(player: Player): Observable<any> {
     return this.http.post(this.playersUrl, player).pipe(
       tap(() => this.loadPlayers())
     );

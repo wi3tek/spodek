@@ -2,8 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../core/services/admin.service';
-import { HeaderComponent } from '../../shared/components/header/header.component'; // Dodany Router
-
+import { HeaderComponent } from '../../shared/components/header/header.component';
 
 @Component({
   selector: 'app-admin',
@@ -17,9 +16,10 @@ export class AdminComponent implements OnInit {
 
   // --- STAN GLOBALNY ---
   editingId = signal<string | null>(null);
+  activeTab = signal<'players' | 'teams'>('players'); // NOWE: Zakładki
 
   // --- SEKCJA: GRACZE ---
-  newPlayer = signal({ name: '', alias: '' });
+  newPlayer = signal({ name: '', alias: '', imageUrl: '' }); // NOWE: dodano imageUrl
   playerSearchTerm = signal('');
   playerCurrentPage = signal(1);
   pageSizePlayers = 10;
@@ -76,16 +76,24 @@ export class AdminComponent implements OnInit {
 
   saveNewPlayer() {
     const p = this.newPlayer();
-    if (!p.name || !p.alias) return;
 
-    if (!this.isAliasUnique(p.alias)) {
-      alert('BŁĄD: Nazwa gracza "' + p.alias + '" jest już zajęta!');
+    const payload = {
+      name: p.name,
+      alias: p.alias,
+      imageUrl: p.imageUrl,
+    };
+
+    if (!payload.name || !payload.alias) return;
+
+    if (!this.isAliasUnique(payload.alias)) {
+      alert('BŁĄD: Nazwa gracza "' + payload.alias + '" jest już zajęta!');
       return;
     }
 
-    this.adminService.addPlayer(p).subscribe(() => {
+    this.adminService.addPlayer(payload).subscribe(() => {
       this.adminService.loadPlayers();
-      this.newPlayer.set({ name: '', alias: '' });
+      // Czyszczenie formularza wraz z linkiem do avatara
+      this.newPlayer.set({ name: '', alias: '', imageUrl: '' });
     });
   }
 

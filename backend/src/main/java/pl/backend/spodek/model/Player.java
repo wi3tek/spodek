@@ -16,5 +16,6 @@ public class Player extends BaseDocument {
     private String name;
     @Indexed(unique = true)
     private String alias;
+    private String imageUrl;
 
 }

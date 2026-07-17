@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -16,6 +17,8 @@ public class MatchDTO {
     private boolean finished;
     private SideDTO homeSide;
     private SideDTO awaySide;
+    private List<String> comments = new ArrayList<>();
+
 
     @Data
     public static class SideDTO {

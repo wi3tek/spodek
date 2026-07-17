@@ -52,6 +52,7 @@ public class MatchService {
         existingMatch.setMatchweek( matchDetails.getMatchweek() );
         existingMatch.setHomeSide( matchDetails.getHomeSide() );
         existingMatch.setAwaySide( matchDetails.getAwaySide() );
+        existingMatch.setComments( matchDetails.getComments() );
 
         // --- NOWA LOGIKA: ELO NA ŻYWO ---
         if (!matchDetails.isFinished()) {
@@ -96,6 +97,7 @@ public class MatchService {
         dto.setCreatedAt( m.getCreatedAt() );
         dto.setUpdatedAt( m.getUpdatedAt() ); // Mapowanie nowego pola
         dto.setFinished( m.isFinished() );
+        dto.setComments( m.getComments() );
 
         dto.setHomeSide( mapSide( m.getHomeSide(), teamMap, playerMap ) );
         dto.setAwaySide( mapSide( m.getAwaySide(), teamMap, playerMap ) );

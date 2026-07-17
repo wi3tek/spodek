@@ -495,7 +495,20 @@
           @for (row of sortedTable(); track row.playerId; let i = $index) {
             <tr class="animate-in">
               <td>{{ i + 1 }}</td>
-              <td><strong>{{ row.alias }}</strong></td>
+
+              <!-- ZAKTUALIZOWANA KOMÓRKA Z AVATAREM I ALIASEM -->
+              <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  @if (row.imageUrl) {
+                    <img [src]="row.imageUrl" class="player-avatar-img" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                  } @else {
+                    <span class="player-avatar" style="font-size: 1.2rem;">👤</span>
+                  }
+                  <strong>{{ row.alias }}</strong>
+                </div>
+              </td>
+              <!-- KONIEC ZAKTUALIZOWANEJ KOMÓRKI -->
+
               <td>{{ row.matchesPlayed }}</td>
               <td>{{ row.points }}</td>
 
