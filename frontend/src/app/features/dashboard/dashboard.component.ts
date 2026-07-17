@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router'; // Dodaj RouterLink i Rout
 import { LeagueService } from '../../core/services/league.service';
 import { League } from '../../core/models/league.model';
 import { HeaderComponent } from '../../shared/components/header/header.component';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -27,17 +28,6 @@ export class DashboardComponent {
       next: (data) => this.leagues = data,
       error: (err) => console.error('Błąd pobierania lig:', err)
     });
-  }
-
-  logout() {
-    // 1. Usuwamy token z pamięci przeglądarki
-    localStorage.removeItem('access_token');
-
-    // 2. Opcjonalnie: czyścimy inne dane sesji, jeśli je masz
-    console.log('Wylogowano pomyślnie. Do zobaczenia!');
-
-    // 3. Przekierowujemy do ekranu logowania
-    this.router.navigate(['/login']);
   }
 
   // ... reszta kodu (ngOnInit, loadLeagues, logout)

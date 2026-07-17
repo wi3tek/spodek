@@ -2,6 +2,7 @@ import { Component, Input, inject, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ThemeService } from '../../../core/services/theme.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -17,6 +18,7 @@ export class HeaderComponent {
 
   public themeService = inject(ThemeService);
   private router = inject(Router);
+  authService = inject(AuthService);
 
   isMobileMenuOpen = signal(false);
   isScrolled = signal(false);

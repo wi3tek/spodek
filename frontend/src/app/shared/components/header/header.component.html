@@ -24,6 +24,16 @@
       <button class="btn-theme" (click)="themeService.toggleTheme()">
         {{ themeService.isWorldCupTheme() ? 'Motyw ₊✧' : 'Motyw 🏆' }}
       </button>
+
+      <!-- NOWE: Sekcja z czasem sesji na desktopie -->
+      @if (authService.sessionTimeLeft() !== null) {
+        <div class="divider"></div>
+        <div class="session-info" [class.warning]="authService.sessionTimeLeft()! < 300">
+          <span class="time-left">⏱ {{ authService.formatTime(authService.sessionTimeLeft()!) }}</span>
+          <button class="btn-icon-sm" (click)="authService.refreshToken()" title="Odśwież sesję">🔄</button>
+        </div>
+      }
+
       <button class="btn-secondary btn-sm btn-logout" (click)="logout()">Wyloguj</button>
     </div>
 
@@ -45,7 +55,18 @@
   <div class="drawer-content">
     <button class="drawer-link" routerLink="/dashboard" routerLinkActive="active" (click)="closeMobileMenu()">🏠 Dashboard</button>
     <button class="drawer-link" routerLink="/admin" routerLinkActive="active" (click)="closeMobileMenu()">⚙️ Ustawienia</button>
+
     <div class="drawer-divider"></div>
+
+    <!-- NOWE: Sekcja z czasem sesji w menu mobilnym -->
+    @if (authService.sessionTimeLeft() !== null) {
+      <div class="drawer-session-info" [class.warning]="authService.sessionTimeLeft()! < 300">
+        <span>Czas sesji: <strong>{{ authService.formatTime(authService.sessionTimeLeft()!) }}</strong></span>
+        <button class="btn-refresh" (click)="authService.refreshToken()">Odśwież 🔄</button>
+      </div>
+      <div class="drawer-divider"></div>
+    }
+
     <button class="drawer-link theme-link" (click)="themeService.toggleTheme(); closeMobileMenu()">
       🎨 Zmień motyw {{ themeService.isWorldCupTheme() ? '₊✧' : '🏆' }}
     </button>

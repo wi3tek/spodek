@@ -92,9 +92,4 @@ export class LeagueSeasonsComponent implements OnInit {
     season.status = season.status === 'ACTIVE' ? 'FINISHED' : 'ACTIVE';
     this.saveEdit(season);
   }
-
-  logout() {
-    localStorage.removeItem('spodek_token');
-    this.router.navigate(['/login']);
-  }
 }

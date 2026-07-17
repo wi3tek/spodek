@@ -522,11 +522,6 @@ export class SeasonComponent implements OnInit {
     };
   }
 
-  logout() {
-    localStorage.removeItem('spodek_token');
-    this.router.navigate(['/login']);
-  }
-
   addPlayerToSide(side: 'home' | 'away', player: any) {
     const target = side === 'home' ? this.newMatch.homeSide : this.newMatch.awaySide;
     const isAlreadyAdded = target.players.some((p: any) => p.playerId === player.id);
