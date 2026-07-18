@@ -19,6 +19,8 @@ import { Component, input } from '@angular/core';
         display: inline-flex;
         align-items: center;
         gap: 0.4em;
+        flex-direction: row; /* Forces horizontal layout */
+        white-space: nowrap; /* Prevents text from wrapping to the next line */
         /* Rozmiar czcionki będzie przekazywany z zewnątrz przez input() i sterował wielkością obrazka w 'em' */
       }
 
@@ -51,6 +53,14 @@ import { Component, input } from '@angular/core';
         padding: 0;
         color: var(--text-dark, #1e293b);
         word-break: break-word;
+      }
+
+      .avatar-container {
+        display: flex;
+        flex-direction: row; /* Forces horizontal layout */
+        align-items: center; /* Vertically centers the image and text */
+        gap: 8px; /* Adds space between the image and the text */
+        white-space: nowrap; /* Prevents text from wrapping to the next line */
       }
     `,
   ],

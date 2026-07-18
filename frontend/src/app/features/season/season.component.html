@@ -516,11 +516,13 @@
 
               <!-- ZAKTUALIZOWANA KOMÓRKA Z AVATAREM I ALIASEM -->
               <td>
-                <app-player-avatar
-                  [alias]="row.alias"
-                  [imageUrl]="row.imageUrl"
-                  fontSize="0.95rem">
-                </app-player-avatar>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <app-player-avatar
+                    [alias]="row.alias"
+                    [imageUrl]="row.imageUrl"
+                    fontSize="0.95rem">
+                  </app-player-avatar>
+                </div>
               </td>
               <!-- KONIEC ZAKTUALIZOWANEJ KOMÓRKI -->
 
