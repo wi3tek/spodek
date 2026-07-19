@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core'; // Dodano OnInit
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
@@ -12,6 +12,9 @@ import { Router } from '@angular/router';
   styleUrls: ['./login.scss'],
 })
 export class LoginComponent implements OnInit {
+  publicLeagueCode: string = '';
+  activeTab: 'login' | 'guest' = 'login'; // Zmienna sterująca zakładkami
+
   // Implementacja interfejsu
   credentials = { login: '', password: '' };
 
@@ -39,5 +42,14 @@ export class LoginComponent implements OnInit {
         alert('Nie udało się zalogować');
       },
     });
+  }
+
+  protected enterAsGuest() {
+    const code = this.publicLeagueCode.trim();
+    if (code.length > 0) {
+      this.router.navigate(['/live', code]);
+    } else {
+      alert('Proszę podać kod ligi.');
+    }
   }
 }

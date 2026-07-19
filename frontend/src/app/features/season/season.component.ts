@@ -12,7 +12,8 @@ import { MatchmakingService } from '../../core/services/matchmaking.service';
 import { StatsComponent } from '../stats/stats.component'; // NOWE
 import { TeamStatsComponent } from '../team-stats/team-stats.component';
 import { HeaderComponent } from '../../shared/components/header/header.component';
-import { PlayerAvatarComponent } from '../../shared/components/player-avatar/player-avatar.component'; // NOWY IMPORT
+import { PlayerAvatarComponent } from '../../shared/components/player-avatar/player-avatar.component';
+import { LiveService } from '../../core/services/live.service'; // NOWY IMPORT
 
 @Component({
   selector: 'app-season',
@@ -24,7 +25,7 @@ import { PlayerAvatarComponent } from '../../shared/components/player-avatar/pla
     StatsComponent,
     TeamStatsComponent,
     HeaderComponent,
-    PlayerAvatarComponent
+    PlayerAvatarComponent,
   ],
   templateUrl: './season.component.html',
   styleUrls: ['./season.component.scss'],
@@ -37,6 +38,7 @@ export class SeasonComponent implements OnInit {
   private adminService = inject(AdminService);
   private matchweekService = inject(MatchweekService); // NOWE
   private matchmakingService = inject(MatchmakingService); // NOWE
+  private liveService = inject(LiveService); // NOWE
 
   // --- DANE ---
   seasonId = signal<string | null>(null);
@@ -80,6 +82,8 @@ export class SeasonComponent implements OnInit {
     const start = this.currentSuggestionPage() * 3;
     return this.allSuggestedMatches().slice(start, start + 3);
   });
+
+  isReadOnly = signal<boolean>(false);
 
   // Oblicza, którzy gracze ROZEGRALI jakikolwiek mecz w aktualnej kolejce
   playersWithMatchesInWeek = computed(() => {
@@ -203,12 +207,32 @@ export class SeasonComponent implements OnInit {
   });
 
   ngOnInit() {
+    const codeParam = this.route.snapshot.paramMap.get('code');
     const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
+
+    if (codeParam) {
+      this.isReadOnly.set(true);
+      this.loadPublicData(codeParam);
+    } else if (id) {
+      this.isReadOnly.set(false);
       this.seasonId.set(id);
       this.loadSeasonData(id);
       this.loadInitialData();
     }
+  }
+
+  private loadPublicData(code: string) {
+    this.liveService.getLiveResults(code).subscribe({
+      next: (res) => {
+        this.season.set(res.season);
+        const sorted = res.matches.sort(
+          (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+        this.matches.set(sorted);
+        this.tableData.set(res.table);
+      },
+      error: (err) => console.error('Błąd pobierania danych sezonu read only:', err)
+    });
   }
 
   loadInitialData() {

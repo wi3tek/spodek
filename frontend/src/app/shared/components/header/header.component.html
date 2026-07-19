@@ -12,6 +12,7 @@
     </div>
 
     <div class="user-actions desktop-only">
+      @if (!isReadOnly) {
       <nav class="top-nav">
         <button class="btn-nav" routerLink="/dashboard" routerLinkActive="active">
           🏠 <span class="nav-text">Dashboard</span>
@@ -20,6 +21,7 @@
           ⚙️ <span class="nav-text">Ustawienia</span>
         </button>
       </nav>
+      }
       <div class="divider"></div>
 
       <!-- NOWE: Przycisk instalacji PWA (Pokaże się tylko, jeśli apka nie jest zainstalowana) -->
@@ -44,7 +46,7 @@
         </div>
       }
 
-      <button class="btn-secondary btn-sm btn-logout" (click)="logout()">Wyloguj</button>
+      <button class="btn-secondary btn-sm btn-logout" (click)="logout()"> {{ isReadOnly ? 'Wyjdź' : 'Wyloguj' }}</button>
     </div>
 
     <button class="hamburger-btn mobile-only" (click)="toggleMobileMenu()">
@@ -63,9 +65,10 @@
     <button class="close-btn" (click)="closeMobileMenu()">✕</button>
   </div>
   <div class="drawer-content">
+    @if (!isReadOnly) {
     <button class="drawer-link" routerLink="/dashboard" routerLinkActive="active" (click)="closeMobileMenu()">🏠 Dashboard</button>
     <button class="drawer-link" routerLink="/admin" routerLinkActive="active" (click)="closeMobileMenu()">⚙️ Ustawienia</button>
-
+    }
     <div class="drawer-divider"></div>
 
     @if (installPrompt) {
@@ -76,7 +79,7 @@
     }
 
     <!-- NOWE: Sekcja z czasem sesji w menu mobilnym -->
-    @if (authService.sessionTimeLeft() !== null) {
+    @if (!isReadOnly && authService.sessionTimeLeft() !== null) {
       <div class="drawer-session-info" [class.warning]="authService.sessionTimeLeft()! < 300">
         <span>Czas sesji: <strong>{{ authService.formatTime(authService.sessionTimeLeft()!) }}</strong></span>
         <button class="btn-refresh" (click)="authService.refreshToken()">Odśwież 🔄</button>
@@ -87,6 +90,6 @@
     <button class="drawer-link theme-link" (click)="themeService.toggleTheme(); closeMobileMenu()">
       🎨 Zmień motyw {{ themeService.isWorldCupTheme() ? '₊✧' : '🏆' }}
     </button>
-    <button class="drawer-link logout-link" (click)="logout()">🚪 Wyloguj</button>
+    <button class="drawer-link logout-link" (click)="logout()">🚪 {{ isReadOnly ? 'Wyjdź' : 'Wyloguj' }}</button>
   </div>
 </div>

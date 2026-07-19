@@ -1,6 +1,7 @@
 package pl.backend.spodek.web;
 
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.backend.spodek.dto.SeasonTableEntryDTO;
@@ -47,8 +48,7 @@ public class SeasonController {
     @GetMapping("/{seasonId}")
     public Season getSeasonsById(@PathVariable String seasonId) {
         // Zwracamy sezony od najnowszego (audyt nam w tym pomaga)
-        return seasonRepository.findById( seasonId ).orElseThrow(() -> new IllegalArgumentException("There is no " +
-                "season with id: "+seasonId));
+        return seasonService.getSeasonById( seasonId );
     }
 
     @GetMapping("/{seasonId}/table")

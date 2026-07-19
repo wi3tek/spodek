@@ -15,6 +15,7 @@ export class HeaderComponent {
   @Input() title: string = 'FIFOWA ŚPODA';
   @Input() backLink?: any[] | string | null;
   @Input() backText?: string;
+  @Input() isReadOnly: boolean = false; // NOWE: Flaga trybu gościa
 
   public themeService = inject(ThemeService);
   private router = inject(Router);

@@ -2,12 +2,14 @@ package pl.backend.spodek.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import pl.backend.spodek.dto.SeasonTableEntryDTO;
 import pl.backend.spodek.model.Match;
 import pl.backend.spodek.model.Player;
 import pl.backend.spodek.model.PlayerRatingHistory;
+import pl.backend.spodek.model.Season;
 import pl.backend.spodek.repository.LeagueIdProjection;
 import pl.backend.spodek.repository.MatchRepository;
 import pl.backend.spodek.repository.PlayerRatingHistoryRepository;
@@ -149,5 +151,16 @@ public class SeasonService {
         log.info( "⚠️ [CACHE MISS] Pobieram id ligi dla sezonu: " + seasonId );
         LeagueIdProjection projection = seasonRepository.findLeagueIdById( seasonId );
         return projection != null ? projection.getLeagueId() : null;
+    }
+
+    public Season getSeasonById(String seasonId) {
+        return seasonRepository.findById( seasonId ).orElseThrow( () -> new IllegalArgumentException( "There is no " +
+                "season with id: " + seasonId ) );
+    }
+
+    public Season getBySeasonCode(String seasonCode) {
+
+        return seasonRepository.findByLiveCode(seasonCode).orElseThrow(() -> new IllegalArgumentException("Cannot " +
+                "find season by code "+ seasonCode));
     }
 }

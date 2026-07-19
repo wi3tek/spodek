@@ -2,11 +2,26 @@
   <div class="login-card animate-in">
 
     <div class="login-header">
-      <img src="/logo.png" alt="Logo" class="login-logo" height="200";>
+      <img src="/logo.png" alt="Logo" class="login-logo" height="200">
       <p>Witamy oficjalnie!</p>
     </div>
 
-    <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+    <div class="tabs">
+      <button
+        type="button"
+        [class.active]="activeTab === 'login'"
+        (click)="activeTab = 'login'">
+        Zaloguj
+      </button>
+      <button
+        type="button"
+        [class.active]="activeTab === 'guest'"
+        (click)="activeTab = 'guest'">
+        Śledź wyniki
+      </button>
+    </div>
+
+    <form *ngIf="activeTab === 'login'" (ngSubmit)="onSubmit()" #loginForm="ngForm">
       <div class="input-group">
         <label for="email">E-mail / Login</label>
         <div class="input-wrapper">
@@ -35,13 +50,35 @@
         </div>
       </div>
 
-      <button type="submit" class="btn-login" [disabled]="!loginForm.valid">
+      <button type="submit" class="btn-primary" [disabled]="!loginForm.valid">
         Zaloguj się
       </button>
     </form>
 
+    <div class="guest-section" *ngIf="activeTab === 'guest'">
+      <div class="input-group">
+        <label for="leagueCode">Kod ligi</label>
+        <div class="input-wrapper">
+          <span class="icon">🏆</span>
+          <input
+            type="text"
+            id="leagueCode"
+            maxlength="7"
+            placeholder="Podaj 7-znakowy kod ligi"
+            [(ngModel)]="publicLeagueCode"
+            (keyup.enter)="enterAsGuest()"
+            autofocus>
+        </div>
+      </div>
+
+      <button class="btn-primary" (click)="enterAsGuest()" [disabled]="!publicLeagueCode.trim()">
+        Śledź wyniki na żywo
+      </button>
+    </div>
+
     <div class="login-footer">
       <p>&copy; 2026 FIFOWA ŚPODA</p>
     </div>
+
   </div>
 </div>

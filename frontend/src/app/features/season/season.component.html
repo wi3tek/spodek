@@ -2,8 +2,9 @@
 
   <app-header
     [title]="season()?.name"
-    backText="← Powrót do ligi"
-    [backLink]="['/league', season()?.leagueId]">
+    [backText]="isReadOnly() ? undefined : '← Powrót do ligi'"
+    [backLink]="isReadOnly() ? null : ['/league', season()?.leagueId]"
+    [isReadOnly]="isReadOnly()">
   </app-header>
 
   @if (showMatchForm()) {
@@ -335,7 +336,10 @@
                  (ngModelChange)="newCommentText.set($event)"
                  (keyup.enter)="addComment()"
                  placeholder="Wpisz komentarz (np. 'Bramka nożycami', 'Krzysiek bez formy')...">
+
+          @if (!isReadOnly()) {
           <button class="btn-primary" (click)="addComment()">Dodaj</button>
+          }
         </div>
         <div class="comments-list">
           @for (c of newMatch.comments; track $index) {
@@ -376,7 +380,7 @@
           <span class="active-week-badge" title="Zmienisz ją w formularzu dodawania meczu">Kolejka: {{ activeMatchweek() }}</span>
         </h2>
 
-        @if (!showMatchForm()) {
+        @if (!isReadOnly() && !showMatchForm()) {
         <div class="header-actions">
           <button class="btn-primary btn-sm" (click)="addNewMatch()">+ Dodaj Mecz</button>
         </div>
@@ -402,11 +406,14 @@
               <div class="header-right-actions">
                 @if (m.finished) {
                   <button class="btn-icon view" (click)="viewMatchDetails(m)" title="Szczegóły meczu">👁️</button>
+                  @if (!isReadOnly()) {
                   <button class="btn-icon delete" (click)="deleteMatch(m.id)" title="Usuń ten mecz">🗑️</button>
-                } @else {
+                  }
+                  } @else {
                   <button class="btn-icon view" (click)="viewMatchDetails(m)" title="Szczegóły meczu">👁️</button>
+                  @if (!isReadOnly()) {
                   <button class="btn-icon edit" (click)="editMatch(m)" title="Edytuj mecz">✏️</button>
-                }
+                }}
               </div>
             </div>
 

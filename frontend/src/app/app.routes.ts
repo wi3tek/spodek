@@ -24,5 +24,6 @@ export const routes: Routes = [
   {path: 'league', component: AdminComponent, canActivate: [authGuard]},
   {path: 'league/:id', component: LeagueSeasonsComponent, canActivate: [authGuard]},
   {path: 'season/:id', component: SeasonComponent, canActivate: [authGuard]},
+  {path: 'live/:code', component: SeasonComponent},
   {path: '**', redirectTo: '/login'}
 ];

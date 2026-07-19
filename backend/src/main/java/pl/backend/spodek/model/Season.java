@@ -21,6 +21,8 @@ public class Season extends BaseDocument {
     private String leagueId; // Klucz do ligi
     private String status;   // ACTIVE, FINISHED
 
+    private String liveCode;
+
     private LocalDateTime startDate;
     private LocalDateTime endDate;
 

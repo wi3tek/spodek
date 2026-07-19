@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Input } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -44,7 +44,11 @@ export class TeamStatsService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/team-stats`;
 
+  @Input() isReadOnly: boolean = false; // NOWE: Flaga trybu gościa
+
   getStats(leagueId: string, seasonId: string): Observable<TeamStatsResponse> {
+    // TODO Wywołać na bazie readOnly
+
     return this.http.get<TeamStatsResponse>(`${this.apiUrl}/${leagueId}?seasonId=${seasonId}`);
   }
 }

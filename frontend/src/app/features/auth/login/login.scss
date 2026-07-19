@@ -20,7 +20,7 @@
 
 .login-header {
   text-align: center;
-  margin-bottom: 35px;
+  margin-bottom: 25px;
 
   .login-logo {
     margin-bottom: 15px;
@@ -37,6 +37,38 @@
     color: #94a3b8;
     font-size: 0.9rem;
     margin-top: 5px;
+  }
+}
+
+/* Zakładki (Taby) */
+.tabs {
+  display: flex;
+  background-color: #f1f5f9;
+  border-radius: 12px;
+  padding: 5px;
+  margin-bottom: 25px;
+
+  button {
+    flex: 1;
+    padding: 10px 15px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &.active {
+      background: white;
+      color: #4a3427; /* Twój Primary Brown */
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    &:hover:not(.active) {
+      color: #4a3427;
+    }
   }
 }
 
@@ -82,7 +114,8 @@
   }
 }
 
-.btn-login {
+/* Zmieniona nazwa klasy dla uniwersalnego przycisku */
+.btn-primary {
   width: 100%;
   padding: 14px;
   background: #4a3427;
