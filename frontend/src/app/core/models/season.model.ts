@@ -8,4 +8,5 @@ export interface Season {
   startDate?: string;
   endDate?: string;
   uniqueTeams: boolean;
+  liveCode: string;
 }

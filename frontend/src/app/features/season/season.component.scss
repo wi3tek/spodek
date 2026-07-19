@@ -594,6 +594,10 @@
 }
 
 .status-tag {
+  display: inline-flex;   /* Ustawia element jako flex kontener, ale w linii z innymi */
+  align-items: center;    /* Wyrównuje tekst i obrazek idealnie w pionie (do środka) */
+  gap: 6px;               /* Tworzy ładny, równy odstęp między tekstem a obrazkiem */
+
   font-size: 0.65rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -620,10 +624,16 @@
 }
 
 .blinking-ball {
-  display: inline-block;
+  display: flex;
+  align-items: center;
   font-size: 1.25rem;
   margin-left: 4px;
   animation: heartbeat-ball 1.2s infinite ease-in-out;
+
+  img {
+    height: 30px;
+    margin-bottom: 3px;
+  }
 }
 
 /* Przyciski Ikony na górze */
@@ -1818,6 +1828,261 @@
     font-style: italic;
 
     li { margin-bottom: 5px; }
+
+    li::marker {
+      content: '- ';
+    }
   }
 }
 
+.share-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-left: 5px solid var(--beer-gold);
+  margin-bottom: 24px;
+  padding: 20px 25px;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+
+  .share-info {
+    flex: 1;
+
+    h3 {
+      margin: 0 0 5px 0;
+      font-size: 1.1rem;
+      color: var(--primary-brown);
+      border: none;
+      padding: 0;
+    }
+
+    p {
+      margin: 0 0 12px 0;
+      font-size: 0.85rem;
+      color: #64748b;
+      line-height: 1.4;
+    }
+  }
+
+  .live-code-badge {
+    display: inline-block;
+    background: var(--primary-brown);
+    color: var(--beer-gold);
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    padding: 6px 15px;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .qr-container {
+    background: white;
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px dashed #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+  }
+}
+
+/* ==========================================================================
+   SCOREBOARD MUNDIAL 2026 🏆
+   ========================================================================== */
+.wc26-scoreboard-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 650px;
+  margin: 30px auto 15px auto; /* Margines górny na wystający timer */
+  font-family: 'Inter', system-ui, sans-serif;
+  user-select: none;
+}
+
+/* Wystający na górze timer / data */
+.wc26-timer {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #e2e8f0;
+  color: #1e293b;
+  font-weight: 800;
+  font-size: 0.88rem;
+  padding: 4px 16px;
+  border-radius: 8px;
+  z-index: 1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  white-space: nowrap;
+
+  /* RWD dla timera */
+  @media (max-width: 600px) {
+    font-size: 0.75rem;
+    padding: 3px 12px;
+    top: -20px;
+  }
+}
+
+/* Magia 5-kolorowej ramki za pomocą tła i paddingu + calc() */
+.wc26-border-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 50px;
+  padding: 3px; /* Grubość kolorowej ramki */
+
+  /* Gradient z twardymi odcięciami bazujący na PIKSELACH OD ŚRODKA.
+     Gwarantuje to, że czerwone pole idealnie przykrywa tylko środek! */
+  background: linear-gradient(90deg,
+  #42d3e6 0px, #42d3e6 35px,                 /* 1. Jasny błękit/turkus (lewy brzeg) */
+  #0047fa 35px, #0047fa calc(50% - 68px),    /* 2. Głębszy niebieski (pod Gospodarzami) */
+  #ef4444 calc(50% - 68px), #ef4444 calc(50% + 70px), /* 3. Czerwony (IDEALNIE pod wynikiem) */
+  #b0ff00 calc(50% + 68px), #b0ff00 calc(100% - 35px),/* 4. Jaskrawy zielony (pod Gośćmi) */
+  #0080ff calc(100% - 35px), #0080ff 100%    /* 5. Jasny niebieski (prawy brzeg) */
+  );
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  z-index: 2;
+
+  /* RWD Ramki: na telefonie moduł wyniku jest mniejszy, więc zwężamy czerwony środek */
+  @media (max-width: 600px) {
+    background: linear-gradient(90deg,
+    #42d3e6 0px, #42d3e6 20px,
+    #0047fa 20px, #0047fa calc(50% - 50px),
+    #ef4444 calc(50% - 50px), #ef4444 calc(50% + 50px),
+    #b0ff00 calc(50% + 50px), #b0ff00 calc(100% - 20px),
+    #0080ff calc(100% - 20px), #0080ff 100%
+    );
+  }
+}
+
+/* Czarne tło pod nazwami drużyn */
+.wc26-inner-bg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: #111111;
+  border-radius: 47px; /* Zgrane z zewnętrznym border-radiusem */
+  height: 40px;
+  padding: 0 20px;
+  box-sizing: border-box;
+
+  /* RWD dla wnętrza paska */
+  @media (max-width: 600px) {
+    padding: 0 10px;
+    height: 42px;
+  }
+}
+
+/* Sekcje drużyn (logo + nazwa) */
+.wc26-team {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+
+  &.home { justify-content: flex-start; }
+  &.away { justify-content: flex-end; }
+
+  .team-logo {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+
+    @media (max-width: 600px) {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .team-name {
+    color: white;
+    font-weight: 900;
+    font-size: 0.9rem;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px; /* Zabezpieczenie przed za długimi nazwami */
+
+    /* Agresywne RWD dla długich nazw na komórkach */
+    @media (max-width: 600px) {
+      font-size: 0.8rem;
+      letter-spacing: 0px;
+      max-width: 80px;
+    }
+    @media (max-width: 400px) {
+      font-size: 0.75rem;
+      max-width: 60px;
+    }
+  }
+}
+
+/* Centralny wystający turkusowy element z wynikiem */
+.wc26-center-score {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #2dd4bf; /* Turkusowy kolor z obrazka */
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  height: 51px; /* Wyższy niż czarny pasek bazowy */
+  z-index: 3;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+
+  /* Mniejszy moduł na komórki */
+  @media (max-width: 600px) {
+    height: 40px;
+    border-radius: 10px;
+    padding: 0 4px;
+  }
+}
+
+.wc26-score-digit {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #111111;
+  width: 30px;
+  text-align: center;
+  line-height: 1;
+
+  @media (max-width: 600px) {
+    font-size: 1.6rem;
+    width: 28px;
+  }
+}
+
+.wc26-logo-box {
+  background: #111111;
+  border-radius: 8px;
+  padding: 4px 6px;
+  margin: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+
+  img {
+    height: 36px;
+    object-fit: contain;
+  }
+
+  @media (max-width: 600px) {
+    height: 30px;
+    padding: 3px 5px;
+    margin: 0 2px;
+    img {
+      height: 28px;
+    }
+  }
+}

@@ -14,6 +14,7 @@ import { TeamStatsComponent } from '../team-stats/team-stats.component';
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { PlayerAvatarComponent } from '../../shared/components/player-avatar/player-avatar.component';
 import { LiveService } from '../../core/services/live.service'; // NOWY IMPORT
+import { QRCodeComponent } from 'angularx-qrcode';
 
 @Component({
   selector: 'app-season',
@@ -26,6 +27,7 @@ import { LiveService } from '../../core/services/live.service'; // NOWY IMPORT
     TeamStatsComponent,
     HeaderComponent,
     PlayerAvatarComponent,
+    QRCodeComponent,
   ],
   templateUrl: './season.component.html',
   styleUrls: ['./season.component.scss'],
@@ -136,6 +138,13 @@ export class SeasonComponent implements OnInit {
       // Krok 3: Jeśli status jest ten sam, sortuj alfabetycznie po aliasie
       return a.alias.localeCompare(b.alias);
     });
+  });
+
+  liveUrl = computed(() => {
+    const code = this.season()?.liveCode;
+    if (!code) return '';
+    // window.location.origin pobiera główny adres strony (np. http://localhost:4200)
+    return `${window.location.origin}/live/${code}`;
   });
 
   attendanceSuggestions = computed(() => {

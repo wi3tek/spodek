@@ -7,6 +7,25 @@
     [isReadOnly]="isReadOnly()">
   </app-header>
 
+  @if (!isReadOnly() && season()?.liveCode) {
+    <section class="card share-panel animate-in">
+      <div class="share-info">
+        <h3>📡 Śledzenie na żywo</h3>
+        <p>Zeskanuj kod QR lub podaj gościom ten kod na stronie logowania, aby mogli śledzić wyniki tej ligi:</p>
+        <div class="live-code-badge">{{ season()?.liveCode }}</div>
+      </div>
+      <div class="qr-container">
+        <qrcode
+          [qrdata]="liveUrl()"
+          [width]="110"
+          [errorCorrectionLevel]="'M'"
+          colorDark="#4a3427"
+          colorLight="#ffffff">
+        </qrcode>
+      </div>
+    </section>
+  }
+
   @if (showMatchForm()) {
     <section class="card match-form-panel animate-in">
       <div class="form-header">
@@ -399,7 +418,8 @@
                 @if (m.finished) {
                   <span class="status-tag">Zakończony 🔒</span>
                 } @else {
-                  <span class="status-tag active">W trakcie... <span class="blinking-ball">⚽</span></span>
+                  <span class="status-tag active">W trakcie...
+                    <span class="blinking-ball"><img src="/trionda.png"></span></span>
                 }
               </div>
 
@@ -417,7 +437,36 @@
               </div>
             </div>
 
-            <div class="match-content compact-mode">
+            <!-- NOWY DESIGN MECZU (MUNDIAL 2026) -->
+            <div class="wc26-scoreboard-wrapper">
+
+              <div class="wc26-timer">{{ m.createdAt | date:'dd MMM, HH:mm' }}</div>
+
+              <div class="wc26-border-wrapper">
+                <div class="wc26-inner-bg">
+                  <div class="wc26-team home">
+                    <img [src]="'/logos/light/' + m.homeSide.assetId + '.png'" class="team-logo">
+                    <span class="team-name">{{ m.homeSide.teamName }}</span>
+                  </div>
+
+                  <div class="wc26-team away">
+                    <span class="team-name">{{ m.awaySide.teamName }}</span>
+                    <img [src]="'/logos/light/' + m.awaySide.assetId + '.png'" class="team-logo">
+                  </div>
+                </div>
+              </div>
+
+              <div class="wc26-center-score">
+                <div class="wc26-score-digit">{{ m.homeSide.goals }}</div>
+                <div class="wc26-logo-box">
+                  <img src="/wc-logo.png" alt="WC26">
+                </div>
+                <div class="wc26-score-digit">{{ m.awaySide.goals }}</div>
+              </div>
+            </div>
+
+            <!-- Strzelcy bramek pod spodem (Opcjonalne, zachowane z Twojego starego kodu) -->
+            <div style="display: flex; justify-content: space-between; padding: 0 10px; margin-top: 5px;">
               <div class="players-col home-players">
                 @for (p of m.homeSide.players; track p.playerId) {
                   <div class="player-entry">
@@ -429,23 +478,6 @@
                   </div>
                 }
               </div>
-
-              <div class="team-block">
-                <img [src]="'/logos/light/' + m.homeSide.assetId + '.png'" class="team-logo">
-                <span class="team-name">{{ m.homeSide.teamName }}</span>
-              </div>
-
-              <div class="score-center">
-                <span class="score">{{ m.homeSide.goals }}</span>
-                <span class="separator">:</span>
-                <span class="score">{{ m.awaySide.goals }}</span>
-              </div>
-
-              <div class="team-block">
-                <img [src]="'/logos/light/' + m.awaySide.assetId + '.png'" class="team-logo">
-                <span class="team-name">{{ m.awaySide.teamName }}</span>
-              </div>
-
               <div class="players-col away-players">
                 @for (p of m.awaySide.players; track p.playerId) {
                   <div class="player-entry">
@@ -458,6 +490,48 @@
                 }
               </div>
             </div>
+
+<!--            <div class="match-content compact-mode">-->
+<!--              <div class="players-col home-players">-->
+<!--                @for (p of m.homeSide.players; track p.playerId) {-->
+<!--                  <div class="player-entry">-->
+<!--                    <span class="player-alias">{{ p.alias }}</span>-->
+<!--                    <span class="player-stats-mini">-->
+<!--                      @if (p.goals > 0) { <small>⚽{{p.goals}}</small> }-->
+<!--                      @if (p.assists > 0) { <small>👟{{p.assists}}</small> }-->
+<!--                    </span>-->
+<!--                  </div>-->
+<!--                }-->
+<!--              </div>-->
+
+<!--              <div class="team-block">-->
+<!--                <img [src]="'/logos/light/' + m.homeSide.assetId + '.png'" class="team-logo">-->
+<!--                <span class="team-name">{{ m.homeSide.teamName }}</span>-->
+<!--              </div>-->
+
+<!--              <div class="score-center">-->
+<!--                <span class="score">{{ m.homeSide.goals }}</span>-->
+<!--                <span class="separator">:</span>-->
+<!--                <span class="score">{{ m.awaySide.goals }}</span>-->
+<!--              </div>-->
+
+<!--              <div class="team-block">-->
+<!--                <img [src]="'/logos/light/' + m.awaySide.assetId + '.png'" class="team-logo">-->
+<!--                <span class="team-name">{{ m.awaySide.teamName }}</span>-->
+<!--              </div>-->
+
+<!--              <div class="players-col away-players">-->
+<!--                @for (p of m.awaySide.players; track p.playerId) {-->
+<!--                  <div class="player-entry">-->
+<!--                    <span class="player-stats-mini">-->
+<!--                      @if (p.assists > 0) { <small>👟{{p.assists}}</small> }-->
+<!--                      @if (p.goals > 0) { <small>⚽{{p.goals}}</small> }-->
+<!--                    </span>-->
+<!--                    <span class="player-alias">{{ p.alias }}</span>-->
+<!--                  </div>-->
+<!--                }-->
+<!--              </div>-->
+<!--            </div>-->
           </div>
         } @empty {
           <div class="empty-state">Brak meczów. Dodaj pierwszy!</div>
@@ -593,19 +667,49 @@
       </div>
 
       <div class="modal-body">
-        <div class="details-score-board">
-          <div class="team">
-            <img [src]="'/logos/light/' + viewingMatch().homeSide.assetId + '.png'" alt="Home Team">
-            <span>{{ viewingMatch().homeSide.teamName }}</span>
+
+        <!-- ZAKTUALIZOWANY SCOREBOARD W MODALU (MUNDIAL 2026) -->
+        <div class="wc26-scoreboard-wrapper" style="margin-top: 15px; margin-bottom: 30px;">
+
+          <!-- Timer wyświetlający dokładną datę rozegrania meczu -->
+          <div class="wc26-timer">{{ viewingMatch().createdAt | date:'dd.MM.yyyy, HH:mm' }}</div>
+
+          <div class="wc26-border-wrapper">
+            <div class="wc26-inner-bg">
+              <div class="wc26-team home">
+                <img [src]="'/logos/light/' + viewingMatch().homeSide.assetId + '.png'" class="team-logo">
+                <span class="team-name">{{ viewingMatch().homeSide.teamName }}</span>
+              </div>
+
+              <div class="wc26-team away">
+                <span class="team-name">{{ viewingMatch().awaySide.teamName }}</span>
+                <img [src]="'/logos/light/' + viewingMatch().awaySide.assetId + '.png'" class="team-logo">
+              </div>
+            </div>
           </div>
-          <div class="score">
-            {{ viewingMatch().homeSide.goals }} : {{ viewingMatch().awaySide.goals }}
-          </div>
-          <div class="team">
-            <img [src]="'/logos/light/' + viewingMatch().awaySide.assetId + '.png'" alt="Away Team">
-            <span>{{ viewingMatch().awaySide.teamName }}</span>
+
+          <div class="wc26-center-score">
+            <div class="wc26-score-digit">{{ viewingMatch().homeSide.goals }}</div>
+            <div class="wc26-logo-box">
+              <img src="/wc-logo.png" alt="WC26">
+            </div>
+            <div class="wc26-score-digit">{{ viewingMatch().awaySide.goals }}</div>
           </div>
         </div>
+
+<!--        <div class="details-score-board">-->
+<!--          <div class="team">-->
+<!--            <img [src]="'/logos/light/' + viewingMatch().homeSide.assetId + '.png'" alt="Home Team">-->
+<!--            <span>{{ viewingMatch().homeSide.teamName }}</span>-->
+<!--          </div>-->
+<!--          <div class="score">-->
+<!--            {{ viewingMatch().homeSide.goals }} : {{ viewingMatch().awaySide.goals }}-->
+<!--          </div>-->
+<!--          <div class="team">-->
+<!--            <img [src]="'/logos/light/' + viewingMatch().awaySide.assetId + '.png'" alt="Away Team">-->
+<!--            <span>{{ viewingMatch().awaySide.teamName }}</span>-->
+<!--          </div>-->
+<!--        </div>-->
 
         <div class="flashscore-grid">
           <div class="fs-side fs-home">
