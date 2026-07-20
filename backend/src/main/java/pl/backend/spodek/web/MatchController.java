@@ -54,7 +54,7 @@ public class MatchController {
             return ResponseEntity.noContent().build(); // Zwraca kod 204 (sukces, brak treści)
         } catch (IllegalArgumentException e) {
             log.error("Nie znaleziono meczu do usunięcia: {}", e.getMessage());
-            return ResponseEntity.notFound().build();  // Zwraca kod 404 (nie znaleziono)
+            return ResponseEntity.notFound().build();
         }
     }
 }
