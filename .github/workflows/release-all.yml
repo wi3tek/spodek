@@ -90,7 +90,7 @@ jobs:
         run: |
           echo "🚀 Rozpoczynam wdrożenie na Railway..."
           
-          # Tworzymy potok w systemowym folderze tymczasowym (aby Railway go nie spakował!)
+          # Tworzymy potok w systemowym folderze tymczasowym
           rm -f /tmp/railway_pipe && mkfifo /tmp/railway_pipe
           
           # Uruchamiamy CLI w tle i kierujemy logi do potoku
@@ -102,7 +102,8 @@ jobs:
           # Czytamy logi linijka po linijce
           while read -r line; do
             echo "$line"
-            if [[ "$line" == *"No changes to watched files"* ]]; then
+            # Dodaliśmy nowy warunek łapiący "build will skip" oraz "no changes detected"
+            if [[ "$line" == *"No changes to watched files"* ]] || [[ "$line" == *"no changes detected in watch paths"* ]] || [[ "$line" == *"build will skip"* ]]; then
               echo "=========================================="
               echo "⚠️ Wykryto brak zmian! Przerywam zawieszone CLI."
               echo "=========================================="
