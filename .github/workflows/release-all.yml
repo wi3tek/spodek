@@ -80,6 +80,9 @@ jobs:
           
           DEPLOY_ID=$(echo "$TRIGGER_RESPONSE" | jq -r '.id')
           
+          # Zapisujemy ID wdrożenia, aby użyć go w wygenerowanym linku w kolejnym kroku
+          echo "DEPLOY_ID=$DEPLOY_ID" >> $GITHUB_ENV
+          
           if [ "$DEPLOY_ID" = "null" ] || [ -z "$DEPLOY_ID" ]; then
             echo "❌ Błąd wyzwalania wdrożenia. Odpowiedź serwera: $TRIGGER_RESPONSE"
             exit 1
@@ -112,4 +115,4 @@ jobs:
         if: always()
         run: |
           echo "Pełne logi z procesu budowania znajdziesz pod tym adresem:"
-          echo "👉 https://dashboard.render.com/web/${{ secrets.RENDER_SERVICE_ID }}/logs"
+          echo "👉 https://dashboard.render.com/static/${{ secrets.RENDER_SERVICE_ID }}/deploys/${{ env.DEPLOY_ID }}"
