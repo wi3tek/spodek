@@ -15,7 +15,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/matches")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // W produkcji zamień na konkretny adres Twojego Angulara
 public class MatchController {
 
     private final MatchService matchService;

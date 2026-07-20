@@ -68,5 +68,17 @@ jobs:
         run: railway up ./backend --service twoj-serwis-api --detach
 
       # --- 5. PUBLIKACJA FRONTENDU (RENDER) ---
-      - name: Wyzwolenie wdrożenia PWA na Render
-        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+      - name: Wdrożenie PWA na Render i oczekiwanie na wynik
+        # Ta akcja łączy się z API Rendera i "zamraża" GitHuba, dopóki wdrożenie się nie skończy
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+          wait-for-success: true # Wymusza oczekiwanie. Zapali na czerwono, jeśli Render zwróci błąd.
+
+      - name: Link do logów na Renderze
+        # Ten krok wykona się tylko wtedy, gdy wdrożenie (lub samo czekanie) się powiedzie
+        if: always()
+        run: |
+          echo "Wdrożenie zakończone. Pełne logi z budowania znajdziesz w panelu Render:"
+          echo "👉 https://dashboard.render.com/web/${{ secrets.RENDER_SERVICE_ID }}/logs"
