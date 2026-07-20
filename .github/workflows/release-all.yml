@@ -1,0 +1,72 @@
+name: 🚀 Wdróż CAŁĄ aplikację (Front + Back)
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Rodzaj aktualizacji (MAJOR/MINOR/PATCH)'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      changelog:
+        description: 'Co nowego (zostaw puste dla domyślnego)'
+        required: false
+        type: string
+        default: 'Nowa wersja aplikacji' # <--- TUTAJ KONTROLUJESZ DOMYŚLNY TEKST
+
+jobs:
+  deploy-all:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      # --- 1. PODBICIE GŁÓWNEJ WERSJI (SINGLE SOURCE OF TRUTH) ---
+      - name: Wyliczenie nowej wersji z głównego pliku
+        run: |
+          OLD_VERSION=$(cat app-version.txt)
+          NEW_VERSION=$(npx semver -i ${{ github.event.inputs.bump_type }} $OLD_VERSION)
+          
+          # Nadpisanie głównego pliku
+          echo $NEW_VERSION > app-version.txt
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      # --- 2. WSTRZYKNIĘCIE DO FRONTENDU I CHANGELOG ---
+      - name: Aktualizacja PWA
+        run: |
+          jq --arg v "${{ env.NEW_VERSION }}" --arg c "${{ github.event.inputs.changelog }}" '.appData.version = $v | .appData.changelog = $c' ./frontend/ngsw-config.json > tmp.json
+          mv tmp.json ./frontend/ngsw-config.json
+
+      # --- 3. WSPÓLNY COMMIT ---
+      - name: Commit i Tag
+        run: |
+          git add app-version.txt ./frontend/ngsw-config.json
+          git commit -m "🚀 release: v${{ env.NEW_VERSION }}" -m "${{ github.event.inputs.changelog }}"
+          git tag "v${{ env.NEW_VERSION }}"
+          git push origin HEAD --follow-tags
+
+      # (Później następują kroki wdrożenia Railway i Render)
+      # --- 4. PUBLIKACJA BACKENDU (RAILWAY) ---
+      - name: Instalacja Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Publikacja API na Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up ./backend --service twoj-serwis-api --detach
+
+      # --- 5. PUBLIKACJA FRONTENDU (RENDER) ---
+      - name: Wyzwolenie wdrożenia PWA na Render
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
