@@ -28,6 +28,7 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
 
+      # --- 1. PRZYGOTOWANIE WERSJI ---
       - name: Podbicie wersji z głównego pliku
         run: |
           OLD_VERSION=$(cat app-version.txt)
@@ -48,10 +49,12 @@ jobs:
           git tag "frontend-v${{ env.NEW_VERSION }}"
           git push origin HEAD --follow-tags
 
-      - name: Uruchomienie wdrożenia i oczekiwanie na wynik (Polling)
+      # --- 2. WDROŻENIE (RENDER) ---
+      - name: Uruchomienie wdrożenia i oczekiwanie na wynik
+        id: deploy # Dodajemy ID, aby sprawdzić status w podsumowaniu
         env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}       # To zostaje sekretem!
-          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}    # Zmieniono z secrets na vars
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
         run: |
           echo "🚀 Rozpoczynam wdrożenie na Renderze..."
           
@@ -62,8 +65,9 @@ jobs:
           
           DEPLOY_ID=$(echo "$TRIGGER_RESPONSE" | jq -r '.id')
           
-          # Zapisujemy ID wdrożenia
-          echo "DEPLOY_ID=$DEPLOY_ID" >> $GITHUB_ENV
+          # Eksportujemy gotowy URL do środowiska
+          RENDER_URL="https://dashboard.render.com/static/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID"
+          echo "RENDER_URL=$RENDER_URL" >> $GITHUB_ENV
           
           if [ "$DEPLOY_ID" = "null" ] || [ -z "$DEPLOY_ID" ]; then
             echo "❌ Błąd wyzwalania wdrożenia. Odpowiedź serwera: $TRIGGER_RESPONSE"
@@ -93,9 +97,14 @@ jobs:
             sleep 10
           done
 
-      - name: Link do logów na Renderze
+      # --- 3. PODSUMOWANIE ---
+      - name: Generowanie raportu końcowego
         if: always()
         run: |
-          echo "Pełne logi z procesu budowania znajdziesz pod tym adresem:"
-          # Zmieniono z secrets na vars przy RENDER_SERVICE_ID
-          echo "👉 https://dashboard.render.com/static/${{ vars.RENDER_SERVICE_ID }}/deploys/${{ env.DEPLOY_ID }}"
+          ICON="❌"
+          if [ "${{ steps.deploy.outcome }}" = "success" ]; then ICON="✅"; fi
+
+          echo "$ICON deploy - frontend --> ${{ env.RENDER_URL }}"
+
+          echo "### Wynik wdrożenia Frontendu 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "$ICON **deploy - frontend** --> [Przejdź do logów Render](${{ env.RENDER_URL }})" >> $GITHUB_STEP_SUMMARY

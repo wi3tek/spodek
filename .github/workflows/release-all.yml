@@ -18,8 +18,13 @@ on:
         default: 'Nowa wersja aplikacji'
 
 jobs:
-  deploy-all:
+  # ==========================================
+  # ZADANIE 1: PRZYGOTOWANIE WERSJI I COMMIT
+  # ==========================================
+  prepare-release:
     runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.prep.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,22 +38,22 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
 
-      # --- 1. PODBICIE GŁÓWNEJ WERSJI ---
       - name: Wyliczenie nowej wersji z głównego pliku
+        id: prep
         run: |
           OLD_VERSION=$(cat app-version.txt)
           NEW_VERSION=$(npx semver -i ${{ github.event.inputs.bump_type }} $OLD_VERSION)
           
           echo $NEW_VERSION > app-version.txt
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-      # --- 2. WSTRZYKNIĘCIE DO FRONTENDU ---
       - name: Aktualizacja PWA
         run: |
           jq --arg v "${{ env.NEW_VERSION }}" --arg c "${{ github.event.inputs.changelog }}" '.appData.version = $v | .appData.changelog = $c' ./frontend/ngsw-config.json > tmp.json
           mv tmp.json ./frontend/ngsw-config.json
 
-      # --- 3. WSPÓLNY COMMIT ---
       - name: Commit i Tag
         run: |
           git add app-version.txt ./frontend/ngsw-config.json
@@ -56,7 +61,21 @@ jobs:
           git tag "v${{ env.NEW_VERSION }}"
           git push origin HEAD --follow-tags
 
-      # --- 4. PUBLIKACJA BACKENDU (RAILWAY) ---
+  # ==========================================
+  # ZADANIE 2: WDROŻENIE BACKENDU (RAILWAY)
+  # ==========================================
+  deploy-backend:
+    needs: prepare-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/v${{ needs.prepare-release.outputs.new_version }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Instalacja Railway CLI
         run: npm i -g @railway/cli
 
@@ -64,21 +83,23 @@ jobs:
         working-directory: ./backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        # Usunięcie flagi --detach wymusza oczekiwanie na koniec wdrożenia i strumieniowanie logów
         run: railway up --service fifowa-spoda-backend
 
-      - name: Link do logów na Railway
-        if: always()
-        run: |
-          echo "✅ Wdrożenie backendu zakończone. Pełne logi z budowania widoczne są w zakładce kroku powyżej."
-          echo "Aby przejść bezpośrednio do podglądu tej usługi w panelu Railway, wejdź na:"
-          echo "👉 https://railway.app/dashboard"
-
-      # --- 5. PUBLIKACJA FRONTENDU (RENDER) ---
+  # ==========================================
+  # ZADANIE 3: WDROŻENIE FRONTENDU (RENDER)
+  # ==========================================
+  deploy-frontend:
+    needs: prepare-release
+    runs-on: ubuntu-latest
+    # Deklaracja wyjścia, aby przekazać link z Render do zadania podsumowującego
+    outputs:
+      render_url: ${{ steps.deploy.outputs.render_url }}
+    steps:
       - name: Uruchomienie wdrożenia i oczekiwanie na wynik (Polling)
+        id: deploy
         env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}       # To zostaje sekretem!
-          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}    # Zmieniono z secrets na vars
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
         run: |
           echo "🚀 Rozpoczynam wdrożenie na Renderze..."
           
@@ -89,8 +110,8 @@ jobs:
           
           DEPLOY_ID=$(echo "$TRIGGER_RESPONSE" | jq -r '.id')
           
-          # Zapisujemy ID wdrożenia
-          echo "DEPLOY_ID=$DEPLOY_ID" >> $GITHUB_ENV
+          # Zapisujemy adres logów ZANIM wejdziemy w pętlę i przesyłamy go na zewnątrz
+          echo "render_url=https://dashboard.render.com/static/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID" >> $GITHUB_OUTPUT
           
           if [ "$DEPLOY_ID" = "null" ] || [ -z "$DEPLOY_ID" ]; then
             echo "❌ Błąd wyzwalania wdrożenia. Odpowiedź serwera: $TRIGGER_RESPONSE"
@@ -120,9 +141,29 @@ jobs:
             sleep 10
           done
 
-      - name: Link do logów na Renderze
-        if: always()
+  # ==========================================
+  # ZADANIE 4: WSPÓLNE PODSUMOWANIE WYNIKÓW
+  # ==========================================
+  summary:
+    needs: [deploy-backend, deploy-frontend]
+    if: always() # Wymusza uruchomienie nawet w przypadku błędów poprzednich kroków
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generowanie raportu końcowego
         run: |
-          echo "Pełne logi z procesu budowania znajdziesz pod tym adresem:"
-          # Zmieniono z secrets na vars przy RENDER_SERVICE_ID
-          echo "👉 https://dashboard.render.com/static/${{ vars.RENDER_SERVICE_ID }}/deploys/${{ env.DEPLOY_ID }}"
+          # Sprawdzenie statusu backendu
+          BACKEND_ICON="❌"
+          if [ "${{ needs.deploy-backend.result }}" = "success" ]; then BACKEND_ICON="✅"; fi
+
+          # Sprawdzenie statusu frontendu
+          FRONTEND_ICON="❌"
+          if [ "${{ needs.deploy-frontend.result }}" = "success" ]; then FRONTEND_ICON="✅"; fi
+
+          # Wypisanie wyniku w konsoli logów (zgodnie z formatem)
+          echo "$BACKEND_ICON deploy - backend --> https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs"
+          echo "$FRONTEND_ICON deploy - frontend --> ${{ needs.deploy-frontend.outputs.render_url }}"
+
+          # Dodatkowy bonus: Wypisanie sformatowanego raportu na głównej stronie "Summary" akcji
+          echo "### Wynik wdrożenia 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "$BACKEND_ICON **deploy - backend** --> [Przejdź do logów Railway](https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs)" >> $GITHUB_STEP_SUMMARY
+          echo "$FRONTEND_ICON **deploy - frontend** --> [Przejdź do logów Render](${{ needs.deploy-frontend.outputs.render_url }})" >> $GITHUB_STEP_SUMMARY

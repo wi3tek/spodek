@@ -28,6 +28,7 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
 
+      # --- 1. PRZYGOTOWANIE WERSJI ---
       - name: Podbicie wersji z głównego pliku
         run: |
           OLD_VERSION=$(cat app-version.txt)
@@ -41,24 +42,29 @@ jobs:
           git add app-version.txt
           git commit -m "backend-v${{ env.NEW_VERSION }}"
           git tag "backend-v${{ env.NEW_VERSION }}"
+          git push origin HEAD --follow-tags
 
-      - name: Push do repozytorium
-        run: git push origin HEAD --follow-tags
-
-      # --- PUBLIKACJA BACKENDU (RAILWAY) ---
+      # --- 2. WDROŻENIE (RAILWAY) ---
       - name: Instalacja Railway CLI
         run: npm i -g @railway/cli
 
       - name: Uruchomienie wdrożenia Railway i oczekiwanie na wynik
+        id: deploy # ID potrzebne do podsumowania
         working-directory: ./backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        # Usunięcie flagi --detach wymusza oczekiwanie na koniec wdrożenia i strumieniowanie logów
         run: railway up --service fifowa-spoda-backend
 
-      - name: Link do logów na Railway
+      # --- 3. PODSUMOWANIE ---
+      - name: Generowanie raportu końcowego
         if: always()
         run: |
-          echo "✅ Wdrożenie backendu zakończone. Pełne logi z budowania widoczne są w zakładce kroku powyżej."
-          echo "Aby przejść bezpośrednio do podglądu tej usługi w panelu Railway, wejdź na:"
-          echo "👉 https://railway.app/dashboard"
+          ICON="❌"
+          if [ "${{ steps.deploy.outcome }}" = "success" ]; then ICON="✅"; fi
+          
+          RAILWAY_URL="https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs"
+
+          echo "$ICON deploy - backend --> $RAILWAY_URL"
+
+          echo "### Wynik wdrożenia Backendu 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "$ICON **deploy - backend** --> [Przejdź do logów Railway]($RAILWAY_URL)" >> $GITHUB_STEP_SUMMARY
