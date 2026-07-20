@@ -28,12 +28,13 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
 
-      - name: Podbicie wersji frontendu
-        working-directory: ./frontend
-        run: npm version ${{ github.event.inputs.bump_type }} --no-git-tag-version
-
-      - name: Zapisanie nowej wersji do zmiennej
-        run: echo "NEW_VERSION=$(node -p "require('./frontend/package.json').version")" >> $GITHUB_ENV
+      - name: Podbicie wersji z głównego pliku
+        run: |
+          OLD_VERSION=$(cat app-version.txt)
+          NEW_VERSION=$(npx semver -i ${{ github.event.inputs.bump_type }} $OLD_VERSION)
+          
+          echo $NEW_VERSION > app-version.txt
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
       - name: Wstrzyknięcie wersji do PWA
         run: |
@@ -42,24 +43,55 @@ jobs:
 
       - name: Commit i Tag
         run: |
-          git add ./frontend/package.json ./frontend/ngsw-config.json
-          # Dodajemy prefiks "frontend-v" dla porządku w tagach (np. frontend-v1.2.0)
+          git add app-version.txt ./frontend/ngsw-config.json
           git commit -m "frontend-v${{ env.NEW_VERSION }}"
           git tag "frontend-v${{ env.NEW_VERSION }}"
           git push origin HEAD --follow-tags
 
-      # --- 5. PUBLIKACJA FRONTENDU (RENDER) ---
-      - name: Wdrożenie PWA na Render i oczekiwanie na wynik
-        # Ta akcja łączy się z API Rendera i "zamraża" GitHuba, dopóki wdrożenie się nie skończy
-        uses: johnbeynon/render-deploy-action@v0.0.8
-        with:
-          service-id: ${{ secrets.RENDER_SERVICE_ID }}
-          api-key: ${{ secrets.RENDER_API_KEY }}
-          wait-for-success: true # Wymusza oczekiwanie. Zapali na czerwono, jeśli Render zwróci błąd.
+      - name: Uruchomienie wdrożenia i oczekiwanie na wynik (Polling)
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          echo "🚀 Rozpoczynam wdrożenie na Renderze..."
+          
+          TRIGGER_RESPONSE=$(curl -s -X POST \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+            -H "Accept: application/json" \
+            -H "Authorization: Bearer $RENDER_API_KEY")
+          
+          DEPLOY_ID=$(echo "$TRIGGER_RESPONSE" | jq -r '.id')
+          
+          if [ "$DEPLOY_ID" = "null" ] || [ -z "$DEPLOY_ID" ]; then
+            echo "❌ Błąd wyzwalania wdrożenia. Odpowiedź serwera: $TRIGGER_RESPONSE"
+            exit 1
+          fi
+          
+          echo "✅ Wdrożenie wystartowało. ID zadania: $DEPLOY_ID"
+          echo "⏳ Czekam na zakończenie budowania..."
+          
+          while true; do
+            STATUS_RESPONSE=$(curl -s -X GET \
+              "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID" \
+              -H "Accept: application/json" \
+              -H "Authorization: Bearer $RENDER_API_KEY")
+          
+            STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status')
+          
+            if [ "$STATUS" = "live" ]; then
+              echo "🎉 Wdrożenie zakończone sukcesem!"
+              exit 0
+            elif [ "$STATUS" = "build_failed" ] || [ "$STATUS" = "canceled" ] || [ "$STATUS" = "update_failed" ]; then
+              echo "❌ Wdrożenie zakończyło się błędem: $STATUS"
+              exit 1
+            fi
+          
+            echo "Obecny status: $STATUS... (sprawdzam ponownie za 15 sekund)"
+            sleep 15
+          done
 
       - name: Link do logów na Renderze
-        # Ten krok wykona się tylko wtedy, gdy wdrożenie (lub samo czekanie) się powiedzie
         if: always()
         run: |
-          echo "Wdrożenie zakończone. Pełne logi z budowania znajdziesz w panelu Render:"
+          echo "Pełne logi z procesu budowania znajdziesz pod tym adresem:"
           echo "👉 https://dashboard.render.com/web/${{ secrets.RENDER_SERVICE_ID }}/logs"

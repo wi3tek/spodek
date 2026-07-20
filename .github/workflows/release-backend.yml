@@ -28,26 +28,17 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
 
-      - name: Podbicie wersji w pliku tekstowym
-        working-directory: ./backend
+      - name: Podbicie wersji z głównego pliku
         run: |
-          # 1. Odczytuje obecną wersję z pliku
-          OLD_VERSION=$(cat backend-version)
-          
-          # 2. Wylicza nową wersję
+          OLD_VERSION=$(cat app-version.txt)
           NEW_VERSION=$(npx semver -i ${{ github.event.inputs.bump_type }} $OLD_VERSION)
           
-          # 3. Zapisuje nową wersję z powrotem do pliku
-          echo $NEW_VERSION > backend-version
-          
-          # 4. Eksportuje zmienną środowiskową na potrzeby commita
+          echo $NEW_VERSION > app-version.txt
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
       - name: Commit i Tag
-        working-directory: ./backend
         run: |
-          # Dodaje zmodyfikowany plik i robi commit
-          git add backend-version
+          git add app-version.txt
           git commit -m "backend-v${{ env.NEW_VERSION }}"
           git tag "backend-v${{ env.NEW_VERSION }}"
 
@@ -60,5 +51,4 @@ jobs:
       - name: Publikacja na Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        # Pamiętaj o podmianie "twoj-serwis-api" na faktyczną nazwę serwisu na Railway!
         run: railway up ./backend --service twoj-serwis-api --detach
