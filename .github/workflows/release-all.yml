@@ -61,9 +61,11 @@ jobs:
         run: npm i -g @railway/cli
 
       - name: Publikacja API na Railway
+        working-directory: ./backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up ./backend --service twoj-serwis-api --detach
+        # Z komendy zniknęło "./backend", ponieważ jesteśmy już wewnątrz tego folderu
+        run: railway up --service fifowa-spoda-backend --detach
 
       # --- 5. PUBLIKACJA FRONTENDU (RENDER) ---
       - name: Uruchomienie wdrożenia i oczekiwanie na wynik (Polling)

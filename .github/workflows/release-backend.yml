@@ -45,10 +45,13 @@ jobs:
       - name: Push do repozytorium
         run: git push origin HEAD --follow-tags
 
+      # --- 4. PUBLIKACJA BACKENDU (RAILWAY) ---
       - name: Instalacja Railway CLI
         run: npm i -g @railway/cli
 
-      - name: Publikacja na Railway
+      - name: Publikacja API na Railway
+        working-directory: ./backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up ./backend --service fifowa-spoda-backend --detach
+        # Z komendy zniknęło "./backend", ponieważ jesteśmy już wewnątrz tego folderu
+        run: railway up --service fifowa-spoda-backend --detach
