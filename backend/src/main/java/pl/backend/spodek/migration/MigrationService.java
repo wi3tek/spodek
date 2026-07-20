@@ -13,6 +13,7 @@ import pl.backend.spodek.migration.dto.LeagueMigrationDto;
 import pl.backend.spodek.model.*;
 import pl.backend.spodek.repository.*;
 import pl.backend.spodek.service.MatchService;
+import pl.backend.spodek.service.SeasonService;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -33,6 +34,7 @@ public class MigrationService {
     private final PlayerRepository playerRepository;
     private final MatchService matchService;
     private final MongoTemplate mongoTemplate;
+    private final SeasonService seasonService;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -298,6 +300,7 @@ public class MigrationService {
                     s.setUniqueTeams(row.isSeasonUniqueTeams());
                     s.setMinPlayerMatchAmount(row.getSeasonMinPlayerMatchAmount());
                     s.setLeagueSeasonCount(row.getSeasonLeagueSeasonCount());
+                    s.setLiveCode( seasonService.generateUniqueLiveCode() );
                     seasonRepository.save(s);
 
                     // Wymuszenie historycznych dat Sezonu w MongoDB

@@ -101,7 +101,7 @@ export class StatsService {
 
   // Zmienione parametry - komponent poda nam, czy jest na widoku live
   getStats(leagueId: string, seasonId: string, isReadOnly: boolean): Observable<StatsResponse> {
-    const endpoint = isReadOnly ? 'public/stats' : 'stats';
+    const endpoint = isReadOnly ? 'public/live/stats' : 'stats';
     return this.http.get<StatsResponse>(
       `${environment.apiUrl}/${endpoint}/${leagueId}?seasonId=${seasonId}`,
     );

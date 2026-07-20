@@ -17,11 +17,14 @@ public class LiveEventPublisher { // Usunięto zbędne "implements"
     private final ApplicationEventPublisher eventPublisher; // Wstrzykujemy prawdziwy silnik Springa
 
     public void publishEvent(String seasonId, String leagueId) {
+
+        // ZABEZPIECZENIE: Jeśli leagueId z frontendu jest nullem, dociągamy je z bazy (jest cachowane, więc szybkie)
+        String safeLeagueId = (leagueId != null) ? leagueId : seasonService.getLeagueIdBySeason(seasonId);
         Optional<String> seasonCodeOptional = seasonService.findSeasonCodeBySeasonId(seasonId);
 
         seasonCodeOptional.ifPresent(seasonCode ->
                 // Zwróć uwagę na kolejność argumentów (seasonCode, leagueId, seasonId)
-                eventPublisher.publishEvent(new LiveMatchUpdatedEvent(seasonCode, leagueId, seasonId))
+                eventPublisher.publishEvent(new LiveMatchUpdatedEvent(seasonCode, safeLeagueId, seasonId))
         );
 
         if (seasonCodeOptional.isEmpty()) {

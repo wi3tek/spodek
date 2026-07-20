@@ -45,7 +45,7 @@ export class TeamStatsService {
 
   // Zmienione parametry - komponent poda nam, czy jest na widoku live
   getStats(leagueId: string, seasonId: string, isReadOnly: boolean): Observable<TeamStatsResponse> {
-    const endpoint = isReadOnly ? 'public/team-stats' : 'team-stats';
+    const endpoint = isReadOnly ? 'public/live/team-stats' : 'team-stats';
     return this.http.get<TeamStatsResponse>(
       `${environment.apiUrl}/${endpoint}/${leagueId}?seasonId=${seasonId}`,
     );

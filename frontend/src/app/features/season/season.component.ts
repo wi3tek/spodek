@@ -1,4 +1,12 @@
-import { Component, OnInit, inject, signal, computed, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  inject,
+  signal,
+  computed,
+  OnDestroy,
+  HostListener,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -238,23 +246,66 @@ export class SeasonComponent implements OnInit, OnDestroy {
     }
   }
 
-  // NOWA WERSJA ODBIERAJĄCA STRUMIEŃ
-  private loadPublicData(code: string) {
-    this.liveSubscription = this.liveService.streamLiveResults(code).subscribe({
-      next: (res) => {
-        // Podmiana głównych sygnałów na żywo
-        this.season.set(res.season);
-        const sorted = res.matches.sort(
-          (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        );
-        this.matches.set(sorted);
-        this.tableData.set(res.table);
+  linkCopied = signal(false);
+  activeTooltip = signal<string | null>(null);
 
-        // KLUCZOWE: "Pukamy" w doły ekranu, żeby przeładowały statystyki z publicznych endpointów!
-        this.statsRefreshTrigger.update((v) => v + 1);
-      },
+  // Nasłuchiwanie na kliknięcie poza dymkiem, aby go zamknąć
+  @HostListener('document:click', ['$event'])
+  onDocumentClick() {
+    this.activeTooltip.set(null);
+  }
+
+  // Przełączanie dymków
+  toggleTooltip(id: string, side: 'home' | 'away', event: Event) {
+    event.stopPropagation(); // Blokuje "rozlanie się" kliknięcia na tło
+    const key = `${id}-${side}`;
+    this.activeTooltip.set(this.activeTooltip() === key ? null : key);
+  }
+
+  // Pobieranie pełnej nazwy i aliasu z bazy załadowanych drużyn
+  getFullTeamDetails(teamId: string, fallbackName: string) {
+    if (!teamId) return { name: fallbackName, alias: null };
+    const team = this.allTeams().find((t) => t.id === teamId);
+    return {
+      name: team?.name || fallbackName,
+      alias: team?.alias || null,
+    };
+  }
+
+  // Funkcja kopiowania linku
+  copyLiveLink() {
+    navigator.clipboard.writeText(this.liveUrl()).then(() => {
+      this.linkCopied.set(true);
+      setTimeout(() => this.linkCopied.set(false), 2000); // Ukryj po 2 sekundach
+    });
+  }
+
+  // ZAKTUALIZOWANA WERSJA
+  private loadPublicData(code: string) {
+    // 1. Natychmiastowe pobranie danych na start (zwykły GET)
+    this.liveService.getLiveResults(code).subscribe({
+      next: (res) => this.applyLiveUpdate(res),
+      error: (err) => console.error('Błąd inicjalnego pobierania Live:', err),
+    });
+
+    // 2. Podpięcie się pod rurę strumieniową (SSE) do nasłuchiwania kolejnych bramek
+    this.liveSubscription = this.liveService.streamLiveResults(code).subscribe({
+      next: (res) => this.applyLiveUpdate(res),
       error: (err) => console.error('Błąd strumienia read only:', err),
     });
+  }
+
+  // NOWA METODA POMOCNICZA
+  private applyLiveUpdate(res: any) {
+    this.season.set(res.season);
+    const sorted = res.matches.sort(
+      (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    this.matches.set(sorted);
+    this.tableData.set(res.table);
+
+    // Przeładowanie statystyk
+    this.statsRefreshTrigger.update((v) => v + 1);
   }
 
   loadInitialData() {

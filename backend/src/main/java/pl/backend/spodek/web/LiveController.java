@@ -13,7 +13,7 @@ import pl.backend.spodek.service.LiveStreamService;
 import pl.backend.spodek.service.TeamStatsService;
 import pl.backend.spodek.service.stats.StatsService;
 
-@RequestMapping("/api/public")
+@RequestMapping("/api/public/live")
 @RestController
 @RequiredArgsConstructor
 public class LiveController {
@@ -24,13 +24,13 @@ public class LiveController {
     private final StatsService statsService;
 
     // NOWY ENDPOINT STRUMIENIOWY DLA FRONTENDU
-    @GetMapping(value = "/live/stream/{seasonCode}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "/stream/{seasonCode}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamLiveResults(@PathVariable String seasonCode) {
         return liveStreamService.subscribe(seasonCode);
     }
 
     // Ten endpoint zostawiamy na wszelki wypadek / awaryjne zapytania
-    @GetMapping("/live/{seasonCode}")
+    @GetMapping("/{seasonCode}")
     public LiveResponse getSeasonsByLeague(@PathVariable String seasonCode) {
         return liveService.getLiveResults( seasonCode );
     }

@@ -2086,3 +2086,126 @@
     }
   }
 }
+
+/* ==========================================================================
+   NOWY, KOMPAKTOWY PANEL QR & UDOSTĘPNIANIA
+   ========================================================================== */
+.share-panel.compact-share {
+  padding: 12px 15px; /* Mniejsze paddingi */
+  margin-bottom: 15px;
+  align-items: center;
+  margin-top: 30px;
+
+
+  .share-info {
+    h3 { font-size: 1rem; margin-bottom: 4px; }
+    p { font-size: 0.75rem; margin-bottom: 8px; }
+  }
+
+  .live-code-badge {
+    padding: 4px 10px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    &:hover {
+      background: var(--beer-gold);
+      color: white;
+    }
+  }
+
+  .qr-container {
+    padding: 4px;
+    cursor: pointer;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+
+    .copy-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      font-size: 0.65rem;
+      font-weight: bold;
+      text-align: center;
+      padding: 4px 0;
+      transform: translateY(100%);
+      transition: transform 0.2s ease;
+    }
+
+    &:hover .copy-overlay {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* ==========================================================================
+   DYMKI Z PEŁNĄ NAZWĄ KLUBÓW (MUNDIAL 2026)
+   ========================================================================== */
+.wc26-team {
+  position: relative;
+  cursor: pointer; /* Wskazuje, że można kliknąć */
+}
+
+.mobile-tooltip {
+  position: absolute;
+  bottom: 130%; /* Wyświetla się nad paskiem */
+  background: #0f172a;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  z-index: 100;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  animation: tooltipFade 0.2s ease-out;
+  pointer-events: none; /* Żeby nie blokowało kolejnych kliknięć */
+
+  .full-name {
+    font-weight: 800;
+    font-size: 0.85rem;
+  }
+
+  .alias {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  /* Trójkącik wskazujący na nazwę */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    border-width: 6px;
+    border-style: solid;
+    border-color: #0f172a transparent transparent transparent;
+  }
+}
+
+/* Przesunięcie dymku, by nie uciekł za ekran */
+.wc26-team.home .mobile-tooltip {
+  left: 0;
+  &::after { left: 20%; transform: translateX(-50%); }
+}
+
+.wc26-team.away .mobile-tooltip {
+  right: 0;
+  &::after { right: 20%; transform: translateX(50%); }
+}
+
+@keyframes tooltipFade {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Zabezpieczenie przed przełamaniem na najmniejszych telefonach */
+@media (max-width: 400px) {
+  .mobile-tooltip {
+    white-space: normal;
+    min-width: 150px;
+    .full-name { font-size: 0.75rem; }
+    .alias { font-size: 0.65rem; }
+  }
+}

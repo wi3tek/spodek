@@ -36,10 +36,10 @@ public class SeasonService {
 
     public Season createSeason(Season season) {
         if (season.getStatus() == null) {
-            season.setStatus("ACTIVE");
+            season.setStatus( "ACTIVE" );
         }
 
-        season.setLiveCode(generateUniqueLiveCode());
+        season.setLiveCode( generateUniqueLiveCode() );
 
         return seasonRepository.save( season );
     }
@@ -57,10 +57,10 @@ public class SeasonService {
 
         // Wyciągamy datę ostatniego meczu w tym sezonie, żeby wiedzieć dla jakiego momentu pobrać "Snapshot" ELO
         LocalDateTime lastMatchDate = matches.stream()
-                .map(Match::getCreatedAt)
-                .filter(Objects::nonNull)
-                .max(LocalDateTime::compareTo)
-                .orElse(LocalDateTime.now());
+                .map( Match::getCreatedAt )
+                .filter( Objects::nonNull )
+                .max( LocalDateTime::compareTo )
+                .orElse( LocalDateTime.now() );
 
         Map<String, SeasonTableEntryDTO> statsMap = new HashMap<>();
 
@@ -78,14 +78,14 @@ public class SeasonService {
             // Ponieważ nie znamy Twojego repo w 100%, zrobimy bezpieczne pobranie najnowszego dla tego gracza w tej lidze.
             // Zauważ, że jeśli gracz miał nowsze mecze w innym sezonie, ten kod trzeba zoptymalizować pod datę (lastMatchDate).
             Optional<PlayerRatingHistory> latestRating = ratingHistoryRepository
-                    .findFirstByLeagueIdAndPlayerIdOrderByCreatedAtDesc(leagueId, entry.getPlayerId());
+                    .findFirstByLeagueIdAndPlayerIdOrderByCreatedAtDesc( leagueId, entry.getPlayerId() );
 
             if (latestRating.isPresent()) {
-                entry.setCurrentElo(latestRating.get().getRatingAfter());
-                entry.setEloDifference(latestRating.get().getRatingDifference());
+                entry.setCurrentElo( latestRating.get().getRatingAfter() );
+                entry.setEloDifference( latestRating.get().getRatingDifference() );
             } else {
-                entry.setCurrentElo(BigDecimal.valueOf(1000)); // Wartość domyślna
-                entry.setEloDifference(BigDecimal.ZERO);
+                entry.setCurrentElo( BigDecimal.valueOf( 1000 ) ); // Wartość domyślna
+                entry.setEloDifference( BigDecimal.ZERO );
             }
 
             entry.setGoalDifference( entry.getGoalsScored() - entry.getGoalsLost() );
@@ -180,8 +180,8 @@ public class SeasonService {
     // 3. LEPSZA NAZWA CACHE: seasonByCode
     @Cacheable(value = "seasonByCode", key = "#seasonCode")
     public Season getBySeasonCode(String seasonCode) {
-        return seasonRepository.findByLiveCode(seasonCode).orElseThrow(() -> new IllegalArgumentException("Cannot " +
-                "find season by code "+ seasonCode));
+        return seasonRepository.findByLiveCode( seasonCode ).orElseThrow( () -> new IllegalArgumentException( "Cannot " +
+                "find season by code " + seasonCode ) );
     }
 
     public Optional<String> findSeasonCodeBySeasonId(String seasonId) {
@@ -189,18 +189,25 @@ public class SeasonService {
     }
 
     // Metoda pomocnicza
-    private String generateUniqueLiveCode() {
-        String code;
-        do {
-            StringBuilder sb = new StringBuilder(8);
+    public String generateUniqueLiveCode() {
+        while (true) {
+            // 1. Generujemy nowy kod
+            StringBuilder sb = new StringBuilder( 8 );
             for (int i = 0; i < 8; i++) {
-                sb.append(ALPHANUMERIC.charAt(secureRandom.nextInt(ALPHANUMERIC.length())));
+                sb.append( ALPHANUMERIC.charAt( secureRandom.nextInt( ALPHANUMERIC.length() ) ) );
             }
-            code = sb.toString();
+            String code = sb.toString();
 
-            // Pętla kręci się tak długo, jak długo w bazie istnieje już sezon z takim samym kodem
-        } while (seasonRepository.findByLiveCode(code).isPresent());
+            // 2. Sprawdzamy, czy taki kod już istnieje w bazie
+            boolean codeExists = seasonRepository.findByLiveCode( code ).isPresent();
 
-        return code;
+            // 3. Jeśli NIE znalazł sezonu po danym kodzie, możemy go użyć i przerwać pętlę
+            if (!codeExists) {
+                return code;
+            }
+
+            // 4. Jeśli znalazł (codeExists == true), pętla ignoruje "if"
+            // i zaczyna się od nowa, generując kolejny kod.
+        }
     }
 }

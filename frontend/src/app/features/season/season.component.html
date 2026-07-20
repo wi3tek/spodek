@@ -8,20 +8,25 @@
   </app-header>
 
   @if (!isReadOnly() && season()?.liveCode) {
-    <section class="card share-panel animate-in">
+    <section class="card share-panel animate-in compact-share">
       <div class="share-info">
         <h3>📡 Śledzenie na żywo</h3>
-        <p>Zeskanuj kod QR lub podaj gościom ten kod na stronie logowania, aby mogli śledzić wyniki tej ligi:</p>
-        <div class="live-code-badge">{{ season()?.liveCode }}</div>
+        <p>Zeskanuj QR lub kliknij kod, aby skopiować link do przeglądarki:</p>
+        <div class="live-code-badge" (click)="copyLiveLink()" title="Kopiuj kod">
+          {{ season()?.liveCode }} 📋
+        </div>
       </div>
-      <div class="qr-container">
+      <div class="qr-container" (click)="copyLiveLink()" title="Kliknij, aby skopiować URL">
         <qrcode
           [qrdata]="liveUrl()"
-          [width]="110"
+          [width]="70"
           [errorCorrectionLevel]="'M'"
           colorDark="#4a3427"
           colorLight="#ffffff">
         </qrcode>
+        <div class="copy-overlay">
+          <span>{{ linkCopied() ? 'Skopiowano!' : 'Kopiuj Link' }}</span>
+        </div>
       </div>
     </section>
   }
@@ -444,15 +449,39 @@
 
               <div class="wc26-border-wrapper">
                 <div class="wc26-inner-bg">
-                  <div class="wc26-team home">
+
+                  <!-- Gospodarze z eventem kliknięcia -->
+                  <div class="wc26-team home" (click)="toggleTooltip(m.id, 'home', $event)">
                     <img [src]="'/logos/light/' + m.homeSide.assetId + '.png'" class="team-logo">
                     <span class="team-name">{{ m.homeSide.teamName }}</span>
+
+                    <!-- Dymek Gospodarzy -->
+                    @if (activeTooltip() === m.id + '-home') {
+                      <div class="mobile-tooltip">
+                        <div class="full-name">{{ getFullTeamDetails(m.homeSide.teamId, m.homeSide.teamName).name }}</div>
+                        @if (getFullTeamDetails(m.homeSide.teamId, m.homeSide.teamName).alias) {
+                          <div class="alias">"{{ getFullTeamDetails(m.homeSide.teamId, m.homeSide.teamName).alias }}"</div>
+                        }
+                      </div>
+                    }
                   </div>
 
-                  <div class="wc26-team away">
+                  <!-- Goście z eventem kliknięcia -->
+                  <div class="wc26-team away" (click)="toggleTooltip(m.id, 'away', $event)">
                     <span class="team-name">{{ m.awaySide.teamName }}</span>
                     <img [src]="'/logos/light/' + m.awaySide.assetId + '.png'" class="team-logo">
+
+                    <!-- Dymek Gości -->
+                    @if (activeTooltip() === m.id + '-away') {
+                      <div class="mobile-tooltip">
+                        <div class="full-name">{{ getFullTeamDetails(m.awaySide.teamId, m.awaySide.teamName).name }}</div>
+                        @if (getFullTeamDetails(m.awaySide.teamId, m.awaySide.teamName).alias) {
+                          <div class="alias">"{{ getFullTeamDetails(m.awaySide.teamId, m.awaySide.teamName).alias }}"</div>
+                        }
+                      </div>
+                    }
                   </div>
+
                 </div>
               </div>
 
