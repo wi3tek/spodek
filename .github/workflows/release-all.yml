@@ -58,8 +58,15 @@ jobs:
         run: |
           git add app-version.txt ./frontend/ngsw-config.json
           git commit -m "🚀 release: v${{ env.NEW_VERSION }}" -m "${{ github.event.inputs.changelog }}"
+          
+          # 1. Tworzymy tag
           git tag "v${{ env.NEW_VERSION }}"
-          git push origin HEAD --follow-tags
+          
+          # 2. Wysyłamy commita na obecną gałąź
+          git push origin HEAD
+          
+          # 3. WYMUSZAMY wysłanie taga na serwer
+          git push origin "v${{ env.NEW_VERSION }}"
 
   # ==========================================
   # ZADANIE 2: WDROŻENIE BACKENDU (RAILWAY)
@@ -187,7 +194,7 @@ jobs:
   # ZADANIE 4: WSPÓLNE PODSUMOWANIE WYNIKÓW
   # ==========================================
   summary:
-    needs: [deploy-backend, deploy-frontend]
+    needs: [ deploy-backend, deploy-frontend ]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -198,7 +205,7 @@ jobs:
           BACKEND_URL="https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs"
           BACKEND_DESC="[Przejdź do logów Railway]($BACKEND_URL)"
           BACKEND_LOG_LINK="$BACKEND_URL"
-
+          
           # Sprawdzenie statusu backendu ze wsparciem dla SKIP
           if [ "${{ needs.deploy-backend.outputs.skipped }}" = "true" ]; then
             BACKEND_ICON="⚠️"
@@ -207,16 +214,22 @@ jobs:
           elif [ "${{ needs.deploy-backend.result }}" = "success" ]; then 
             BACKEND_ICON="✅"
           fi
-
+          
           # Sprawdzenie statusu frontendu
           FRONTEND_ICON="❌"
           if [ "${{ needs.deploy-frontend.result }}" = "success" ]; then FRONTEND_ICON="✅"; fi
-
+          
           # Wypisanie logów w konsoli
           echo "$BACKEND_ICON deploy - backend --> $BACKEND_LOG_LINK"
           echo "$FRONTEND_ICON deploy - frontend --> ${{ needs.deploy-frontend.outputs.render_url }}"
-
+          
           # Dodanie ładnego podsumowania (Summary) w GitHubie
           echo "### Wynik wdrożenia 🚀" >> $GITHUB_STEP_SUMMARY
           echo "$BACKEND_ICON **deploy - backend** --> $BACKEND_DESC" >> $GITHUB_STEP_SUMMARY
           echo "$FRONTEND_ICON **deploy - frontend** --> [Przejdź do logów Render](${{ needs.deploy-frontend.outputs.render_url }})" >> $GITHUB_STEP_SUMMARY
+          
+          # OSTATECZNA WERYFIKACJA STATUSU ZADANIA
+          if [ "$BACKEND_ICON" = "❌" ] || [ "$FRONTEND_ICON" = "❌" ]; then
+            echo "❌ Przynajmniej jedno wdrożenie się nie powiodło. Oznaczam akcję jako błędną."
+            exit 1
+          fi
