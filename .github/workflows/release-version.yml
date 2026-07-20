@@ -1,4 +1,4 @@
-name: Podbij globalną wersję i wdróż na Railway
+name: release-version
 
 on:
   workflow_dispatch:
