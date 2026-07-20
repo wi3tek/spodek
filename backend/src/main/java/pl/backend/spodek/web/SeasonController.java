@@ -1,7 +1,6 @@
 package pl.backend.spodek.web;
 
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.NonNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.backend.spodek.dto.SeasonTableEntryDTO;
@@ -30,8 +29,7 @@ public class SeasonController {
 
     @PostMapping
     public Season createSeason(@RequestBody Season season) {
-        if (season.getStatus() == null) season.setStatus( "ACTIVE" );
-        return seasonRepository.save( season );
+        return seasonService.createSeason( season );
     }
 
     @PutMapping("/{id}")

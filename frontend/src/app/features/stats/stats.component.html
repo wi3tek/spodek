@@ -114,18 +114,47 @@
           <h3 class="section-title">📈 Historia Rankingu (ELO)</h3>
 
           <div class="period-selector-wrapper">
-            <label for="period-select" class="selector-label">Okres:</label>
+            <!-- Wybór typu interwału -->
+            <label for="type-select" class="selector-label">Interwał:</label>
+            <select
+              id="type-select"
+              [ngModel]="selectedChartType()"
+              (ngModelChange)="onTypeChange($event)"
+              class="period-select-dropdown">
+              <option value="day">Kolejka</option>
+              <option value="match">Mecz</option>
+            </select>
+
+            <!-- Wybór wartości (zależny od typu) -->
+            <label for="period-select" class="selector-label" style="margin-left: 10px;">Wartość:</label>
             <select
               id="period-select"
               [ngModel]="selectedChartPeriod()"
               (ngModelChange)="onPeriodChange($event)"
               class="period-select-dropdown">
-              <option value="10">Ostatnie 10 kolejek</option>
-              <option value="20">Ostatnie 20 kolejek</option>
-              <option value="30">Ostatnie 30 kolejek</option>
-              <option value="50">Ostatnie 50 kolejek</option>
-              <option value="100">Ostatnie 100 kolejek</option>
-              <option value="all">Cała historia</option>
+
+              @if (selectedChartType() === 'day') {
+                <option value="10">Ostatnie 10 kolejek</option>
+                <option value="20">Ostatnie 20 kolejek</option>
+                <option value="30">Ostatnie 30 kolejek</option>
+                <option value="50">Ostatnie 50 kolejek</option>
+                <option value="100">Ostatnie 100 kolejek</option>
+                <option value="all">Cała historia</option>
+              } @else {
+                <option value="5">5 meczów</option>
+                <option value="10">10 meczów</option>
+                <option value="20">20 meczów</option>
+                <option value="30">30 meczów</option>
+                <option value="30">40 meczów</option>
+                <option value="50">50 meczów</option>
+                <option value="100">100 meczów</option>
+                <option value="200">200 meczów</option>
+                <option value="300">300 meczów</option>
+                <option value="400">400 meczów</option>
+                <option value="500">500 meczów</option>
+                <option value="1000">1000 meczów</option>
+                <option value="all">Cała historia</option>
+              }
             </select>
           </div>
         </div>

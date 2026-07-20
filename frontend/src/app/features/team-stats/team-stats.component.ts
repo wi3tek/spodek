@@ -14,6 +14,7 @@ import { CommonModule, DecimalPipe } from '@angular/common';
 import { TeamStatsResponse, TeamStatsService } from '../../core/services/team-stats.service';
 import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
 import * as L from 'leaflet';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-team-stats',
@@ -31,6 +32,11 @@ export class TeamStatsComponent implements OnChanges, AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
 
   private teamStatsService = inject(TeamStatsService);
+  private router = inject(Router); // NOWE
+
+  get isReadOnlyMode(): boolean {
+    return this.router.url.includes('/live/');
+  }
   isLoading = signal(false);
   statsData = signal<TeamStatsResponse | null>(null);
 
@@ -56,15 +62,17 @@ export class TeamStatsComponent implements OnChanges, AfterViewInit, OnDestroy {
     if (!this.leagueId) return;
     this.isLoading.set(true);
 
-    this.teamStatsService.getStats(this.leagueId, this.seasonId || '').subscribe({
-      next: (data) => {
-        this.statsData.set(data);
-        this.isLoading.set(false);
-        // POPRAWKA: Usunięto argument, metoda wywoła się bez błędów TS2554
-        setTimeout(() => this.initMap(), 150);
-      },
-      error: () => this.isLoading.set(false),
-    });
+    this.teamStatsService
+      .getStats(this.leagueId, this.seasonId || '', this.isReadOnlyMode)
+      .subscribe({
+        next: (data) => {
+          this.statsData.set(data);
+          this.isLoading.set(false);
+          // POPRAWKA: Usunięto argument, metoda wywoła się bez błędów TS2554
+          setTimeout(() => this.initMap(), 150);
+        },
+        error: () => this.isLoading.set(false),
+      });
   }
 
   // Funkcja generująca url do logo dokładnie tak, jak to robiłeś

@@ -98,14 +98,12 @@ export interface StatsResponse {
 @Injectable({ providedIn: 'root' })
 export class StatsService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/stats`;
 
-  @Input() isReadOnly: boolean = false; // NOWE: Flaga trybu gościa
-
-  getStats(leagueId: string, seasonId: string): Observable<StatsResponse> {
-
-    // TODO wywołać na bazie readOnly
-
-    return this.http.get<StatsResponse>(`${this.apiUrl}/${leagueId}?seasonId=${seasonId}`);
+  // Zmienione parametry - komponent poda nam, czy jest na widoku live
+  getStats(leagueId: string, seasonId: string, isReadOnly: boolean): Observable<StatsResponse> {
+    const endpoint = isReadOnly ? 'public/stats' : 'stats';
+    return this.http.get<StatsResponse>(
+      `${environment.apiUrl}/${endpoint}/${leagueId}?seasonId=${seasonId}`,
+    );
   }
 }

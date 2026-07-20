@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -6,7 +6,7 @@ import { SeasonService } from '../../core/services/season.service';
 import { MatchService } from '../../core/services/match.service';
 import { AdminService } from '../../core/services/admin.service';
 import { MatchweekService } from '../../core/services/matchweek.service';
-import {debounceTime, distinctUntilChanged, Subject} from 'rxjs'; // NOWE
+import { debounceTime, distinctUntilChanged, Subject, Subscription } from 'rxjs'; // NOWE
 import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
 import { MatchmakingService } from '../../core/services/matchmaking.service';
 import { StatsComponent } from '../stats/stats.component'; // NOWE
@@ -32,7 +32,7 @@ import { QRCodeComponent } from 'angularx-qrcode';
   templateUrl: './season.component.html',
   styleUrls: ['./season.component.scss'],
 })
-export class SeasonComponent implements OnInit {
+export class SeasonComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private matchService = inject(MatchService);
@@ -41,6 +41,8 @@ export class SeasonComponent implements OnInit {
   private matchweekService = inject(MatchweekService); // NOWE
   private matchmakingService = inject(MatchmakingService); // NOWE
   private liveService = inject(LiveService); // NOWE
+
+  private liveSubscription?: Subscription;
 
   // --- DANE ---
   seasonId = signal<string | null>(null);
@@ -230,17 +232,28 @@ export class SeasonComponent implements OnInit {
     }
   }
 
+  ngOnDestroy() {
+    if (this.liveSubscription) {
+      this.liveSubscription.unsubscribe();
+    }
+  }
+
+  // NOWA WERSJA ODBIERAJĄCA STRUMIEŃ
   private loadPublicData(code: string) {
-    this.liveService.getLiveResults(code).subscribe({
+    this.liveSubscription = this.liveService.streamLiveResults(code).subscribe({
       next: (res) => {
+        // Podmiana głównych sygnałów na żywo
         this.season.set(res.season);
         const sorted = res.matches.sort(
           (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
         this.matches.set(sorted);
         this.tableData.set(res.table);
+
+        // KLUCZOWE: "Pukamy" w doły ekranu, żeby przeładowały statystyki z publicznych endpointów!
+        this.statsRefreshTrigger.update((v) => v + 1);
       },
-      error: (err) => console.error('Błąd pobierania danych sezonu read only:', err)
+      error: (err) => console.error('Błąd strumienia read only:', err),
     });
   }
 

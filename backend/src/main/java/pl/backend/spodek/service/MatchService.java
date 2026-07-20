@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import pl.backend.spodek.dto.MatchDTO;
+import pl.backend.spodek.event.LiveEventPublisher;
+import pl.backend.spodek.event.LiveMatchUpdatedEvent;
 import pl.backend.spodek.model.Match;
 import pl.backend.spodek.model.Player;
 import pl.backend.spodek.model.Team;
@@ -23,6 +25,7 @@ public class MatchService {
     private final PlayerRepository playerRepository;
     private final RatingHistoryService ratingHistoryService; // Serwis ratingowy
     private final SeasonService seasonService;
+    private final LiveEventPublisher liveEventPublisher;
 
     public Match createMatch(Match match) {
         // currentMatchId to null, bo mecz jeszcze nie istnieje
@@ -34,6 +37,9 @@ public class MatchService {
         if (savedMatch.isFinished()) {
             ratingHistoryService.applyMatchRating(savedMatch);
         }
+
+        // Załóżmy, że potrzebujesz do tego pobrać obiekt Season, by mieć seasonCode
+        liveEventPublisher.publishEvent(match.getSeasonId(), match.getLeagueId());
         return savedMatch;
     }
 
@@ -76,6 +82,7 @@ public class MatchService {
             ratingHistoryService.recalculateHistoryFromMatch(updatedMatch.getLeagueId(), updatedMatch.getCreatedAt());
         }
 
+        liveEventPublisher.publishEvent(existingMatch.getSeasonId(), existingMatch.getLeagueId());
         return updatedMatch;
     }
 
@@ -221,5 +228,7 @@ public class MatchService {
             log.info("🗑️ Usunięto zakończony mecz {}. Uruchamiam przeliczanie wsteczne ELO.", matchId);
             ratingHistoryService.recalculateHistoryFromMatch(existingMatch.getLeagueId(), existingMatch.getCreatedAt());
         }
+
+        liveEventPublisher.publishEvent(existingMatch.getSeasonId(), existingMatch.getLeagueId());
     }
 }

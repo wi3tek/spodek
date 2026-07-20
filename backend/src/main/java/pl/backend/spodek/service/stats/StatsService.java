@@ -1,6 +1,7 @@
 package pl.backend.spodek.service.stats;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import pl.backend.spodek.dto.FunFact;
 import pl.backend.spodek.dto.StatsDto;
@@ -29,6 +30,7 @@ public class StatsService {
     private final TeamRepository teamRepository;
     private final FunFactFactory funFactFactory;
 
+    @Cacheable(value = "stats", key = "#leagueId.concat('-').concat(#seasonId)")
     public StatsDto.Response generateFullStats(String leagueId, String seasonId) {
         Map<String, Player> playersMap = playerRepository.findAll().stream()
                 .collect(Collectors.toMap(Player::getId, p -> p));

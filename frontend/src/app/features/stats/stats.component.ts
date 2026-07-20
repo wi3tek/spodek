@@ -20,6 +20,7 @@ import {
 } from '../../core/services/stats.service';
 import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { Router } from '@angular/router';
 
 Chart.register(...registerables);
 
@@ -57,12 +58,19 @@ export class StatsComponent implements OnChanges {
   }
 
   private statsService = inject(StatsService);
+  private router = inject(Router); // NOWE
+
+  // Dynamiczny getter sprawdzający, czy adres WWW to podgląd kibica
+  get isReadOnlyMode(): boolean {
+    return this.router.url.includes('/live/');
+  }
   private chart: Chart | null = null;
 
   isLoading = signal(false);
   statsData = signal<StatsResponse | null>(null);
   selectedPlayerId = signal<string>('');
 
+  selectedChartType = signal<'day' | 'match'>('day'); // NOWE
   // 1. Określamy domyślny okres wykresu na 2 lata ('2')
   selectedChartPeriod = signal<string>('all');
 
@@ -112,7 +120,8 @@ export class StatsComponent implements OnChanges {
     if (!this.leagueId) return;
     this.isLoading.set(true);
 
-    this.statsService.getStats(this.leagueId, this.seasonId || '').subscribe({
+    // Przekazujemy flagę do zaktualizowanego serwisu
+    this.statsService.getStats(this.leagueId, this.seasonId || '', this.isReadOnlyMode).subscribe({
       next: (data) => {
         this.statsData.set(data);
         this.isLoading.set(false);
@@ -124,13 +133,18 @@ export class StatsComponent implements OnChanges {
             this.selectedPlayerId.set(data.relations[0].playerId);
           }
         }
-
       },
       error: () => this.isLoading.set(false),
     });
   }
+  // Nowa metoda do obsługi zmiany typu (Kolejka / Mecz)
+  onTypeChange(type: 'day' | 'match') {
+    this.selectedChartType.set(type);
+    this.selectedChartPeriod.set('all'); // Resetujemy do "all", żeby uniknąć wyboru z innej listy
+    this.updateChart();
+  }
 
-  // Funkcja wywoływana przy zmianie okresu na dropdownie
+  // Funkcja wywoływana przy zmianie wartości na dropdownie
   onPeriodChange(period: string) {
     this.selectedChartPeriod.set(period);
     this.updateChart(); // Odświeżamy wykres w locie
@@ -201,64 +215,64 @@ export class StatsComponent implements OnChanges {
     if (!stats || !stats.eloChart || stats.eloChart.length === 0 || !this._eloChartCanvas) return;
     if (this.chart) this.chart.destroy();
 
-    // 1. Zbieramy absolutnie wszystkie unikalne dni z bazy danych
-    const allDaysStr = new Set<string>();
+    const chartType = this.selectedChartType();
+
+    // 1. Zbieramy absolutnie wszystkie unikalne znaczniki czasu
+    const allKeysStr = new Set<string>();
     stats.eloChart.forEach((line) =>
       line.history.forEach((pt: any) => {
         const d = new Date(pt.date);
-        allDaysStr.add(
-          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-        );
+        if (chartType === 'day') {
+          // Jeśli dzień, formatujemy jak dotychczas
+          allKeysStr.add(
+            `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+          );
+        } else {
+          // Jeśli mecz, bierzemy unikalny czas z bazy (idealne do pojedynczych spotkań)
+          allKeysStr.add(pt.date);
+        }
       }),
     );
-    const sortedDays = Array.from(allDaysStr).sort(
+    const sortedKeys = Array.from(allKeysStr).sort(
       (a, b) => new Date(a).getTime() - new Date(b).getTime(),
     );
 
-    // 2. NOWE FILTROWANIE: Pobieramy ostatnie X kolejek (dni)
+    // 2. FILTROWANIE
     const period = this.selectedChartPeriod();
-    let filteredDays = sortedDays;
+    let filteredKeys = sortedKeys;
 
     if (period !== 'all') {
       const matchdaysCount = parseInt(period, 10);
-      // Pobieramy tylko X ostatnich elementów (kolejek) z końca osi czasu
-      filteredDays = sortedDays.slice(-matchdaysCount);
+      filteredKeys = sortedKeys.slice(-matchdaysCount);
     }
 
-    // Pobieramy znacznik czasu pierwszego dnia na przefiltrowanym wykresie
-    const firstFilteredDayTime = filteredDays.length > 0 ? new Date(filteredDays[0]).getTime() : 0;
+    const firstFilteredKeyTime = filteredKeys.length > 0 ? new Date(filteredKeys[0]).getTime() : 0;
 
+    // Etykiety X dopasowane do interwału
     const labels = [
       'Start',
-      ...filteredDays.map((dayStr) =>
-        new Date(dayStr).toLocaleDateString('pl-PL', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        }),
-      ),
+      ...filteredKeys.map((keyStr) => {
+        const d = new Date(keyStr);
+        if (chartType === 'day') {
+          return d.toLocaleDateString('pl-PL', { year: 'numeric', month: 'short', day: 'numeric' });
+        } else {
+          // Dla pojedynczego meczu dodajemy też dokładną godzinę, by ładnie to wyglądało w tooltipie
+          return `${d.toLocaleDateString('pl-PL', { month: 'short', day: 'numeric' })} ${d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+      }),
     ];
+
     const colors = [
-      '#ef4444',
-      '#3b82f6',
-      '#10b981',
-      '#f59e0b',
-      '#8b5cf6',
-      '#ec4899',
-      '#14b8a6',
-      '#f97316',
-      '#6366f1',
-      '#84cc16',
+      '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6',
+      '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
     ];
 
     const datasets = stats.eloChart.map((line, idx) => {
-      // Domyślny start to 1000 ELO
       let startingElo = 1000;
 
-      // 3. Matematyka początkowego ELO pozostaje bez zmian (zadziała idealnie!)
-      if (firstFilteredDayTime > 0) {
+      if (firstFilteredKeyTime > 0) {
         const pastHistory = line.history
-          .filter((pt: any) => new Date(pt.date).getTime() < firstFilteredDayTime)
+          .filter((pt: any) => new Date(pt.date).getTime() < firstFilteredKeyTime)
           .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         if (pastHistory.length > 0) {
@@ -269,19 +283,21 @@ export class StatsComponent implements OnChanges {
       const dataPoints: number[] = [startingElo];
       let currentElo = startingElo;
 
-      for (const dayStr of filteredDays) {
-        const matchesThatDay = line.history.filter((pt: any) => {
-          const d = new Date(pt.date);
-          return (
-            `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` ===
-            dayStr
-          );
+      for (const keyStr of filteredKeys) {
+        const matchesAtKey = line.history.filter((pt: any) => {
+          if (chartType === 'day') {
+            const d = new Date(pt.date);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === keyStr;
+          } else {
+            return pt.date === keyStr;
+          }
         });
-        if (matchesThatDay.length > 0) {
-          matchesThatDay.sort(
+
+        if (matchesAtKey.length > 0) {
+          matchesAtKey.sort(
             (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
           );
-          currentElo = matchesThatDay[matchesThatDay.length - 1].elo;
+          currentElo = matchesAtKey[matchesAtKey.length - 1].elo;
         }
         dataPoints.push(currentElo);
       }
@@ -302,6 +318,7 @@ export class StatsComponent implements OnChanges {
 
     let hoveredDatasetIndex: number | null = null;
     const config: ChartConfiguration = {
+      // (Twoja konfiguracja ChartConfiguration bez zmian...)
       type: 'line',
       data: { labels, datasets },
       options: {
@@ -348,12 +365,14 @@ export class StatsComponent implements OnChanges {
           y: {
             grid: { color: '#f1f5f9' },
             ticks: { font: { weight: 'bold' } },
-            title: { display: true, text: 'Punkty ELO (koniec dnia)', font: { weight: 'bold' } },
+            // Podpis osi zależny od trybu
+            title: { display: true, text: chartType === 'day' ? 'Punkty ELO (koniec dnia)' : 'Punkty ELO (po meczu)', font: { weight: 'bold' } },
           },
           x: { ticks: { autoSkip: true, maxTicksLimit: 20 }, grid: { display: false } },
         },
       },
     };
+
     const ctx = this._eloChartCanvas.nativeElement.getContext('2d');
     if (ctx) this.chart = new Chart(ctx, config);
   }

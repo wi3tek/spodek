@@ -1,6 +1,8 @@
 package pl.backend.spodek.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import pl.backend.spodek.dto.*;
 import pl.backend.spodek.model.Season;
@@ -14,7 +16,7 @@ public class LiveService {
     private final SeasonService seasonService;
     private final MatchService matchService;
 
-
+    @Cacheable(value = "liveResponse", key = "#seasonCode")
     public LiveResponse getLiveResults(String seasonCode) {
         Season season = seasonService.getBySeasonCode( seasonCode );
         List<MatchDTO> matchesBySeason = matchService.getMatchesBySeason( season.getId() );
@@ -25,5 +27,11 @@ public class LiveService {
                 .matches(matchesBySeason)
                 .table(seasonTable)
                 .build();
+    }
+
+    // Metoda do wyrzucania starych danych po golu!
+    @CacheEvict(value = "liveResponse", key = "#seasonCode")
+    public void clearLiveCache(String seasonCode) {
+        // Pusta metoda. Adnotacja wykonuje całą pracę.
     }
 }

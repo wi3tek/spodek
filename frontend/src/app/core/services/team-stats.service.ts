@@ -42,13 +42,12 @@ export interface TeamStatsResponse {
 @Injectable({ providedIn: 'root' })
 export class TeamStatsService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/team-stats`;
 
-  @Input() isReadOnly: boolean = false; // NOWE: Flaga trybu gościa
-
-  getStats(leagueId: string, seasonId: string): Observable<TeamStatsResponse> {
-    // TODO Wywołać na bazie readOnly
-
-    return this.http.get<TeamStatsResponse>(`${this.apiUrl}/${leagueId}?seasonId=${seasonId}`);
+  // Zmienione parametry - komponent poda nam, czy jest na widoku live
+  getStats(leagueId: string, seasonId: string, isReadOnly: boolean): Observable<TeamStatsResponse> {
+    const endpoint = isReadOnly ? 'public/team-stats' : 'team-stats';
+    return this.http.get<TeamStatsResponse>(
+      `${environment.apiUrl}/${endpoint}/${leagueId}?seasonId=${seasonId}`,
+    );
   }
 }

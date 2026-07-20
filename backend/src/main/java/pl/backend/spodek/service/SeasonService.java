@@ -2,7 +2,6 @@ package pl.backend.spodek.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.NonNull;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import pl.backend.spodek.dto.SeasonTableEntryDTO;
@@ -17,6 +16,7 @@ import pl.backend.spodek.repository.SeasonRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,8 +29,20 @@ public class SeasonService {
     private final MatchRepository matchRepository;
     private final AdminService adminService;
     private final SeasonRepository seasonRepository;
-    // NOWE: Wstrzykujemy repozytorium historii ratingów
     private final PlayerRatingHistoryRepository ratingHistoryRepository;
+
+    private static final String ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    public Season createSeason(Season season) {
+        if (season.getStatus() == null) {
+            season.setStatus("ACTIVE");
+        }
+
+        season.setLiveCode(generateUniqueLiveCode());
+
+        return seasonRepository.save( season );
+    }
 
     public List<SeasonTableEntryDTO> getSeasonTable(String seasonId) {
         List<Match> matches = matchRepository.findBySeasonId( seasonId );
@@ -146,21 +158,49 @@ public class SeasonService {
         }
     }
 
-    @Cacheable("leagueIdBySeason")
+    // 1. POPRAWIONY KLUCZ: #seasonId
+    @Cacheable(value = "leagueIdBySeason", key = "#seasonId")
     public String getLeagueIdBySeason(String seasonId) {
         log.info( "⚠️ [CACHE MISS] Pobieram id ligi dla sezonu: " + seasonId );
         LeagueIdProjection projection = seasonRepository.findLeagueIdById( seasonId );
         return projection != null ? projection.getLeagueId() : null;
     }
 
+    // 2. LEPSZA NAZWA CACHE: seasonById
+    @Cacheable(value = "seasonById", key = "#seasonId")
     public Season getSeasonById(String seasonId) {
-        return seasonRepository.findById( seasonId ).orElseThrow( () -> new IllegalArgumentException( "There is no " +
+        return findBySeasonId( seasonId ).orElseThrow( () -> new IllegalArgumentException( "There is no " +
                 "season with id: " + seasonId ) );
     }
 
-    public Season getBySeasonCode(String seasonCode) {
+    private Optional<Season> findBySeasonId(String seasonId) {
+        return seasonRepository.findById( seasonId );
+    }
 
+    // 3. LEPSZA NAZWA CACHE: seasonByCode
+    @Cacheable(value = "seasonByCode", key = "#seasonCode")
+    public Season getBySeasonCode(String seasonCode) {
         return seasonRepository.findByLiveCode(seasonCode).orElseThrow(() -> new IllegalArgumentException("Cannot " +
                 "find season by code "+ seasonCode));
+    }
+
+    public Optional<String> findSeasonCodeBySeasonId(String seasonId) {
+        return findBySeasonId( seasonId ).map( Season::getLiveCode );
+    }
+
+    // Metoda pomocnicza
+    private String generateUniqueLiveCode() {
+        String code;
+        do {
+            StringBuilder sb = new StringBuilder(8);
+            for (int i = 0; i < 8; i++) {
+                sb.append(ALPHANUMERIC.charAt(secureRandom.nextInt(ALPHANUMERIC.length())));
+            }
+            code = sb.toString();
+
+            // Pętla kręci się tak długo, jak długo w bazie istnieje już sezon z takim samym kodem
+        } while (seasonRepository.findByLiveCode(code).isPresent());
+
+        return code;
     }
 }

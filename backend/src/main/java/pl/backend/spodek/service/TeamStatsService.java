@@ -1,6 +1,7 @@
 package pl.backend.spodek.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import pl.backend.spodek.dto.TeamStatsDto;
 import pl.backend.spodek.model.Match;
@@ -20,6 +21,7 @@ public class TeamStatsService {
     private final TeamRepository teamRepository;
     private static final int MIN_MATCHES = 5; // Minimalna liczba spotkań
 
+    @Cacheable(value = "teamStats", key = "#leagueId.concat('-').concat(#seasonId)")
     public TeamStatsDto.Response generateTeamStats(String leagueId, String seasonId) {
         Map<String, Team> teamsMap = teamRepository.findAll().stream()
                 .collect(Collectors.toMap(Team::getId, t -> t));
