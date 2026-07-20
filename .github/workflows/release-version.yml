@@ -13,7 +13,7 @@ on:
           - major
 
 jobs:
-  bump-version-and-deploy:
+  deploy-new-version:
     runs-on: ubuntu-latest
     steps:
       - name: Pobranie repozytorium
@@ -24,7 +24,7 @@ jobs:
       - name: Konfiguracja Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Konfiguracja bota Git
         run: |
