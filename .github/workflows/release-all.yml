@@ -60,12 +60,19 @@ jobs:
       - name: Instalacja Railway CLI
         run: npm i -g @railway/cli
 
-      - name: Publikacja API na Railway
+      - name: Uruchomienie wdrożenia Railway i oczekiwanie na wynik
         working-directory: ./backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        # Z komendy zniknęło "./backend", ponieważ jesteśmy już wewnątrz tego folderu
-        run: railway up --service fifowa-spoda-backend --detach
+        # Usunięcie flagi --detach wymusza oczekiwanie na koniec wdrożenia i strumieniowanie logów
+        run: railway up --service fifowa-spoda-backend
+
+      - name: Link do logów na Railway
+        if: always()
+        run: |
+          echo "✅ Wdrożenie backendu zakończone. Pełne logi z budowania widoczne są w zakładce kroku powyżej."
+          echo "Aby przejść bezpośrednio do podglądu tej usługi w panelu Railway, wejdź na:"
+          echo "👉 https://railway.app/dashboard"
 
       # --- 5. PUBLIKACJA FRONTENDU (RENDER) ---
       - name: Uruchomienie wdrożenia i oczekiwanie na wynik (Polling)
