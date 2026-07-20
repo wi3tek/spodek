@@ -18,7 +18,7 @@ interface AppUpdateData {
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
-  protected readonly title = signal('spodek-ui');
+  protected readonly title = signal('fifowa-spoda-ui');
   private swUpdate = inject(SwUpdate);
   // ODCZYT: Sprawdzamy czy w localStorage zapisano włączony motyw
   isWorldCupTheme = signal<boolean>(localStorage.getItem('theme_worldcup') === 'true');

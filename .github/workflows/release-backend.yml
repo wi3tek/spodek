@@ -1,0 +1,64 @@
+name: Backend Release (Railway)
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Rodzaj aktualizacji API (MAJOR/MINOR/PATCH)'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: Podbicie wersji w pliku tekstowym
+        working-directory: ./backend
+        run: |
+          # 1. Odczytuje obecną wersję z pliku
+          OLD_VERSION=$(cat backend-version)
+          
+          # 2. Wylicza nową wersję
+          NEW_VERSION=$(npx semver -i ${{ github.event.inputs.bump_type }} $OLD_VERSION)
+          
+          # 3. Zapisuje nową wersję z powrotem do pliku
+          echo $NEW_VERSION > backend-version
+          
+          # 4. Eksportuje zmienną środowiskową na potrzeby commita
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Commit i Tag
+        working-directory: ./backend
+        run: |
+          # Dodaje zmodyfikowany plik i robi commit
+          git add backend-version
+          git commit -m "backend-v${{ env.NEW_VERSION }}"
+          git tag "backend-v${{ env.NEW_VERSION }}"
+
+      - name: Push do repozytorium
+        run: git push origin HEAD --follow-tags
+
+      - name: Instalacja Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Publikacja na Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        # Pamiętaj o podmianie "twoj-serwis-api" na faktyczną nazwę serwisu na Railway!
+        run: railway up ./backend --service twoj-serwis-api --detach

@@ -1,0 +1,53 @@
+name: Frontend Release (Render)
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Rodzaj aktualizacji PWA (MAJOR/MINOR/PATCH)'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: Podbicie wersji frontendu
+        working-directory: ./frontend
+        run: npm version ${{ github.event.inputs.bump_type }} --no-git-tag-version
+
+      - name: Zapisanie nowej wersji do zmiennej
+        run: echo "NEW_VERSION=$(node -p "require('./frontend/package.json').version")" >> $GITHUB_ENV
+
+      - name: Wstrzyknięcie wersji do PWA
+        run: |
+          jq --arg v "${{ env.NEW_VERSION }}" '.appData.version = $v' ./frontend/ngsw-config.json > tmp.json
+          mv tmp.json ./frontend/ngsw-config.json
+
+      - name: Commit i Tag
+        run: |
+          git add ./frontend/package.json ./frontend/ngsw-config.json
+          # Dodajemy prefiks "frontend-v" dla porządku w tagach (np. frontend-v1.2.0)
+          git commit -m "frontend-v${{ env.NEW_VERSION }}"
+          git tag "frontend-v${{ env.NEW_VERSION }}"
+          git push origin HEAD --follow-tags
+
+      - name: Wyzwolenie wdrożenia na Render
+        # Puka pod specjalny adres URL, co informuje Render, że czas pobrać kod i zbudować apkę
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}

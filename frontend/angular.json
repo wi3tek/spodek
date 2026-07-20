@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "spodek-ui": {
+    "fifowa-spoda-ui": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -21,7 +21,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "outputPath": "dist/spodek-ui",
+            "outputPath": "dist/fifowa-spoda-ui",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "baseHref": "/",
@@ -61,10 +61,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "spodek-ui:build:production"
+              "buildTarget": "fifowa-spoda-ui:build:production"
             },
             "development": {
-              "buildTarget": "spodek-ui:build:development"
+              "buildTarget": "fifowa-spoda-ui:build:development"
             }
           },
           "defaultConfiguration": "development"
