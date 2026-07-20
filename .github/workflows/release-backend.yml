@@ -56,12 +56,16 @@ jobs:
         run: |
           echo "🚀 Rozpoczynam wdrożenie na Railway..."
           
-          rm -f railway_pipe && mkfifo railway_pipe
-          railway up --service fifowa-spoda-backend > railway_pipe 2>&1 &
+          # Tworzymy potok w systemowym folderze tymczasowym (aby Railway go nie spakował!)
+          rm -f /tmp/railway_pipe && mkfifo /tmp/railway_pipe
+          
+          # Uruchamiamy CLI w tle i kierujemy logi do potoku
+          railway up --service fifowa-spoda-backend > /tmp/railway_pipe 2>&1 &
           RAILWAY_PID=$!
           
           SKIPPED=false
           
+          # Czytamy logi linijka po linijce
           while read -r line; do
             echo "$line"
             if [[ "$line" == *"No changes to watched files"* ]]; then
@@ -73,10 +77,12 @@ jobs:
               kill -9 $RAILWAY_PID 2>/dev/null || true
               break
             fi
-          done < railway_pipe
+          done < /tmp/railway_pipe
           
-          rm -f railway_pipe
+          # Sprzątamy potok
+          rm -f /tmp/railway_pipe
           
+          # Obsługa zakończenia
           if [ "$SKIPPED" = "true" ]; then
              exit 0
           fi

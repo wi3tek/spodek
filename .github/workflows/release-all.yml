@@ -90,11 +90,11 @@ jobs:
         run: |
           echo "🚀 Rozpoczynam wdrożenie na Railway..."
           
-          # Używamy potoku nazwanego (FIFO) do czytania logów w locie
-          rm -f railway_pipe && mkfifo railway_pipe
+          # Tworzymy potok w systemowym folderze tymczasowym (aby Railway go nie spakował!)
+          rm -f /tmp/railway_pipe && mkfifo /tmp/railway_pipe
           
-          # Uruchamiamy CLI w tle
-          railway up --service fifowa-spoda-backend > railway_pipe 2>&1 &
+          # Uruchamiamy CLI w tle i kierujemy logi do potoku
+          railway up --service fifowa-spoda-backend > /tmp/railway_pipe 2>&1 &
           RAILWAY_PID=$!
           
           SKIPPED=false
@@ -111,16 +111,16 @@ jobs:
               kill -9 $RAILWAY_PID 2>/dev/null || true
               break
             fi
-          done < railway_pipe
+          done < /tmp/railway_pipe
           
-          rm -f railway_pipe
+          # Sprzątamy potok
+          rm -f /tmp/railway_pipe
           
-          # Jeśli pominięto wdrożenie, kończymy krok z sukcesem
+          # Obsługa zakończenia
           if [ "$SKIPPED" = "true" ]; then
              exit 0
           fi
           
-          # Jeśli wdrożenie idzie normalnie, czekamy na koniec CLI
           wait $RAILWAY_PID
           if [ $? -ne 0 ]; then
             echo "❌ Wdrożenie Railway zakończyło się błędem."
