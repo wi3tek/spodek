@@ -107,8 +107,8 @@ jobs:
               exit 1
             fi
           
-            echo "Obecny status: $STATUS... (sprawdzam ponownie za 15 sekund)"
-            sleep 15
+            echo "Deploy status: $STATUS... "
+            sleep 10
           done
 
       - name: Link do logów na Renderze
