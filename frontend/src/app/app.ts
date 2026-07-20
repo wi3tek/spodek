@@ -1,9 +1,14 @@
-import {Component, signal, effect, inject} from '@angular/core';
+import { Component, signal, effect, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { LoadingSpinnerComponent } from './features/loading-spinner/loading-spinner.component';
 import { CommonModule } from '@angular/common';
 import {SwUpdate, VersionReadyEvent} from '@angular/service-worker';
 import {filter} from 'rxjs';
+
+interface AppUpdateData {
+  version?: string;
+  changelog?: string;
+}
 
 @Component({
   selector: 'app-root',
@@ -12,7 +17,7 @@ import {filter} from 'rxjs';
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {
+export class App implements OnInit {
   protected readonly title = signal('spodek-ui');
   private swUpdate = inject(SwUpdate);
   // ODCZYT: Sprawdzamy czy w localStorage zapisano włączony motyw
@@ -40,19 +45,22 @@ export class App {
   }
 
   ngOnInit() {
-    // Upewniamy się, że Service Worker jest włączony (np. działa tylko na produkcji)
     if (this.swUpdate.isEnabled) {
       this.swUpdate.versionUpdates
         .pipe(
-          // Filtrujemy zdarzenia, interesuje nas tylko moment, gdy nowa wersja jest gotowa
           filter((evt): evt is VersionReadyEvent => evt.type === 'VERSION_READY')
         )
-        .subscribe(() => {
-          // Opcja 1: Automatyczne (agresywne) odświeżenie bez pytania
-          // window.location.reload();
+        // Zwróć uwagę na dodane (evt) poniżej
+        .subscribe((evt) => {
 
-          // Opcja 2: (Zalecana) Pytamy użytkownika, czy chce zaktualizować
-          if (confirm('Dostępna jest nowa wersja aplikacji. Czy chcesz zaktualizować teraz?')) {
+          // Pobieramy dane zdefiniowane w ngsw-config.json
+          // Musimy rzutować typ ("as AppUpdateData"), ponieważ domyślnie Angular widzi to jako typ "object"
+          const appData = evt.latestVersion.appData as AppUpdateData | undefined;
+
+          // Wyciągamy wersję, a jeśli z jakiegoś powodu jej brak, używamy domyślnego tekstu
+          const versionNumber = appData?.version ? ` (wersja ${appData.version})` : '';
+
+          if (confirm(`Dostępna jest nowa wersja aplikacji${versionNumber}. Czy chcesz zaktualizować teraz?`)) {
             window.location.reload();
           }
         });
