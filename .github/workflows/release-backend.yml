@@ -49,22 +49,62 @@ jobs:
         run: npm i -g @railway/cli
 
       - name: Uruchomienie wdrożenia Railway i oczekiwanie na wynik
-        id: deploy # ID potrzebne do podsumowania
+        id: deploy
         working-directory: ./backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service fifowa-spoda-backend
+        run: |
+          echo "🚀 Rozpoczynam wdrożenie na Railway..."
+          
+          rm -f railway_pipe && mkfifo railway_pipe
+          railway up --service fifowa-spoda-backend > railway_pipe 2>&1 &
+          RAILWAY_PID=$!
+          
+          SKIPPED=false
+          
+          while read -r line; do
+            echo "$line"
+            if [[ "$line" == *"No changes to watched files"* ]]; then
+              echo "=========================================="
+              echo "⚠️ Wykryto brak zmian! Przerywam zawieszone CLI."
+              echo "=========================================="
+              echo "skipped=true" >> $GITHUB_OUTPUT
+              SKIPPED=true
+              kill -9 $RAILWAY_PID 2>/dev/null || true
+              break
+            fi
+          done < railway_pipe
+          
+          rm -f railway_pipe
+          
+          if [ "$SKIPPED" = "true" ]; then
+             exit 0
+          fi
+          
+          wait $RAILWAY_PID
+          if [ $? -ne 0 ]; then
+            echo "❌ Wdrożenie Railway zakończyło się błędem."
+            exit 1
+          fi
 
       # --- 3. PODSUMOWANIE ---
       - name: Generowanie raportu końcowego
         if: always()
         run: |
           ICON="❌"
-          if [ "${{ steps.deploy.outcome }}" = "success" ]; then ICON="✅"; fi
-          
           RAILWAY_URL="https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs"
+          LOG_LINK="$RAILWAY_URL"
+          DESC="[Przejdź do logów Railway]($RAILWAY_URL)"
 
-          echo "$ICON deploy - backend --> $RAILWAY_URL"
+          if [ "${{ steps.deploy.outputs.skipped }}" = "true" ]; then
+            ICON="⚠️"
+            LOG_LINK="POMINIĘTO (Brak zmian)"
+            DESC="Pominięto (Brak zmian w plikach)"
+          elif [ "${{ steps.deploy.outcome }}" = "success" ]; then 
+            ICON="✅"
+          fi
+
+          echo "$ICON deploy - backend --> $LOG_LINK"
 
           echo "### Wynik wdrożenia Backendu 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "$ICON **deploy - backend** --> [Przejdź do logów Railway]($RAILWAY_URL)" >> $GITHUB_STEP_SUMMARY
+          echo "$ICON **deploy - backend** --> $DESC" >> $GITHUB_STEP_SUMMARY

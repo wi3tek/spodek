@@ -67,6 +67,9 @@ jobs:
   deploy-backend:
     needs: prepare-release
     runs-on: ubuntu-latest
+    # Przekazujemy informację o pominięciu na zewnątrz zadania
+    outputs:
+      skipped: ${{ steps.deploy.outputs.skipped }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -80,11 +83,49 @@ jobs:
         run: npm i -g @railway/cli
 
       - name: Uruchomienie wdrożenia Railway i oczekiwanie na wynik
+        id: deploy
         working-directory: ./backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service fifowa-spoda-backend
-
+        run: |
+          echo "🚀 Rozpoczynam wdrożenie na Railway..."
+          
+          # Używamy potoku nazwanego (FIFO) do czytania logów w locie
+          rm -f railway_pipe && mkfifo railway_pipe
+          
+          # Uruchamiamy CLI w tle
+          railway up --service fifowa-spoda-backend > railway_pipe 2>&1 &
+          RAILWAY_PID=$!
+          
+          SKIPPED=false
+          
+          # Czytamy logi linijka po linijce
+          while read -r line; do
+            echo "$line"
+            if [[ "$line" == *"No changes to watched files"* ]]; then
+              echo "=========================================="
+              echo "⚠️ Wykryto brak zmian! Przerywam zawieszone CLI."
+              echo "=========================================="
+              echo "skipped=true" >> $GITHUB_OUTPUT
+              SKIPPED=true
+              kill -9 $RAILWAY_PID 2>/dev/null || true
+              break
+            fi
+          done < railway_pipe
+          
+          rm -f railway_pipe
+          
+          # Jeśli pominięto wdrożenie, kończymy krok z sukcesem
+          if [ "$SKIPPED" = "true" ]; then
+             exit 0
+          fi
+          
+          # Jeśli wdrożenie idzie normalnie, czekamy na koniec CLI
+          wait $RAILWAY_PID
+          if [ $? -ne 0 ]; then
+            echo "❌ Wdrożenie Railway zakończyło się błędem."
+            exit 1
+          fi
   # ==========================================
   # ZADANIE 3: WDROŻENIE FRONTENDU (RENDER)
   # ==========================================
@@ -146,24 +187,35 @@ jobs:
   # ==========================================
   summary:
     needs: [deploy-backend, deploy-frontend]
-    if: always() # Wymusza uruchomienie nawet w przypadku błędów poprzednich kroków
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Generowanie raportu końcowego
         run: |
-          # Sprawdzenie statusu backendu
+          # Domyślne wartości dla backendu
           BACKEND_ICON="❌"
-          if [ "${{ needs.deploy-backend.result }}" = "success" ]; then BACKEND_ICON="✅"; fi
+          BACKEND_URL="https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs"
+          BACKEND_DESC="[Przejdź do logów Railway]($BACKEND_URL)"
+          BACKEND_LOG_LINK="$BACKEND_URL"
+
+          # Sprawdzenie statusu backendu ze wsparciem dla SKIP
+          if [ "${{ needs.deploy-backend.outputs.skipped }}" = "true" ]; then
+            BACKEND_ICON="⚠️"
+            BACKEND_DESC="Pominięto (Brak zmian w plikach)"
+            BACKEND_LOG_LINK="POMINIĘTO (Brak zmian)"
+          elif [ "${{ needs.deploy-backend.result }}" = "success" ]; then 
+            BACKEND_ICON="✅"
+          fi
 
           # Sprawdzenie statusu frontendu
           FRONTEND_ICON="❌"
           if [ "${{ needs.deploy-frontend.result }}" = "success" ]; then FRONTEND_ICON="✅"; fi
 
-          # Wypisanie wyniku w konsoli logów (zgodnie z formatem)
-          echo "$BACKEND_ICON deploy - backend --> https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs"
+          # Wypisanie logów w konsoli
+          echo "$BACKEND_ICON deploy - backend --> $BACKEND_LOG_LINK"
           echo "$FRONTEND_ICON deploy - frontend --> ${{ needs.deploy-frontend.outputs.render_url }}"
 
-          # Dodatkowy bonus: Wypisanie sformatowanego raportu na głównej stronie "Summary" akcji
+          # Dodanie ładnego podsumowania (Summary) w GitHubie
           echo "### Wynik wdrożenia 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "$BACKEND_ICON **deploy - backend** --> [Przejdź do logów Railway](https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs)" >> $GITHUB_STEP_SUMMARY
+          echo "$BACKEND_ICON **deploy - backend** --> $BACKEND_DESC" >> $GITHUB_STEP_SUMMARY
           echo "$FRONTEND_ICON **deploy - frontend** --> [Przejdź do logów Render](${{ needs.deploy-frontend.outputs.render_url }})" >> $GITHUB_STEP_SUMMARY
