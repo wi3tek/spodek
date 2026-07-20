@@ -50,8 +50,8 @@ jobs:
 
       - name: Uruchomienie wdrożenia i oczekiwanie na wynik (Polling)
         env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}       # To zostaje sekretem!
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}    # Zmieniono z secrets na vars
         run: |
           echo "🚀 Rozpoczynam wdrożenie na Renderze..."
           
@@ -62,7 +62,7 @@ jobs:
           
           DEPLOY_ID=$(echo "$TRIGGER_RESPONSE" | jq -r '.id')
           
-          # Zapisujemy ID wdrożenia, aby użyć go w wygenerowanym linku w kolejnym kroku
+          # Zapisujemy ID wdrożenia
           echo "DEPLOY_ID=$DEPLOY_ID" >> $GITHUB_ENV
           
           if [ "$DEPLOY_ID" = "null" ] || [ -z "$DEPLOY_ID" ]; then
@@ -97,4 +97,5 @@ jobs:
         if: always()
         run: |
           echo "Pełne logi z procesu budowania znajdziesz pod tym adresem:"
-          echo "👉 https://dashboard.render.com/static/${{ secrets.RENDER_SERVICE_ID }}/deploys/${{ env.DEPLOY_ID }}"
+          # Zmieniono z secrets na vars przy RENDER_SERVICE_ID
+          echo "👉 https://dashboard.render.com/static/${{ vars.RENDER_SERVICE_ID }}/deploys/${{ env.DEPLOY_ID }}"

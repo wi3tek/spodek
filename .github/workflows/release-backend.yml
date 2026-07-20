@@ -51,4 +51,4 @@ jobs:
       - name: Publikacja na Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up ./backend --fifowa-spoda-backend --detach
+        run: railway up ./backend --service fifowa-spoda-backend --detach
