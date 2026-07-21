@@ -39,6 +39,7 @@ public class SeasonService {
             season.setStatus( "ACTIVE" );
         }
 
+        season.setStartDate( LocalDateTime.now() );
         season.setLiveCode( generateUniqueLiveCode() );
 
         return seasonRepository.save( season );
