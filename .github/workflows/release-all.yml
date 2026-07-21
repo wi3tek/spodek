@@ -100,7 +100,7 @@ jobs:
           # Tworzymy potok w systemowym folderze tymczasowym
           rm -f /tmp/railway_pipe && mkfifo /tmp/railway_pipe
           
-          # 🚨 DODAJ TĘ LINIJKĘ - Wymusza zmianę w katalogu ./backend 
+          # Wymuszenie zmiany, aby ominąć cache Railway
           date > .railway-force-deploy.txt
           
           # Uruchamiamy CLI w tle i kierujemy logi do potoku
@@ -108,10 +108,6 @@ jobs:
           RAILWAY_PID=$!
           
           SKIPPED=false
-          
-          # Czytamy logi linijka po linijce
-          while read -r line; do
-            echo "$line"
           
           # Czytamy logi linijka po linijce
           while read -r line; do
