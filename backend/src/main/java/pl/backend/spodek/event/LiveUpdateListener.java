@@ -31,10 +31,10 @@ public class LiveUpdateListener {
 
     // Zdejmujemy statystyki z Cache'a!
     @EventListener
-    @CacheEvict(value = "stats", key = "#event.leagueId().concat('-').concat(#event.seasonId())")
+  //  @CacheEvict(value = "stats", key = "#event.leagueId().concat('-').concat(#event.seasonId())")
     public void clearStatsCache(LiveMatchUpdatedEvent event) {}
 
     @EventListener
-    @CacheEvict(value = "teamStats", key = "#event.leagueId().concat('-').concat(#event.seasonId())")
+  //  @CacheEvict(value = "teamStats", key = "#event.leagueId().concat('-').concat(#event.seasonId())")
     public void clearTeamStatsCache(LiveMatchUpdatedEvent event) {}
 }
