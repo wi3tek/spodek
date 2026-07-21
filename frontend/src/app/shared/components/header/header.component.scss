@@ -43,14 +43,22 @@
     align-items: center;
     gap: 15px;
 
+
     /* LOGO: Maleje płynnie przy scrollu */
     .app-logo {
       width: 55px;
       height: 55px;
-      object-fit: contain;
+      object-fit: cover; /* Zmień na 'fill', jeśli chcesz zignorować proporcje i po prostu naciągnąć obrazek */
+      object-position: center;
       transition: width 0.3s ease, height 0.3s ease;
-    }
+      border-radius: 10px;
+      border: 2px solid var(--primary-brown);
+      background-color: transparent;
 
+      /* UWAGA: Tutaj nie ma żadnych reguł image-rendering ani transform!
+         Zostawiamy przeglądarce wolną rękę do użycia najlepszego wygładzania. */
+    }
+    
     .title-group {
       display: flex;
       flex-direction: column;

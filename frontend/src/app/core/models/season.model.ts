@@ -14,4 +14,5 @@ export interface Season {
   createdBy?: string;
   updatedAt?: string;
   updatedBy?: string;
+  logoUrl?: string;
 }

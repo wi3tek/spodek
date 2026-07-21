@@ -4,7 +4,8 @@
     [title]="season()?.name"
     [backText]="isReadOnly() ? undefined : '← Powrót do ligi'"
     [backLink]="isReadOnly() ? null : ['/league', season()?.leagueId]"
-    [isReadOnly]="isReadOnly()">
+    [isReadOnly]="isReadOnly()"
+    [logoUrl]="season()?.logoUrl">
   </app-header>
 
   <!-- NOWY PASEK STATUSU I USTAWIEŃ -->
@@ -482,7 +483,7 @@
             <div class="match-element animate-in" [class.finished]="m.finished">
 
               <div class="match-header-row">
-                <div class="match-time">{{ m.createdAt | date:'dd.MM, HH:mm' }}</div>
+                <div class="match-time">{{m.matchweek}} kolejka</div>
 
                 <div class="match-status-center">
                   @if (m.finished) {
@@ -510,7 +511,7 @@
               <div class="scoreboard-container">
 
                 <div class="wc26-scoreboard-wrapper desktop-scoreboard">
-                  <div class="wc26-timer">{{ m.createdAt | date:'dd MMM, HH:mm' }}</div>
+                  <div class="wc26-timer">{{ m.createdAt | date:'dd MMM yyyy, HH:mm' }}</div>
                   <div class="wc26-border-wrapper">
                     <div class="wc26-inner-bg">
                       <div class="wc26-team home" (click)="toggleTooltip(m.id, 'home', $event)">
@@ -543,7 +544,8 @@
                   <div class="wc26-center-score">
                     <div class="wc26-score-digit">{{ m.homeSide.goals }}</div>
                     <div class="wc26-logo-box">
-                      <img src="/wc-logo.png" alt="WC26" class="desktop-logo">
+                      <img [src]="commonService.getLogoUrl(season()?.logoUrl)" (error)="commonService.onImageError($event)"
+                           alt="Logo" class="desktop-logo">
                       <span class="mobile-colon">:</span>
                     </div>
                     <div class="wc26-score-digit">{{ m.awaySide.goals }}</div>
@@ -646,9 +648,6 @@
             <th (click)="toggleSort('matchesPlayed')" class="sortable center">
               M @if(sortKey() === 'matchesPlayed'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
             </th>
-            <th (click)="toggleSort('points')" class="sortable center">
-              Pkt @if(sortKey() === 'points'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-            </th>
             <th (click)="toggleSort('goalsScored')" class="sortable center">
               ⚽ @if(sortKey() === 'goalsScored'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
             </th>
@@ -670,6 +669,9 @@
             <th (click)="toggleSort('currentElo')" class="sortable center highlight">
               RATING @if(sortKey() === 'currentElo'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
             </th>
+            <th (click)="toggleSort('points')" class="sortable center">
+              Pkt @if(sortKey() === 'points'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
             <th (click)="toggleSort('winRatio')" class="sortable highlight">
               WSP.W @if(sortKey() === 'winRatio'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
             </th>
@@ -689,7 +691,7 @@
                   </div>
                 </td>
                 <td>{{ row.matchesPlayed }}</td>
-                <td>{{ row.points }}</td>
+
                 <td>{{ row.goalsScored }}</td>
                 <td>{{ row.assists }}</td>
                 <td>{{ row.goalsLost }}</td>
@@ -708,12 +710,36 @@
                     }
                   </div>
                 </td>
+                <td>{{ row.points }}</td>
                 <td class="highlight-val">{{ row.winRatio | number:'1.2-2' }}</td>
               </tr>
             }
           </tbody>
         </table>
       </section>
+      @if (tableData().length > 0) {
+        <section class="card bump-chart-panel animate-in" style="grid-column: 1 / -1;">
+          <div class="chart-header">
+            <h3>📈 Wyścig w Tabeli</h3>
+
+            <div class="chart-controls">
+              <select class="period-select" [ngModel]="bumpChartInterval()" (ngModelChange)="bumpChartInterval.set($event); updateBumpChart()">
+                <option value="match">Krok: Mecz po meczu</option>
+                <option value="matchweek">Krok: Po każdej Kolejce</option>
+              </select>
+              <button class="btn-secondary btn-sm" (click)="toggleFullScreenChart()">
+                🔲 Pełny ekran
+              </button>
+            </div>
+          </div>
+
+          <div class="chart-scroll-wrapper">
+            <div class="chart-wrapper inline-chart">
+              <canvas #bumpChartCanvas></canvas>
+            </div>
+          </div>
+        </section>
+      }
     </div>
 
     @if (season()?.leagueId) {
@@ -744,7 +770,7 @@
 
         <div class="scoreboard-container" style="margin-top: 15px; margin-bottom: 30px;">
           <div class="wc26-scoreboard-wrapper desktop-scoreboard">
-            <div class="wc26-timer">{{ viewingMatch().createdAt | date:'dd.MM.yyyy, HH:mm' }}</div>
+            <div class="wc26-timer">{{ viewingMatch().createdAt | date:'dd MMM yyyy, HH:mm' }}</div>
             <div class="wc26-border-wrapper">
               <div class="wc26-inner-bg">
                 <div class="wc26-team home">
@@ -826,6 +852,23 @@
             </ul>
           </div>
         }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- NOWE: MODAL PEŁNEGO EKRANU DLA WYKRESU (DODAJ NA SAMYM DOLE OBOK INNYCH MODALI) -->
+@if (isChartFullScreen()) {
+  <div class="modal-overlay" (click)="toggleFullScreenChart()">
+    <div class="modal-content full-screen-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📈 Wyścig w Tabeli (Wszyscy gracze)</h3>
+        <button class="btn-close" (click)="toggleFullScreenChart()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="chart-wrapper-fullscreen">
+          <canvas #bumpChartModalCanvas></canvas>
+        </div>
       </div>
     </div>
   </div>

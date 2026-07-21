@@ -557,3 +557,77 @@
     transform: scale(1.05);
   }
 }
+
+/* ==========================================================================
+   PODGLĄD LOGA (NOWE)
+   ========================================================================== */
+
+/* Stylowanie samego kafelka z obrazkiem */
+.logo-preview-box {
+
+  img {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    margin-top:10px;
+    display: flex;
+    justify-content: left;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 2px solid var(--primary-brown);
+
+  }
+}
+
+/* Wariant dla formularza Dodawania (Pod inputami) */
+.preview-logo-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f1f5f9;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+
+  .preview-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #64748b;
+  }
+}
+
+/* Wariant dla formularza Edycji (Obok inputów) */
+.edit-layout-wrapper {
+  display: flex;
+  align-items: center; /* Centruje w pionie podgląd względem formularza */
+  gap: 20px;
+  padding-right: 35px; /* Chroni przed przyciskiem X */
+
+  .input-row {
+    flex: 1; /* Formularz bierze większość miejsca */
+    padding-right: 0 !important; /* Nadpisuje starą regułę dla .editing .input-row */
+  }
+
+  .logo-preview-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+
+    /* Ustawia logo ładnie na środku */
+    justify-content: center;
+    height: 100%;
+  }
+
+  @media (max-width: 500px) {
+    /* Na bardzo małych ekranach zrzucamy logo pod inputy */
+    flex-direction: column;
+    align-items: flex-start;
+    padding-right: 0;
+    gap: 15px;
+
+    .logo-preview-side {
+      width: 100%;
+      align-items: flex-start;
+    }
+  }
+}

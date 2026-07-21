@@ -36,6 +36,7 @@ export class LeagueSeasonsComponent implements OnInit {
 
   // Sygnał do przechowywania oryginalnego stanu sezonu (przed edycją)
   originalSeason = signal<Season | null>(null);
+  newSeasonLogoUrl = signal<string>('');
 
   // --- NASŁUCHIWANIE NA KLAWISZ ESCAPE ---
   @HostListener('document:keydown.escape', ['$event'])
@@ -79,6 +80,7 @@ export class LeagueSeasonsComponent implements OnInit {
       name: name,
       leagueId: id,
       image: this.newSeasonImage(),
+      logoUrl: this.newSeasonLogoUrl(), // <--- DODANO
       minPlayerMatchAmount: this.newSeasonMinMatches(),
       uniqueTeams: this.newSeasonUniqueTeams(),
       status: 'ACTIVE',
@@ -90,6 +92,7 @@ export class LeagueSeasonsComponent implements OnInit {
       this.newSeasonImage.set('');
       this.newSeasonMinMatches.set(10);
       this.newSeasonUniqueTeams.set(true);
+      this.newSeasonLogoUrl.set('');
       this.showAddForm.set(false);
       this.loadData(id);
     });
@@ -106,11 +109,19 @@ export class LeagueSeasonsComponent implements OnInit {
       const original = this.originalSeason()!;
       // Przywraca oryginalne wartości do sezonu na liście (cofa zmiany z ngModel)
       this.seasons.update((currentSeasons) =>
-        currentSeasons.map((s) => (s.id === original.id ? { ...original } : s))
+        currentSeasons.map((s) => (s.id === original.id ? { ...original } : s)),
       );
     }
     this.editingSeasonId.set(null);
     this.originalSeason.set(null);
+  }
+
+  updateEndDate(season: any, dateString: string) {
+    if (dateString) {
+      season.endDate = new Date(dateString).toISOString();
+    } else {
+      season.endDate = null;
+    }
   }
 
   hasChanges(season: Season): boolean {
@@ -122,12 +133,19 @@ export class LeagueSeasonsComponent implements OnInit {
       season.image !== original.image ||
       season.minPlayerMatchAmount !== original.minPlayerMatchAmount ||
       season.uniqueTeams !== original.uniqueTeams ||
-      season.status !== original.status
+      season.status !== original.status ||
+      season.endDate !== original.endDate || // <--- DODANO SPRAWDZANIE DATY
+      season.logoUrl !== original?.logoUrl
     );
   }
 
   saveEdit(season: Season) {
     if (!season.id) return;
+
+    // JEŚLI SEZON JEST ZAKOŃCZONY, A DATA JEST PUSTA -> DOMYŚLNIE AKTUALNA DATA
+    if (season.status === 'FINISHED' && !season.endDate) {
+      season.endDate = new Date().toISOString();
+    }
 
     const payload: Season = {
       ...season,

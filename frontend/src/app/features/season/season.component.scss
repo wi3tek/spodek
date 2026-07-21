@@ -2676,3 +2676,137 @@
     }
   }
 }
+
+/* ==========================================================================
+   BUMP CHART (WYKRES WYŚCIGOWY)
+   ========================================================================== */
+.bump-chart-section {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 2px dashed #e2e8f0;
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+
+    h3 {
+      margin: 0;
+      color: var(--primary-brown);
+      font-size: 1.2rem;
+    }
+  }
+
+  .inline-chart {
+    position: relative;
+    height: 350px;
+    width: 100%;
+
+    /* Na telefonach wymuszamy landscape mode dla tego konkretnego kawałka (scroll w prawo) */
+    @media (max-width: 600px) {
+      min-width: 600px; /* Zmusza wykres do zachowania sensownej szerokości */
+    }
+  }
+
+  /* Pozwala przewijać na telefonie, jeśli wykres ucieka w prawo */
+  @media (max-width: 600px) {
+    overflow-x: auto;
+  }
+}
+
+/* Modal Pełnoekranowy dla Wykresu */
+.modal-content.full-screen-modal {
+  max-width: 95vw; /* Zajmuje prawie cały ekran */
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+
+  .modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    overflow: hidden; /* Canvas zajmie się resztą */
+  }
+
+  .chart-wrapper-fullscreen {
+    flex: 1;
+    width: 100%;
+    min-height: 400px;
+    position: relative;
+
+    @media (max-width: 600px) {
+      /* Na najmniejszych telefonach zmniejszamy też proporcje dla full-screen, pozwalając na poziomy scroll */
+      min-width: 800px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    overflow-x: auto;
+  }
+}
+
+/* ==========================================================================
+   BUMP CHART PANEL
+   ========================================================================== */
+.bump-chart-panel {
+  margin-top: 10px;
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+
+    h3 {
+      margin: 0;
+      color: var(--primary-brown);
+      font-size: 1.2rem;
+      border: none;
+      padding: 0;
+    }
+
+    .chart-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+
+      .period-select {
+        background-color: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        outline: none;
+        cursor: pointer;
+
+        &:focus {
+          border-color: var(--beer-gold);
+        }
+      }
+    }
+  }
+
+  .chart-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .inline-chart {
+    position: relative;
+    height: 350px;
+    min-width: 600px; /* Zapewnia brak spłaszczania na smartfonach */
+  }
+}

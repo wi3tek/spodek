@@ -1,11 +1,12 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { AuthService } from '../services/auth.service'; // Upewnij się co do ścieżki
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const token = localStorage.getItem('access_token');
-  const router = inject(Router);
+  // Wstrzykujemy AuthService, żeby mieć dostęp do zintegrowanego wylogowania
+  const authService = inject(AuthService);
+  const token = authService.getToken(); // Pobieramy token bezpośrednio przez metodę z serwisu
 
   let clonedReq = req;
 
@@ -22,8 +23,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(clonedReq).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
-        localStorage.removeItem('access_token');
-        router.navigate(['/login']);
+        // Zamiast ręcznego usuwania tokena, wywołujemy pełne wylogowanie z serwisu.
+        // Dzięki temu timer zostaje poprawnie "zabity", a sygnały wyzerowane.
+        authService.logout('Sesja wygasła. Zaloguj się ponownie.');
       }
       return throwError(() => error);
     }),

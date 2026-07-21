@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ThemeService } from '../../../core/services/theme.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { CommonService } from '../../../core/services/common.service';
 
 @Component({
   selector: 'app-header',
@@ -16,10 +17,12 @@ export class HeaderComponent {
   @Input() backLink?: any[] | string | null;
   @Input() backText?: string;
   @Input() isReadOnly: boolean = false; // NOWE: Flaga trybu gościa
+  @Input() logoUrl?: string | null = null;
 
   public themeService = inject(ThemeService);
   private router = inject(Router);
   authService = inject(AuthService);
+  public commonService = inject(CommonService);
 
   isMobileMenuOpen = signal(false);
   isScrolled = signal(false);
@@ -42,6 +45,7 @@ export class HeaderComponent {
     this.closeMobileMenu();
     localStorage.removeItem('spodek_token');
     this.router.navigate(['/login']);
+
   }
 
   // Zmienna przechowująca zdarzenie instalacji

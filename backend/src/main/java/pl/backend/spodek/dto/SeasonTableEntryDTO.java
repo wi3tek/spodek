@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -27,4 +29,17 @@ public class SeasonTableEntryDTO {
     private BigDecimal winRatio;
     private BigDecimal currentElo;
     private BigDecimal eloDifference;
+
+    private List<PlayerMatchSnapshot> history = new ArrayList<>();
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class PlayerMatchSnapshot {
+        private int matchweek;        // Do skoków co kolejkę
+        private int globalMatchIndex; // Do skoków mecz po meczu
+        private int points;
+        private BigDecimal winRatio;
+        private BigDecimal elo;
+    }
 }

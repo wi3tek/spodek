@@ -6,6 +6,8 @@ import {
   computed,
   OnDestroy,
   HostListener,
+  ElementRef,
+  ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -25,6 +27,9 @@ import { StatsComponent } from '../stats/stats.component';
 import { TeamStatsComponent } from '../team-stats/team-stats.component';
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { PlayerAvatarComponent } from '../../shared/components/player-avatar/player-avatar.component';
+import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { CommonService } from '../../core/services/common.service';
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-season',
@@ -52,6 +57,7 @@ export class SeasonComponent implements OnInit, OnDestroy {
   private matchweekService = inject(MatchweekService);
   private matchmakingService = inject(MatchmakingService);
   private liveService = inject(LiveService);
+  public commonService = inject(CommonService);
 
   // --- WŁAŚCIWOŚCI I SYGNAŁY ---
   private liveSubscription?: Subscription;
@@ -118,6 +124,28 @@ export class SeasonComponent implements OnInit, OnDestroy {
   viewingMatch = signal<any | null>(null);
   filterByMinMatches = signal<boolean>(false);
   showSeasonDetailsModal = signal<boolean>(false);
+
+  isChartFullScreen = signal<boolean>(false);
+  bumpChartInterval = signal<'match' | 'matchweek'>('match');
+  private bumpChart: Chart | null = null;
+  private _bumpChartCanvas!: ElementRef<HTMLCanvasElement>;
+  private _bumpChartModalCanvas!: ElementRef<HTMLCanvasElement>;
+
+  @ViewChild('bumpChartCanvas') set bumpChartCanvas(content: ElementRef<HTMLCanvasElement>) {
+    if (content) {
+      this._bumpChartCanvas = content;
+      this.updateBumpChart();
+    }
+  }
+
+  @ViewChild('bumpChartModalCanvas') set bumpChartModalCanvas(
+    content: ElementRef<HTMLCanvasElement>,
+  ) {
+    if (content) {
+      this._bumpChartModalCanvas = content;
+      this.updateBumpChart();
+    }
+  }
 
   newMatch: any = {
     matchweek: 1,
@@ -374,6 +402,7 @@ export class SeasonComponent implements OnInit, OnDestroy {
 
   private applyLiveUpdate(res: any) {
     this.season.set(res.season);
+
     this.seasonId.set(res.season.id);
     this.initFilterToggle(res.season.status); // <--- DODANO
     const sorted = res.matches.sort(
@@ -381,6 +410,7 @@ export class SeasonComponent implements OnInit, OnDestroy {
     );
     this.matches.set(sorted);
     this.tableData.set(res.table);
+    setTimeout(() => this.updateBumpChart(), 0);
     this.statsRefreshTrigger.update((v) => v + 1);
   }
 
@@ -392,6 +422,7 @@ export class SeasonComponent implements OnInit, OnDestroy {
   loadSeasonData(id: string) {
     this.seasonService.getSeasonById(id).subscribe((s) => {
       this.season.set(s);
+      console.log("HALO" + this.season);
       this.initFilterToggle(s.status); // <--- DODANO
     });
     this.matchService.getMatchesBySeason(id).subscribe((m) => {
@@ -403,7 +434,10 @@ export class SeasonComponent implements OnInit, OnDestroy {
     });
 
     this.seasonService.getSeasonTable(id).subscribe({
-      next: (table) => this.tableData.set(table),
+      next: (table) => {
+        this.tableData.set(table);
+        setTimeout(() => this.updateBumpChart(), 0);
+      },
       error: (err) => console.error('Błąd pobierania tabeli:', err),
     });
   }
@@ -814,6 +848,8 @@ export class SeasonComponent implements OnInit, OnDestroy {
       this.sortKey.set(key);
       this.sortDirection.set('desc');
     }
+    // Wywołanie aktualizacji wykresu po zmianie sortowania
+    setTimeout(() => this.updateBumpChart(), 0);
   }
 
   nextPage() {
@@ -831,9 +867,9 @@ export class SeasonComponent implements OnInit, OnDestroy {
   }
 
   private initFilterToggle(status: string) {
-    if( status === 'FINISHED') {
-      this.filterByMinMatches.set(true)
-      this.onFilterToggleChange(true)
+    if (status === 'FINISHED') {
+      this.filterByMinMatches.set(true);
+      this.onFilterToggleChange(true);
       return;
     }
 
@@ -849,5 +885,176 @@ export class SeasonComponent implements OnInit, OnDestroy {
   onFilterToggleChange(val: boolean) {
     this.filterByMinMatches.set(val);
     localStorage.setItem('season_table_filter', String(val));
+    // Wywołanie aktualizacji wykresu po zmianie filtra
+    setTimeout(() => this.updateBumpChart(), 0);
+  }
+
+  toggleFullScreenChart() {
+    this.isChartFullScreen.set(!this.isChartFullScreen());
+    // Kiedy modal się otwiera, angular rysuje nowe płótno. Setter ViewChild zaktualizuje wykres automatycznie.
+  }
+
+  updateBumpChart() {
+    if (!this.tableData().length) return;
+    const canvas = this.isChartFullScreen() ? this._bumpChartModalCanvas : this._bumpChartCanvas;
+    if (!canvas) return;
+
+    if (this.bumpChart) this.bumpChart.destroy();
+
+    const players = this.tableData();
+    const sortKey = this.sortKey();
+    const interval = this.bumpChartInterval();
+
+    // 1. Określamy limit kroków w zależności od wybranego trybu
+    let maxStep = 0;
+    if (interval === 'match') {
+      const finishedMatches = this.matches().filter((m) => m.finished).length;
+      maxStep = finishedMatches; // Globalny indeks max
+    } else {
+      maxStep = Math.max(...players.flatMap((p) => p.history?.map((h: any) => h.matchweek) || [0]));
+    }
+
+    // 2. Budujemy stany graczy (dla każdego kroku)
+    const statesAtStep = Array.from({ length: maxStep + 1 }, () => [] as any[]);
+
+    players.forEach((p) => {
+      let lastSnap = { points: 0, winRatio: 0, elo: 1000 };
+
+      for (let step = 0; step <= maxStep; step++) {
+        if (step === 0) {
+          statesAtStep[0].push({
+            playerId: p.playerId,
+            alias: p.alias,
+            points: 0,
+            winRatio: 0,
+            elo: 1000,
+          });
+          continue;
+        }
+
+        // Szukamy wszystkich snapshotów aż do aktualnego kroku
+        let validSnaps = [];
+        if (interval === 'match') {
+          validSnaps = p.history?.filter((h: any) => h.globalMatchIndex <= step) || [];
+        } else {
+          validSnaps = p.history?.filter((h: any) => h.matchweek <= step) || [];
+        }
+
+        if (validSnaps.length > 0) {
+          // sortujemy, by mieć pewność, że nadpiszemy ostatnim chronologicznym wynikiem
+          validSnaps.sort((a: any, b: any) => a.globalMatchIndex - b.globalMatchIndex);
+          lastSnap = validSnaps[validSnaps.length - 1];
+        }
+
+        // Pushujemy stan: albo zaktualizowany, albo utrzymany z poprzedniego kroku (pauza)
+        statesAtStep[step].push({
+          playerId: p.playerId,
+          alias: p.alias,
+          points: lastSnap.points,
+          winRatio: lastSnap.winRatio,
+          elo: lastSnap.elo,
+        });
+      }
+    });
+
+    // 3. Nadajemy rangę per krok
+    for (let step = 0; step <= maxStep; step++) {
+      statesAtStep[step].sort((a, b) => {
+        if (sortKey === 'points')
+          return b.points - a.points || b.winRatio - a.winRatio || b.elo - a.elo;
+        if (sortKey === 'winRatio')
+          return b.winRatio - a.winRatio || b.points - a.points || b.elo - a.elo;
+        if (sortKey === 'currentElo')
+          return b.elo - a.elo || b.points - a.points || b.winRatio - a.winRatio;
+        return b.points - a.points;
+      });
+      statesAtStep[step].forEach((state, index) => {
+        state.rank = index + 1;
+      });
+    }
+
+    const topPlayers = this.isChartFullScreen()
+      ? this.sortedTable()
+      : this.sortedTable().slice(0, 5);
+
+    const labels = Array.from({ length: maxStep + 1 }, (_, i) => {
+      if (i === 0) return 'Start';
+      return interval === 'match' ? `Mecz ${i}` : `Kol. ${i}`;
+    });
+
+    const colors = [
+      '#ef4444',
+      '#3b82f6',
+      '#10b981',
+      '#f59e0b',
+      '#8b5cf6',
+      '#ec4899',
+      '#14b8a6',
+      '#f97316',
+      '#6366f1',
+      '#84cc16',
+    ];
+
+    const datasets = topPlayers.map((p, idx) => {
+      const color = colors[idx % colors.length];
+      const dataPoints = [];
+      for (let step = 0; step <= maxStep; step++) {
+        const state = statesAtStep[step].find((s) => s.playerId === p.playerId);
+        dataPoints.push(state ? state.rank : null);
+      }
+      return {
+        label: p.alias,
+        data: dataPoints,
+        borderColor: color,
+        backgroundColor: color,
+        borderWidth: 3,
+        tension: 0.3,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+      };
+    });
+
+    const config: ChartConfiguration = {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { font: { weight: 'bold' } } },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                const rank = context.raw;
+                const step = context.dataIndex;
+                const playerId = topPlayers[context.datasetIndex].playerId;
+                const state = statesAtStep[step].find((s) => s.playerId === playerId);
+                let valStr = '';
+                if (state) {
+                  if (sortKey === 'points') valStr = `${state.points} pkt`;
+                  if (sortKey === 'winRatio') valStr = `${state.winRatio} WSP`;
+                  if (sortKey === 'currentElo') valStr = `${state.elo.toFixed(0)} ELO`;
+                }
+                return `${context.dataset.label}: ${rank} m-ce (${valStr})`;
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            reverse: true,
+            min: 1,
+            max: statesAtStep[0].length,
+            ticks: { stepSize: 1, font: { weight: 'bold' } },
+            title: { display: true, text: 'Pozycja', font: { weight: 'bold' } },
+          },
+          x: { grid: { display: false } },
+        },
+      },
+    };
+
+    const ctx = canvas.nativeElement.getContext('2d');
+    if (ctx) this.bumpChart = new Chart(ctx, config);
   }
 }

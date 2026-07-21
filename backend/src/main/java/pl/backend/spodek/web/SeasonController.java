@@ -42,6 +42,8 @@ public class SeasonController {
                     existing.setMinPlayerMatchAmount( season.getMinPlayerMatchAmount() );
                     existing.setImage( season.getImage() );
                     existing.setStatus( season.getStatus() );
+                    existing.setLogoUrl( season.getLogoUrl() );
+                    existing.setLogoUrl( season.getLogoUrl() );
                     return seasonRepository.save( existing );
                 } )
                 .orElseThrow( () -> new RuntimeException( "Nie ma takiego sezonu" ) );

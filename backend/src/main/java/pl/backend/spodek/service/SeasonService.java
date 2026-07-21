@@ -45,38 +45,41 @@ public class SeasonService {
     }
 
     public List<SeasonTableEntryDTO> getSeasonTable(String seasonId) {
-        List<Match> matches = matchRepository.findBySeasonId( seasonId );
+        // Musimy posortować mecze chronologicznie, żeby historia punktów składała się poprawnie!
+        List<Match> matches = matchRepository.findBySeasonId( seasonId ).stream()
+                .sorted(Comparator.comparing(Match::getCreatedAt))
+                .toList();
         Map<String, Player> playersMap = adminService.getPlayersMap();
 
-        // Zabezpieczenie: jeśli nie ma meczów, nie ma tabeli
         if (matches.isEmpty()) {
             return Collections.emptyList();
         }
-// TODO poprawic w matches leagueId
-        String leagueId = matches.getFirst().getLeagueId();
 
-        // Wyciągamy datę ostatniego meczu w tym sezonie, żeby wiedzieć dla jakiego momentu pobrać "Snapshot" ELO
-        LocalDateTime lastMatchDate = matches.stream()
-                .map( Match::getCreatedAt )
-                .filter( Objects::nonNull )
-                .max( LocalDateTime::compareTo )
-                .orElse( LocalDateTime.now() );
+        String leagueId = matches.get(0).getLeagueId();
 
-        Map<String, SeasonTableEntryDTO> statsMap = new HashMap<>();
-
-        for (Match match : matches) {
-            processMatchSide( statsMap, match, true, playersMap );
-            processMatchSide( statsMap, match, false, playersMap );
+        // 1. Pobieramy pełną historię ELO dla ligi i mapujemy: matchId -> (playerId -> ratingAfter)
+        List<PlayerRatingHistory> eloHist = ratingHistoryRepository.findByLeagueIdOrderByCreatedAtAsc(leagueId);
+        Map<String, Map<String, BigDecimal>> eloByMatch = new HashMap<>();
+        for (PlayerRatingHistory rh : eloHist) {
+            if (rh.getMatchId() != null) {
+                eloByMatch.computeIfAbsent(rh.getMatchId(), k -> new HashMap<>())
+                        .put(rh.getPlayerId(), rh.getRatingAfter());
+            }
         }
 
-        // Pobieramy historię ELO i dopisujemy do zawodników
-        for (SeasonTableEntryDTO entry : statsMap.values()) {
-            // Tymczasowo (do momentu jak napiszesz dedykowane query w Mongo),
-            // pobieramy wszystko i filtrujemy w Javie. W produkcji najlepiej napisać metodę:
-            // findFirstByLeagueIdAndPlayerIdAndCreatedAtLessThanEqualOrderByCreatedAtDesc
+        // Przechowuje nam "obecne" ELO gracza podczas pętli
+        Map<String, BigDecimal> currentEloMap = new HashMap<>();
+        Map<String, SeasonTableEntryDTO> statsMap = new HashMap<>();
 
-            // Ponieważ nie znamy Twojego repo w 100%, zrobimy bezpieczne pobranie najnowszego dla tego gracza w tej lidze.
-            // Zauważ, że jeśli gracz miał nowsze mecze w innym sezonie, ten kod trzeba zoptymalizować pod datę (lastMatchDate).
+        int globalMatchIndex = 0; // <--- INICJALIZACJA
+        for (Match match : matches) {
+            globalMatchIndex++;
+            processMatchSide( statsMap, match, true, playersMap, eloByMatch, currentEloMap, globalMatchIndex );
+            processMatchSide( statsMap, match, false, playersMap, eloByMatch, currentEloMap, globalMatchIndex );
+        }
+
+        // Dopisywanie wartości ostatecznych i różnicy ELO z ostatniego meczu
+        for (SeasonTableEntryDTO entry : statsMap.values()) {
             Optional<PlayerRatingHistory> latestRating = ratingHistoryRepository
                     .findFirstByLeagueIdAndPlayerIdOrderByCreatedAtDesc( leagueId, entry.getPlayerId() );
 
@@ -84,10 +87,9 @@ public class SeasonService {
                 entry.setCurrentElo( latestRating.get().getRatingAfter() );
                 entry.setEloDifference( latestRating.get().getRatingDifference() );
             } else {
-                entry.setCurrentElo( BigDecimal.valueOf( 1000 ) ); // Wartość domyślna
+                entry.setCurrentElo( BigDecimal.valueOf( 1000 ) );
                 entry.setEloDifference( BigDecimal.ZERO );
             }
-
             entry.setGoalDifference( entry.getGoalsScored() - entry.getGoalsLost() );
         }
 
@@ -104,7 +106,10 @@ public class SeasonService {
             Map<String, SeasonTableEntryDTO> statsMap,
             Match match,
             boolean isHome,
-            Map<String, Player> playersMap
+            Map<String, Player> playersMap,
+            Map<String, Map<String, BigDecimal>> eloByMatch,
+            Map<String, BigDecimal> currentEloMap,
+            int globalMatchIndex
     ) {
         var currentSide = isHome ? match.getHomeSide() : match.getAwaySide();
         var opponentSide = isHome ? match.getAwaySide() : match.getHomeSide();
@@ -113,11 +118,9 @@ public class SeasonService {
         int win = 0, draw = 0, loss = 0;
 
         if (currentSide.getGoals() > opponentSide.getGoals()) {
-            points = 3;
-            win = 1;
+            points = 3; win = 1;
         } else if (currentSide.getGoals() == opponentSide.getGoals()) {
-            points = 1;
-            draw = 1;
+            points = 1; draw = 1;
         } else {
             loss = 1;
         }
@@ -142,10 +145,8 @@ public class SeasonService {
             s.setWins( s.getWins() + win );
             s.setDraws( s.getDraws() + draw );
             s.setLosses( s.getLosses() + loss );
-
             s.setGoalsScored( s.getGoalsScored() + currentSide.getGoals() );
             s.setGoalsLost( s.getGoalsLost() + opponentSide.getGoals() );
-
             s.setYellowCards( s.getYellowCards() + player.getYellowCards() );
             s.setRedCards( s.getRedCards() + player.getRedCards() );
             s.setAssists( s.getAssists() + player.getAssists() );
@@ -155,6 +156,25 @@ public class SeasonService {
                         .divide( BigDecimal.valueOf( s.getMatchesPlayed() ), 2, RoundingMode.HALF_UP );
                 s.setWinRatio( ratio );
             }
+
+            BigDecimal eloAfter = currentEloMap.getOrDefault(pId, BigDecimal.valueOf(1000));
+            if (eloByMatch.containsKey(match.getId()) && eloByMatch.get(match.getId()).containsKey(pId)) {
+                eloAfter = eloByMatch.get(match.getId()).get(pId);
+                currentEloMap.put(pId, eloAfter);
+            }
+
+            // UWAGA: Nie usuwamy już historii z danej kolejki (jak sugerowałem wcześniej),
+            // ponieważ potrzebujemy precyzyjnych danych do trybu "Mecz po meczu".
+            // Frontend sam wybierze ostatni mecz z kolejki w trybie "Po każdej Kolejce".
+
+            SeasonTableEntryDTO.PlayerMatchSnapshot snap = new SeasonTableEntryDTO.PlayerMatchSnapshot(
+                    match.getMatchweek(),
+                    globalMatchIndex,
+                    s.getPoints(),
+                    s.getWinRatio(),
+                    eloAfter
+            );
+            s.getHistory().add(snap);
         }
     }
 

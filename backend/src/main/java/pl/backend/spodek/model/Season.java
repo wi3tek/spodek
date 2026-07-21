@@ -31,4 +31,5 @@ public class Season extends BaseDocument {
 
     private Integer minPlayerMatchAmount; // NOWE: Minimalna liczba meczów
     private Integer leagueSeasonCount;
+    private String logoUrl;
 }

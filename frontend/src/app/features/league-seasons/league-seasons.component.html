@@ -1,6 +1,6 @@
 <div class="dashboard-container">
 
-  <app-header title="FIFOWA ŚPODA"></app-header>
+  <app-header [title]="league().name"></app-header>
 
   <div class="grid-layout">
 
@@ -26,6 +26,15 @@
                    (ngModelChange)="newSeasonImage.set($event)"
                    placeholder="Adres URL tła sezonu (image)...">
 
+            <!-- NOWE POLE LOGO -->
+            <input type="text" class="full-input"
+                   [ngModel]="newSeasonLogoUrl()"
+                   (ngModelChange)="newSeasonLogoUrl.set($event)"
+                   placeholder="Adres URL loga sezonu...">
+            <small style="color: #94a3b8; font-size: 0.75rem; margin-top: -8px; margin-bottom: 8px; display: block;">
+              * Zalecane logo w proporcjach kwadratu (1:1). Inne proporcje mogą wyświetlać się niepoprawnie.
+            </small>
+
             <input type="number" class="full-input"
                    [ngModel]="newSeasonMinMatches()"
                    (ngModelChange)="newSeasonMinMatches.set($event)"
@@ -39,6 +48,14 @@
               <span class="label-text">Unikalne drużyny</span>
             </label>
           </div>
+          @if (newSeasonLogoUrl()) {
+            <div class="preview-logo-wrapper mt-10">
+              <span class="preview-label">Podgląd loga:</span>
+              <div class="logo-preview-box">
+                <img [src]="newSeasonLogoUrl()" alt="Podgląd">
+              </div>
+            </div>
+          }
           <button class="btn-primary btn-sm mt-10" (click)="saveSeason()">Stwórz</button>
         </div>
       }
@@ -56,17 +73,28 @@
 
                 <button class="btn-close-edit" (click)="$event.stopPropagation(); cancelEdit()" title="Anuluj edycję">✕</button>
 
-                <div class="input-row" (click)="$event.stopPropagation()" [class.is-finished]="season.status === 'FINISHED'">
+                <!-- USUNIĘTO: [class.is-finished] -> by można było klikać! -->
+                <div class="input-row" (click)="$event.stopPropagation()">
 
                   <div class="readonly-dates">
-                    <span class="readonly-badge">📅 Start: {{ season.startDate | date:'dd MMM yyyy' }}</span>
-                    @if (season.endDate) {
-                      <span class="readonly-badge end">🛑 Koniec: {{ season.endDate | date:'dd MMM yyyy' }}</span>
+                    <span class="readonly-badge">📅 Start: {{ season.startDate | date:'dd.MM.yyyy' }}</span>
+                    @if (season.status === 'ACTIVE' && season.endDate) {
+                      <span class="readonly-badge end">🛑 Koniec: {{ season.endDate | date:'dd.MM.yyyy' }}</span>
                     }
                   </div>
 
+                  <!-- PROSTE POLE DATY: Pojawia się tylko po kliknięciu "Zakończ" -->
+                  @if (season.status === 'FINISHED') {
+                    <input type="date"
+                           class="sm-input"
+                           [ngModel]="season.endDate | date:'yyyy-MM-dd'"
+                           (ngModelChange)="updateEndDate(season, $event)"
+                           title="Data zakończenia">
+                  }
+
                   <input type="text" class="sm-input" [(ngModel)]="season.name" placeholder="Nazwa sezonu" [disabled]="season.status === 'FINISHED'">
                   <input type="text" class="sm-input" [(ngModel)]="season.image" placeholder="URL tła sezonu" [disabled]="season.status === 'FINISHED'">
+                  <input type="text" class="sm-input" [(ngModel)]="season.logoUrl" placeholder="URL loga sezonu" [disabled]="season.status === 'FINISHED'">
                   <input type="number" class="sm-input" [(ngModel)]="season.minPlayerMatchAmount" placeholder="Min. liczba meczów" [disabled]="season.status === 'FINISHED'">
 
                   <label class="custom-toggle" [class.disabled]="season.status === 'FINISHED'">
@@ -74,9 +102,17 @@
                     <span class="slider"></span>
                     <span class="label-text">Unikalne drużyny</span>
                   </label>
-                </div>
 
-              } @else {
+                </div>
+                @if (season.logoUrl) {
+                  <div class="logo-preview-side">
+                    <div class="logo-preview-box">
+                      <img [src]="season.logoUrl" alt="Podgląd">
+                    </div>
+                  </div>
+                }
+
+              }@else {
                 <div class="view-group">
                   <div class="header-row">
                     <span class="title">{{ season.name }}</span>
@@ -96,7 +132,11 @@
                       <span class="detail-item">🛡️ Unikalne Drużyny</span>
                     }
                     <span class="detail-item">🎯 Min. meczów: {{ season.minPlayerMatchAmount || 0 }}</span>
+
                   </div>
+
+
+
                 </div>
               }
             </div>

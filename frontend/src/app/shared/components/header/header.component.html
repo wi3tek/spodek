@@ -2,12 +2,14 @@
   <div class="header-inner">
 
     <div class="brand">
-      <div style="background-color: black; padding: 8px 5px 8px 5px; border-radius: 10px;">
-      <img src="/wc-logo.png" alt="Logo" class="app-logo">
+      <div>
+        <!-- Używamy przekazanego logoUrl lub domyślnego pliku -->
+        <img [src]="commonService.getLogoUrl(logoUrl)" (error)="commonService.onImageError($event)" alt="Logo"
+             class="app-logo">
       </div>
       <div class="title-group">
         @if (backLink && backText) {
-          <button class="btn-back-link" [routerLink]="backLink">{{ backText }}</button>
+        <button class="btn-back-link" [routerLink]="backLink">{{ backText }}</button>
         }
         <h1 class="app-title">{{ title }}</h1>
       </div>
