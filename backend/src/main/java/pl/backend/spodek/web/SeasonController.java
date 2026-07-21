@@ -33,11 +33,15 @@ public class SeasonController {
     }
 
     @PutMapping("/{id}")
-    public Season updatePlayer(@PathVariable String id, @RequestBody Season season) {
+    public Season updateSeason(@PathVariable String id, @RequestBody Season season) {
         return seasonRepository.findById( id )
                 .map( existing -> {
                     existing.setName( season.getName() );
                     existing.setUniqueTeams( season.isUniqueTeams() );
+                    existing.setEndDate( season.getEndDate() );
+                    existing.setMinPlayerMatchAmount( season.getMinPlayerMatchAmount() );
+                    existing.setImage( season.getImage() );
+                    existing.setStatus( season.getStatus() );
                     return seasonRepository.save( existing );
                 } )
                 .orElseThrow( () -> new RuntimeException( "Nie ma takiego sezonu" ) );

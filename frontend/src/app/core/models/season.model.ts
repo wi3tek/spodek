@@ -2,11 +2,16 @@ export interface Season {
   id?: string;
   name: string;
   leagueId: string;
-  status: 'ACTIVE' | 'FINISHED';
-  createdAt?: string;
-  updatedAt?: string;
-  startDate?: string;
-  endDate?: string;
+  image: string | null;
+  minPlayerMatchAmount: number;
   uniqueTeams: boolean;
-  liveCode: string;
+  status: 'ACTIVE' | 'FINISHED' | string;
+  startDate: string;
+  endDate: string;
+  leagueSeasonCount: number;
+  liveCode?: string | null;
+  createdAt?: string;
+  createdBy?: string;
+  updatedAt?: string;
+  updatedBy?: string;
 }

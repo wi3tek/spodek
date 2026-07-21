@@ -16,7 +16,9 @@ public class StatsController {
     @GetMapping("/{leagueId}")
     public ResponseEntity<StatsDto.Response> getStats(
             @PathVariable String leagueId,
-            @RequestParam String seasonId) { // Pobieramy seasonId z frontendu
-        return ResponseEntity.ok(statsService.generateFullStats(leagueId, seasonId));
+            @RequestParam String seasonId,
+            @RequestParam(defaultValue = "SEASON") String scope
+    ) { // Pobieramy seasonId z frontendu
+        return ResponseEntity.ok(statsService.generateFullStats(leagueId, seasonId,scope));
     }
 }

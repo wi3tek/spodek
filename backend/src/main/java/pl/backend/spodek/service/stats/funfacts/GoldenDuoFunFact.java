@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Component
 public class GoldenDuoFunFact implements FunFactService {
-    private static final String TITLE = "Ulubiona para";
+    private static final String TITLE = "Solidne synki";
     private static final String ICON = "🤝";
 
     @Override

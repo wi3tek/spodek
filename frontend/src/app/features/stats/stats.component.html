@@ -1,6 +1,14 @@
 <div class="stats-container card">
   <div class="panel-header">
     <h2>🧑‍🌾 Chłopskie statystyki</h2>
+    <div class="tabs">
+      <button class="tab-btn"
+              [class.active]="scope() === 'SEASON'"
+              (click)="changeScope('SEASON')">SEZON</button>
+      <button class="tab-btn"
+              [class.active]="scope() === 'ALL_TIME'"
+              (click)="changeScope('ALL_TIME')">CAŁA HISTORIA</button>
+    </div>
   </div>
 
   @if (isLoading()) {

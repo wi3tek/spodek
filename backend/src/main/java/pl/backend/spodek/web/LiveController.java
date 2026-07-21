@@ -46,7 +46,9 @@ public class LiveController {
     @GetMapping("/stats/{leagueId}")
     public ResponseEntity<StatsDto.Response> getStats(
             @PathVariable String leagueId,
-            @RequestParam String seasonId) {
-        return ResponseEntity.ok(statsService.generateFullStats(leagueId, seasonId));
+            @RequestParam String seasonId,
+            @RequestParam(defaultValue = "SEASON") String scope
+    ) {
+        return ResponseEntity.ok(statsService.generateFullStats(leagueId, seasonId,scope));
     }
 }

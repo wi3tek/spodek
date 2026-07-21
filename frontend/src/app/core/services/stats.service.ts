@@ -100,10 +100,16 @@ export class StatsService {
   private http = inject(HttpClient);
 
   // Zmienione parametry - komponent poda nam, czy jest na widoku live
-  getStats(leagueId: string, seasonId: string, isReadOnly: boolean): Observable<StatsResponse> {
+  getStats(
+    leagueId: string,
+    seasonId: string,
+    isReadOnly: boolean,
+    scope: string,
+  ): Observable<StatsResponse> {
     const endpoint = isReadOnly ? 'public/live/stats' : 'stats';
+    // POPRAWKA BŁĘDU: Zastąpiono drugie '?' znakiem '&' w query params
     return this.http.get<StatsResponse>(
-      `${environment.apiUrl}/${endpoint}/${leagueId}?seasonId=${seasonId}`,
+      `${environment.apiUrl}/${endpoint}/${leagueId}?seasonId=${seasonId}&scope=${scope}`,
     );
   }
 }

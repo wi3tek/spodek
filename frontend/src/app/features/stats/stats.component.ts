@@ -58,7 +58,7 @@ export class StatsComponent implements OnChanges {
   }
 
   private statsService = inject(StatsService);
-  private router = inject(Router); // NOWE
+  private router = inject(Router);
 
   // Dynamiczny getter sprawdzający, czy adres WWW to podgląd kibica
   get isReadOnlyMode(): boolean {
@@ -70,14 +70,16 @@ export class StatsComponent implements OnChanges {
   statsData = signal<StatsResponse | null>(null);
   selectedPlayerId = signal<string>('');
 
-  selectedChartType = signal<'day' | 'match'>('day'); // NOWE
+  selectedChartType = signal<'day' | 'match'>('day');
   // 1. Określamy domyślny okres wykresu na 2 lata ('2')
-  selectedChartPeriod = signal<string>('all');
+  selectedChartPeriod = signal<string>('50');
 
   // Niezależne stany sortowania dla każdej z 3 tabel w H2H
   partnerSort = signal<{ key: PartnerSortKey; asc: boolean }>({ key: 'matches', asc: false });
   againstSort = signal<{ key: PartnerSortKey; asc: boolean }>({ key: 'matches', asc: false });
   teamSort = signal<{ key: TeamSortKey; asc: boolean }>({ key: 'matches', asc: false });
+
+  scope = signal<'SEASON' | 'ALL_TIME'>('SEASON');
 
   selectedPlayerRelations = computed<PlayerRelations | null>(() => {
     const id = this.selectedPlayerId();
@@ -117,30 +119,48 @@ export class StatsComponent implements OnChanges {
   }
 
   loadStats() {
-    if (!this.leagueId) return;
+    if (!this.leagueId || !this.seasonId) return;
     this.isLoading.set(true);
 
-    // Przekazujemy flagę do zaktualizowanego serwisu
-    this.statsService.getStats(this.leagueId, this.seasonId || '', this.isReadOnlyMode).subscribe({
-      next: (data) => {
-        this.statsData.set(data);
-        this.isLoading.set(false);
+    this.statsService
+      .getStats(this.leagueId, this.seasonId, this.isReadOnlyMode, this.scope())
+      .subscribe({
+        next: (data) => {
+          this.statsData.set(data);
+          this.isLoading.set(false);
 
-        if (data && data.relations && data.relations.length > 0) {
-          const currentId = this.selectedPlayerId();
-          const exists = data.relations.some((r) => r.playerId === currentId);
-          if (!currentId || !exists) {
-            this.selectedPlayerId.set(data.relations[0].playerId);
+          if (data && data.relations && data.relations.length > 0) {
+            const currentId = this.selectedPlayerId();
+            const exists = data.relations.some((r) => r.playerId === currentId);
+            if (!currentId || !exists) {
+              this.selectedPlayerId.set(data.relations[0].playerId);
+            }
           }
-        }
-      },
-      error: () => this.isLoading.set(false),
-    });
+
+          // Odświeżamy wykres po załadowaniu nowych danych
+          setTimeout(() => this.updateChart(), 0);
+        },
+        error: () => this.isLoading.set(false),
+      });
   }
+
+  changeScope(newScope: 'SEASON' | 'ALL_TIME') {
+    if (this.scope() === newScope) return; // Unikamy niepotrzebnych strzałów do API
+    this.scope.set(newScope);
+    this.loadStats();
+  }
+
   // Nowa metoda do obsługi zmiany typu (Kolejka / Mecz)
   onTypeChange(type: 'day' | 'match') {
     this.selectedChartType.set(type);
-    this.selectedChartPeriod.set('all'); // Resetujemy do "all", żeby uniknąć wyboru z innej listy
+
+    // Ustawiamy domyślną wartość w zależności od typu
+    if (type === 'day') {
+      this.selectedChartPeriod.set('50');
+    } else {
+      this.selectedChartPeriod.set('10');
+    }
+
     this.updateChart();
   }
 
@@ -263,8 +283,16 @@ export class StatsComponent implements OnChanges {
     ];
 
     const colors = [
-      '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6',
-      '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
+      '#ef4444',
+      '#3b82f6',
+      '#10b981',
+      '#f59e0b',
+      '#8b5cf6',
+      '#ec4899',
+      '#14b8a6',
+      '#f97316',
+      '#6366f1',
+      '#84cc16',
     ];
 
     const datasets = stats.eloChart.map((line, idx) => {
@@ -287,7 +315,10 @@ export class StatsComponent implements OnChanges {
         const matchesAtKey = line.history.filter((pt: any) => {
           if (chartType === 'day') {
             const d = new Date(pt.date);
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === keyStr;
+            return (
+              `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` ===
+              keyStr
+            );
           } else {
             return pt.date === keyStr;
           }
@@ -366,7 +397,11 @@ export class StatsComponent implements OnChanges {
             grid: { color: '#f1f5f9' },
             ticks: { font: { weight: 'bold' } },
             // Podpis osi zależny od trybu
-            title: { display: true, text: chartType === 'day' ? 'Punkty ELO (koniec dnia)' : 'Punkty ELO (po meczu)', font: { weight: 'bold' } },
+            title: {
+              display: true,
+              text: chartType === 'day' ? 'Punkty ELO (koniec dnia)' : 'Punkty ELO (po meczu)',
+              font: { weight: 'bold' },
+            },
           },
           x: { ticks: { autoSkip: true, maxTicksLimit: 20 }, grid: { display: false } },
         },

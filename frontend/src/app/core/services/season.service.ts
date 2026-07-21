@@ -28,6 +28,7 @@ export class SeasonService {
 
   // Zamknij sezon lub zmień nazwę
   updateSeason(id: string, season: Partial<Season>): Observable<Season> {
+    console.log("CHECK SEASON: " ,season);
     return this.http.put<Season>(`${this.apiUrl}/${id}`, season);
   }
 

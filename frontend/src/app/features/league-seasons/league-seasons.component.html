@@ -16,9 +16,25 @@
       @if (showAddForm()) {
         <div class="add-season-card animate-in">
           <div class="input-row">
-            <input type="text" class="full-input" [(ngModel)]="newSeasonName" placeholder="Nazwa nowego sezonu..." (keyup.enter)="saveSeason()">
-            <label class="custom-toggle">
-              <input type="checkbox" [ngModel]="newSeasonUniqueTeams()" (ngModelChange)="newSeasonUniqueTeams.set($event)">
+            <input type="text" class="full-input"
+                   [ngModel]="newSeasonName()"
+                   (ngModelChange)="newSeasonName.set($event)"
+                   placeholder="Nazwa nowego sezonu...">
+
+            <input type="text" class="full-input"
+                   [ngModel]="newSeasonImage()"
+                   (ngModelChange)="newSeasonImage.set($event)"
+                   placeholder="Adres URL tła sezonu (image)...">
+
+            <input type="number" class="full-input"
+                   [ngModel]="newSeasonMinMatches()"
+                   (ngModelChange)="newSeasonMinMatches.set($event)"
+                   placeholder="Minimalna liczba meczów...">
+
+            <label class="custom-toggle mt-2">
+              <input type="checkbox"
+                     [ngModel]="newSeasonUniqueTeams()"
+                     (ngModelChange)="newSeasonUniqueTeams.set($event)">
               <span class="slider"></span>
               <span class="label-text">Unikalne drużyny</span>
             </label>
@@ -32,41 +48,75 @@
           <div class="league-item season-item"
                [class.editing]="editingSeasonId() === season.id"
                [class.clickable]="editingSeasonId() !== season.id"
+               [style.background-image]="season.image && editingSeasonId() !== season.id ? 'linear-gradient(rgba(250, 250, 250, 0.92), rgba(250, 250, 250, 0.92)), url(' + season.image + ')' : 'none'"
                [routerLink]="editingSeasonId() !== season.id ? ['/season', season.id] : null">
 
             <div class="league-info">
               @if (editingSeasonId() === season.id) {
-                <div class="input-row" (click)="$event.stopPropagation()">
-                  <input type="text" class="sm-input" [(ngModel)]="season.name" placeholder="Nazwa sezonu">
-                  <label class="custom-toggle">
-                    <input type="checkbox" [(ngModel)]="season.uniqueTeams">
+
+                <button class="btn-close-edit" (click)="$event.stopPropagation(); cancelEdit()" title="Anuluj edycję">✕</button>
+
+                <div class="input-row" (click)="$event.stopPropagation()" [class.is-finished]="season.status === 'FINISHED'">
+
+                  <div class="readonly-dates">
+                    <span class="readonly-badge">📅 Start: {{ season.startDate | date:'dd MMM yyyy' }}</span>
+                    @if (season.endDate) {
+                      <span class="readonly-badge end">🛑 Koniec: {{ season.endDate | date:'dd MMM yyyy' }}</span>
+                    }
+                  </div>
+
+                  <input type="text" class="sm-input" [(ngModel)]="season.name" placeholder="Nazwa sezonu" [disabled]="season.status === 'FINISHED'">
+                  <input type="text" class="sm-input" [(ngModel)]="season.image" placeholder="URL tła sezonu" [disabled]="season.status === 'FINISHED'">
+                  <input type="number" class="sm-input" [(ngModel)]="season.minPlayerMatchAmount" placeholder="Min. liczba meczów" [disabled]="season.status === 'FINISHED'">
+
+                  <label class="custom-toggle" [class.disabled]="season.status === 'FINISHED'">
+                    <input type="checkbox" [(ngModel)]="season.uniqueTeams" [disabled]="season.status === 'FINISHED'">
                     <span class="slider"></span>
                     <span class="label-text">Unikalne drużyny</span>
                   </label>
                 </div>
 
               } @else {
-
                 <div class="view-group">
-                  <strong>{{ season.name }}</strong>
-                  <div class="badges">
+                  <div class="header-row">
+                    <span class="title">{{ season.name }}</span>
                     <span class="status" [class.active]="season.status === 'ACTIVE'" (click)="$event.stopPropagation(); toggleStatus(season)">
                       {{ season.status === 'ACTIVE' ? 'Aktywny' : 'Zakończony' }}
                     </span>
-                    @if (season.uniqueTeams) {
-                      <span class="badge-unique">🛡️ Unikalne Drużyny</span>
+                  </div>
+
+                  <div class="season-details">
+                    <span class="detail-item">📅 Start: {{ season.startDate | date:'dd.MM.yyyy' }}</span>
+
+                    @if (season.status === 'FINISHED' && season.endDate) {
+                      <span class="detail-item end-date">🛑 Koniec: {{ season.endDate | date:'dd.MM.yyyy' }}</span>
                     }
+
+                    @if (season.uniqueTeams) {
+                      <span class="detail-item">🛡️ Unikalne Drużyny</span>
+                    }
+                    <span class="detail-item">🎯 Min. meczów: {{ season.minPlayerMatchAmount || 0 }}</span>
                   </div>
                 </div>
-
               }
             </div>
-
             <div class="league-actions">
               @if (editingSeasonId() === season.id) {
-                <button class="btn-icon" (click)="$event.stopPropagation(); saveEdit(season)" title="Zapisz">✅</button>
+                <div class="action-buttons-edit">
+                  @if (season.status === 'ACTIVE') {
+                    <button class="btn-action danger" (click)="$event.stopPropagation(); finishSeason(season)" title="Zakończ sezon">🏁 Zakończ</button>
+                  } @else {
+                    <button class="btn-action secondary" (click)="$event.stopPropagation(); restoreSeason(season)" title="Przywróć sezon">🔄 Przywróć</button>
+                  }
+
+                  <button class="btn-action primary save-btn-text"
+                          [disabled]="!hasChanges(season)"
+                          (click)="$event.stopPropagation(); saveEdit(season)">
+                    💾 Zapisz
+                  </button>
+                </div>
               } @else {
-                <button class="btn-icon" (click)="$event.stopPropagation(); editingSeasonId.set(season.id!)" title="Edytuj">✏️</button>
+                <button class="btn-icon" (click)="$event.stopPropagation(); startEditing(season)" title="Edytuj">✏️</button>
               }
             </div>
           </div>

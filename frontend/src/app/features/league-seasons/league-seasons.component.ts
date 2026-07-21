@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, HostListener } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LeagueService } from '../../core/services/league.service';
 import { CommonModule } from '@angular/common';
@@ -12,7 +12,7 @@ import { HeaderComponent } from '../../shared/components/header/header.component
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule, HeaderComponent],
   templateUrl: './league-seasons.component.html',
-  styleUrls: ['./league-seasons.component.scss']
+  styleUrls: ['./league-seasons.component.scss'],
 })
 export class LeagueSeasonsComponent implements OnInit {
   private route = inject(ActivatedRoute);
@@ -25,10 +25,30 @@ export class LeagueSeasonsComponent implements OnInit {
   seasons = signal<Season[]>([]);
 
   showAddForm = signal(false);
-  newSeasonName = signal('');
-  newSeasonUniqueTeams = signal(true); // Nowy sygnał dla formularza
+
+  // Zmienne/Sygnały dla nowego sezonu
+  newSeasonName = signal<string>('');
+  newSeasonImage = signal<string>('');
+  newSeasonMinMatches = signal<number>(10);
+  newSeasonUniqueTeams = signal<boolean>(true);
 
   editingSeasonId = signal<string | null>(null);
+
+  // Sygnał do przechowywania oryginalnego stanu sezonu (przed edycją)
+  originalSeason = signal<Season | null>(null);
+
+  // --- NASŁUCHIWANIE NA KLAWISZ ESCAPE ---
+  @HostListener('document:keydown.escape', ['$event'])
+  onKeydownHandler(event: KeyboardEvent) {
+    // Zamyka tryb edycji sezonu
+    if (this.editingSeasonId()) {
+      this.cancelEdit();
+    }
+    // Zamyka opcjonalnie też formularz dodawania nowego sezonu
+    if (this.showAddForm()) {
+      this.showAddForm.set(false);
+    }
+  }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -39,13 +59,11 @@ export class LeagueSeasonsComponent implements OnInit {
   }
 
   loadData(id: string) {
-    this.leagueService.getLeagueById(id).subscribe(l => this.league.set(l));
-    this.seasonService.getSeasonsByLeague(id).subscribe(s => {
+    this.leagueService.getLeagueById(id).subscribe((l) => this.league.set(l));
+    this.seasonService.getSeasonsByLeague(id).subscribe((s) => {
       // Sortowanie: od najnowszego startDate (góra) do najstarszego (dół)
-      const sortedSeasons = [...s].sort((a, b) => {
-        const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
-        const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
-        return dateB - dateA; // Najnowsze daty dadzą najwyższy wynik, więc będą pierwsze
+      const sortedSeasons = s.sort((a, b) => {
+        return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
       });
       this.seasons.set(sortedSeasons);
     });
@@ -56,34 +74,70 @@ export class LeagueSeasonsComponent implements OnInit {
     const name = this.newSeasonName().trim();
     if (!id || !name) return;
 
-    // Tworzymy payload - używamy wartości z sygnału
+    // Tworzymy payload
     const newSeason: Partial<Season> = {
       name: name,
       leagueId: id,
+      image: this.newSeasonImage(),
+      minPlayerMatchAmount: this.newSeasonMinMatches(),
+      uniqueTeams: this.newSeasonUniqueTeams(),
       status: 'ACTIVE',
-      uniqueTeams: this.newSeasonUniqueTeams()
     };
 
     this.seasonService.createSeason(newSeason).subscribe(() => {
+      // Czyszczenie całego formularza po poprawnym zapisie
       this.newSeasonName.set('');
-      this.newSeasonUniqueTeams.set(true); // Resetujemy do domyślnej
+      this.newSeasonImage.set('');
+      this.newSeasonMinMatches.set(10);
+      this.newSeasonUniqueTeams.set(true);
       this.showAddForm.set(false);
       this.loadData(id);
     });
   }
 
+  startEditing(season: Season) {
+    this.editingSeasonId.set(season.id!);
+    this.originalSeason.set({ ...season }); // Robimy płytką kopię
+  }
+
+  // --- NOWE: ANULOWANIE EDYCJI (Z COFNIĘCIEM ZMIAN) ---
+  cancelEdit() {
+    if (this.editingSeasonId() && this.originalSeason()) {
+      const original = this.originalSeason()!;
+      // Przywraca oryginalne wartości do sezonu na liście (cofa zmiany z ngModel)
+      this.seasons.update((currentSeasons) =>
+        currentSeasons.map((s) => (s.id === original.id ? { ...original } : s))
+      );
+    }
+    this.editingSeasonId.set(null);
+    this.originalSeason.set(null);
+  }
+
+  hasChanges(season: Season): boolean {
+    const original = this.originalSeason();
+    if (!original) return false;
+
+    return (
+      season.name !== original.name ||
+      season.image !== original.image ||
+      season.minPlayerMatchAmount !== original.minPlayerMatchAmount ||
+      season.uniqueTeams !== original.uniqueTeams ||
+      season.status !== original.status
+    );
+  }
+
   saveEdit(season: Season) {
     if (!season.id) return;
 
-    // TWARDY PAYLOAD: Kopiujemy właściwości, by uniknąć problemów z referencją Angulara,
-    // i wymuszamy, by uniqueTeams było czystym typem boolean.
     const payload: Season = {
       ...season,
-      uniqueTeams: !!season.uniqueTeams
+      uniqueTeams: season.uniqueTeams,
     };
 
     this.seasonService.updateSeason(season.id, payload).subscribe(() => {
       this.editingSeasonId.set(null);
+      this.originalSeason.set(null);
+
       if (this.leagueId()) this.loadData(this.leagueId()!);
     });
   }
@@ -91,5 +145,15 @@ export class LeagueSeasonsComponent implements OnInit {
   toggleStatus(season: Season) {
     season.status = season.status === 'ACTIVE' ? 'FINISHED' : 'ACTIVE';
     this.saveEdit(season);
+  }
+
+  finishSeason(season: any) {
+    season.status = 'FINISHED';
+    season.endDate = new Date().toISOString();
+  }
+
+  restoreSeason(season: any) {
+    season.status = 'ACTIVE';
+    season.endDate = null;
   }
 }

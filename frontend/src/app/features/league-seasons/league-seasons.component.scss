@@ -1,8 +1,6 @@
 /* Układ całego dashboardu (Panele obok siebie) */
 .grid-layout {
   display: grid;
-  /* Proporcja: Główny panel zajmuje więcej miejsca (1.5) niż pasek boczny (1) */
-  /* Na wąskich ekranach automatycznie zejdą pod siebie */
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 24px;
 }
@@ -18,7 +16,7 @@
   background: white;
   border-radius: var(--border-radius);
   padding: 24px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03); /* Bardzo lekki cień */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
   border: 1px solid #f1f5f9;
 
   h2 {
@@ -31,61 +29,12 @@
   }
 }
 
-/* --- PANEL LIG (Styl Tabelaryczny) --- */
-.league-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px; /* Odstęp między wierszami lig */
-}
-
-.league-item {
-  display: flex;
-  justify-content: space-between; /* Lewo - Prawo */
-  align-items: center;
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 8px;
-  border-left: 4px solid var(--beer-gold); /* Złoty akcent z lewej */
-  transition: background 0.2s;
-
-  &:hover {
-    background: #f1f5f9; /* Lekkie przyciemnienie po najechaniu */
-  }
-
-  .league-info strong {
-    font-size: 1.1rem;
-    color: var(--text-dark);
-  }
-
-  .league-actions {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-
-    .status {
-      font-size: 0.8rem;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: #e2e8f0;
-      color: #64748b;
-
-      &.active {
-        background: #dcfce7;
-        color: #166534;
-      }
-    }
-  }
-}
-
-/* Modifikator dla mniejszego przycisku w linii */
 .btn-sm {
   padding: 8px 16px;
   font-size: 0.85rem;
   box-shadow: 0 2px 0px #8e321f;
 }
 
-/* Przycisk dodawania pod listą */
 .btn-add {
   width: 100%;
   margin-top: 20px;
@@ -105,7 +54,6 @@
   }
 }
 
-/* --- PANEL OSTATNICH AKTYWNOŚCI --- */
 .recent-list {
   list-style: none;
   padding: 0;
@@ -126,7 +74,7 @@
 
     .time {
       font-size: 0.8rem;
-      color: var(--text-muted); /* zamiast #888 */
+      color: var(--text-muted);
       white-space: nowrap;
       margin-left: 15px;
     }
@@ -156,14 +104,13 @@
   }
 }
 
-
 .status {
   font-size: 0.8rem;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 20px;
-  background: var(--app-bg); /* zamiast #e2e8f0 */
-  color: var(--text-muted); /* zamiast #64748b */
+  background: var(--app-bg);
+  color: var(--text-muted);
 
   &.active {
     background: #dcfce7;
@@ -171,7 +118,6 @@
   }
 }
 
-/* --- FORMULARZ DODAWANIA --- */
 .add-season-card {
   background: #f8fafc;
   border: 1px dashed #cbd5e1;
@@ -187,8 +133,8 @@
 
   .full-input {
     padding: 10px;
-    background-color: var(--app-bg); /* Ciemne tło w trybie dark */
-    color: var(--text-dark); /* Jasny tekst w trybie dark */
+    background-color: var(--app-bg);
+    color: var(--text-dark);
     border: 1px solid var(--border-color);
     border-radius: 6px;
     font-size: 1rem;
@@ -198,7 +144,6 @@
   .mt-10 { margin-top: 10px; width: 100%; }
 }
 
-/* --- LISTA SEZONÓW --- */
 .league-list {
   display: flex;
   flex-direction: column;
@@ -206,9 +151,10 @@
 }
 
 .league-item {
+  position: relative; /* NOWE: Ważne do poprawnego umieszczenia X w prawym górnym rogu */
   display: flex;
   justify-content: space-between;
-  align-items: center; /* W trybie view wszystko wyśrodkowane */
+  align-items: center;
   padding: 16px;
   background: #fafafa;
   border-radius: 8px;
@@ -217,14 +163,29 @@
 
   &:hover { background: #f1f5f9; }
 
-  /* Kiedy edytujemy, zmieniamy wyrównanie do góry, żeby przycisk "Zapisz" nie zjeżdżał */
   &.editing {
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: stretch;
     background: #fff;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     border-left-color: var(--primary-brown);
 
-    .league-actions { padding-top: 6px; } /* Wyrównanie ikony ✅ do inputa */
+    .league-info {
+      width: 100%;
+    }
+
+    .input-row {
+      padding-right: 35px; /* NOWE: Zabezpiecza inputy przed ucinaniem przez krzyżyk */
+    }
+
+    .league-actions {
+      width: 100%;
+      margin-left: 0;
+      margin-top: 12px;
+      padding-top: 12px;
+      justify-content: flex-end;
+      border-top: 1px dashed #cbd5e1;
+    }
   }
 
   .league-info {
@@ -240,13 +201,16 @@
   }
 }
 
-/* Grupa w widoku (nazwa + badge) */
 .view-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
 
-  strong { font-size: 1.1rem; color: var(--text-dark); }
+  .title {
+    font-size: 1.1rem; color: var(--text-dark);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
 
   .badges {
     display: flex;
@@ -255,7 +219,6 @@
   }
 }
 
-/* Grupa w edycji (input + toggle) */
 .edit-group {
   display: flex;
   flex-direction: column;
@@ -263,8 +226,8 @@
 
   .edit-input {
     padding: 8px;
-    background-color: var(--app-bg); /* Ciemne tło w trybie dark */
-    color: var(--text-dark); /* Jasny tekst w trybie dark */
+    background-color: var(--app-bg);
+    color: var(--text-dark);
     border: 1px solid var(--border-color);
     border-radius: 6px;
     font-weight: bold;
@@ -273,7 +236,6 @@
   }
 }
 
-/* --- BADGES (Statusy) --- */
 .status {
   font-size: 0.75rem;
   font-weight: 700;
@@ -295,7 +257,6 @@
   border: 1px solid var(--border-color);
 }
 
-/* --- CUSTOM TOGGLE SWITCH --- */
 .custom-toggle {
   display: inline-flex;
   align-items: center;
@@ -303,7 +264,7 @@
   cursor: pointer;
   user-select: none;
 
-  input { display: none; } /* Ukrywamy natywny checkbox */
+  input { display: none; }
 
   .slider {
     position: relative;
@@ -333,21 +294,34 @@
   .label-text { font-size: 0.85rem; color: #64748b; font-weight: 600; }
 }
 
-/* --- NOWE STYLE INTERAKCJI DLA SEZONÓW --- */
 .season-item {
-  transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
 
   &.clickable {
     cursor: pointer;
 
     &:hover {
-      background: var(--surface-bg, #f1f5f9) !important;
-      border-left-color: var(--primary-brown) !important; /* Zmiana akcentu bocznego przy najechaniu */
-      transform: translateX(4px); /* Subtelne, eleganckie wysunięcie wiersza */
+      border-left-color: var(--primary-brown) !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      transform: translateX(5px);
+      transition: 0.4s;
     }
   }
 
-  /* RWD: Zabezpieczenie dla bardzo małych smartfonów */
+  .sm-input {
+    padding: 8px;
+    background-color: var(--app-bg);
+    color: var(--text-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-weight: bold;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
   @media (max-width: 500px) {
     flex-direction: column;
     align-items: flex-start !important;
@@ -360,7 +334,7 @@
       .view-group {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 8px;
         align-items: flex-start;
       }
 
@@ -376,8 +350,210 @@
     }
 
     .league-actions {
-      align-self: flex-end; /* Przyciski akcji (ołowek/ptaszek) trafiają w prawy dolny róg wiersza */
-      margin-top: -5px;
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 5px;
     }
+
+    .badges {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      width: 100%;
+    }
+  }
+}
+
+.btn-icon {
+  scale: 1.5;
+  border-radius: 10px;
+  padding: 4px;
+  opacity: 1 !important;
+}
+
+.btn-icon:hover {
+  background: var(--primary-brown);
+
+}
+
+.badges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.action-buttons-edit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-action {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    opacity: 0.85;
+    transform: translateY(-1px);
+  }
+
+  &.danger {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  &.secondary {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  &.primary {
+    background: var(--primary-brown);
+    color: white;
+  }
+
+  &:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+}
+
+.save-btn {
+  font-size: 1.2rem;
+}
+
+.badge-min-matches {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: var(--primary-brown);
+  border: 1px solid #cbd5e1;
+}
+
+.input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.is-finished {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sm-input:disabled {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+}
+
+.custom-toggle.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+
+  .slider {
+    background-color: #e2e8f0 !important;
+  }
+}
+
+.season-details {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.detail-item {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: var(--text-dark);
+  border: 1px solid #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.readonly-dates {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+
+  .readonly-badge {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f8fafc;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px dashed #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    &.end {
+      color: #991b1b;
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+  }
+}
+
+.detail-item.end-date {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+/* ==========================================================================
+   NOWE: PRZYCISK ANULUJ EDYCJĘ (KRZYŻYK X)
+   ========================================================================== */
+.btn-close-edit {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.85); /* Lekkie tło zabezpieczające przed grafiką w tle */
+  border: none;
+  font-size: 1.25rem;
+  color: #94a3b8;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  z-index: 10; /* Gwarantuje klikalność nad inputami */
+
+  &:hover {
+    color: #ef4444;
+    background: #fef2f2;
+    transform: scale(1.05);
   }
 }

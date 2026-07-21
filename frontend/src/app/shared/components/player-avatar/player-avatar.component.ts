@@ -34,8 +34,8 @@ import { Component, input } from '@angular/core';
       }
 
       .avatar-placeholder {
-        width: 1.8em;
-        height: 1.8em;
+        width: 1.2em;
+        height: 1.2em;
         border-radius: 50%;
         background: #f1f5f9;
         display: flex;

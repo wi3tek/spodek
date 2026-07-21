@@ -69,7 +69,7 @@ public class GoldenBallFunFact implements FunFactService {
         // 4. Budujemy odpowiedni komunikat
         if (topPlayers.isEmpty()) return Optional.empty();
 
-        String description = "Liderzy klasyfikacji kanadyjskiej:";
+        String description = "Lider klasyfikacji kanadyjskiej";
         List<FunFact.FunFactItem> items = topPlayers.stream()
                 .map(b -> new FunFact.FunFactItem(
                         b.alias(),

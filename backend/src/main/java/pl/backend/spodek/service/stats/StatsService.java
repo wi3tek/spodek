@@ -30,11 +30,10 @@ public class StatsService {
     private final TeamRepository teamRepository;
     private final FunFactFactory funFactFactory;
 
-    @Cacheable(value = "stats", key = "#leagueId.concat('-').concat(#seasonId)")
-    public StatsDto.Response generateFullStats(String leagueId, String seasonId) {
+    @Cacheable(value = "stats", key = "#leagueId.concat('-').concat(#seasonId).concat('-').concat(#scope)")
+    public StatsDto.Response generateFullStats(String leagueId, String seasonId, String scope) {
         Map<String, Player> playersMap = playerRepository.findAll().stream()
                 .collect(Collectors.toMap(Player::getId, p -> p));
-        // Zmiana: Mapa trzyma pełne obiekty Team, a nie stringi aliasów
         Map<String, Team> teamsMap = teamRepository.findAll().stream()
                 .collect(Collectors.toMap(Team::getId, t -> t));
 
@@ -42,6 +41,7 @@ public class StatsService {
         List<PlayerRatingHistory> ratingHistory = ratingHistoryRepository.findByLeagueIdOrderByCreatedAtAsc(leagueId);
         List<Match> seasonMatches = matchRepository.findBySeasonIdAndFinished(seasonId, true);
 
+        // Aktywni gracze ZAWSZE bazują na obecnym sezonie, aby nie pokazywać "duchów" w historii
         Set<String> activePlayerIds = seasonMatches.stream()
                 .flatMap(m -> Stream.concat(
                         (m.getHomeSide() != null && m.getHomeSide().getPlayers() != null ? m.getHomeSide().getPlayers() : List.<Match.PlayerStats>of()).stream(),
@@ -50,7 +50,10 @@ public class StatsService {
                 .map(Match.PlayerStats::getPlayerId)
                 .collect(Collectors.toSet());
 
-        return buildScopeStats(leagueMatches, playersMap, teamsMap, ratingHistory, activePlayerIds);
+        // Logika wyboru meczów do statystyk na podstawie zakresu
+        List<Match> targetMatches = "ALL_TIME".equalsIgnoreCase(scope) ? leagueMatches : seasonMatches;
+
+        return buildScopeStats(targetMatches, playersMap, teamsMap, ratingHistory, activePlayerIds);
     }
 
     private StatsDto.Response buildScopeStats(List<Match> matches, Map<String, Player> playersMap,
@@ -143,6 +146,8 @@ public class StatsService {
                 .playersMap(playersMap)
                 .teamsMap(teamsMap)
                 .activePlayerIds(activePlayerIds)
+                .targetMatches(matches)          // <--- DODANO
+                .ratingHistory(ratingHistory)    // <--- DODANO
                 .build();
 
         List<FunFact> funFacts = funFactFactory.generateFunFacts(input);
