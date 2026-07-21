@@ -10,19 +10,21 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
+import { QRCodeComponent } from 'angularx-qrcode';
+
+// Komponenty i Serwisy
 import { SeasonService } from '../../core/services/season.service';
 import { MatchService } from '../../core/services/match.service';
 import { AdminService } from '../../core/services/admin.service';
 import { MatchweekService } from '../../core/services/matchweek.service';
-import { debounceTime, distinctUntilChanged, Subject, Subscription } from 'rxjs'; // NOWE
-import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
 import { MatchmakingService } from '../../core/services/matchmaking.service';
-import { StatsComponent } from '../stats/stats.component'; // NOWE
+import { LiveService } from '../../core/services/live.service';
+import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
+import { StatsComponent } from '../stats/stats.component';
 import { TeamStatsComponent } from '../team-stats/team-stats.component';
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { PlayerAvatarComponent } from '../../shared/components/player-avatar/player-avatar.component';
-import { LiveService } from '../../core/services/live.service'; // NOWY IMPORT
-import { QRCodeComponent } from 'angularx-qrcode';
 
 @Component({
   selector: 'app-season',
@@ -41,63 +43,77 @@ import { QRCodeComponent } from 'angularx-qrcode';
   styleUrls: ['./season.component.scss'],
 })
 export class SeasonComponent implements OnInit, OnDestroy {
+  // --- INJEKCJE SERWISÓW ---
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private matchService = inject(MatchService);
   private seasonService = inject(SeasonService);
   private adminService = inject(AdminService);
-  private matchweekService = inject(MatchweekService); // NOWE
-  private matchmakingService = inject(MatchmakingService); // NOWE
-  private liveService = inject(LiveService); // NOWE
+  private matchweekService = inject(MatchweekService);
+  private matchmakingService = inject(MatchmakingService);
+  private liveService = inject(LiveService);
 
+  // --- WŁAŚCIWOŚCI I SYGNAŁY ---
   private liveSubscription?: Subscription;
+  private matchweekSubject = new Subject<number>();
 
-  // --- DANE ---
   seasonId = signal<string | null>(null);
   season = signal<any>(null);
   matches = signal<any[]>([]);
   allPlayers = signal<any[]>([]);
   allTeams = signal<any[]>([]);
+  tableData = signal<any[]>([]);
   today = new Date();
+  isReadOnly = signal<boolean>(false);
+  statsRefreshTrigger = signal(0);
+  matchStateTrigger = signal(0);
 
-  // --- STAN FORMULARZA MECZU ---
+  // Formularz meczu
   showMatchForm = signal(false);
   editingMatch = signal<any | null>(null);
   searchHomeTeam = signal('');
   searchAwayTeam = signal('');
   searchPlayerQuery = signal('');
-  newCommentText = signal(''); // <--- NOWE
-  matchStateTrigger = signal(0);
-  tableData = signal<any[]>([]);
+  newCommentText = signal('');
 
-  // --- STAN OBECNOŚCI I MATCHMAKINGU (NOWE) ---
+  // Stan obecności i matchmakingu
   showAttendanceModal = signal(false);
   activeMatchweek = signal<number>(1);
   presentPlayerIds = signal<string[]>([]);
   visibleInModalIds = signal<string[]>([]);
-
   searchNewPlayerQuery = signal('');
-  // Strumień do opóźniania żądań przy zmianie kolejki
-  private matchweekSubject = new Subject<number>();
+  isLoadingAttendance = signal(false);
 
-  isLoadingAttendance = signal(false); // NOWA FLAGA
-
-  statsRefreshTrigger = signal(0);
-
-  // --- ZMIANY W STANIE SUGEROWANYCH MECZÓW (PAGINACJA) ---
+  // Sugestie
   allSuggestedMatches = signal<any[]>([]);
   currentSuggestionPage = signal(0);
-  isSuggesting = signal(false); // Do zablokowania przycisku na czas ładowania
+  isSuggesting = signal(false);
 
-  // W locie wycinamy tylko 3 kafelki dla aktualnej strony
+  // UI State
+  linkCopied = signal(false);
+  activeTooltip = signal<string | null>(null);
+  sortKey = signal<string>('winRatio');
+  sortDirection = signal<'asc' | 'desc'>('desc');
+  currentPage = signal(1);
+  pageSize = 7;
+  viewingMatch = signal<any | null>(null);
+
+  newMatch: any = {
+    matchweek: 1,
+    homeSide: { teamId: '', assetId: '', teamName: '', goals: 0, players: [] },
+    awaySide: { teamId: '', assetId: '', teamName: '', goals: 0, players: [] },
+    finished: false,
+    comments: [],
+  };
+
+  protected readonly Math = Math;
+
+  // --- COMPUTED VALUES ---
   suggestedMatches = computed(() => {
     const start = this.currentSuggestionPage() * 3;
     return this.allSuggestedMatches().slice(start, start + 3);
   });
 
-  isReadOnly = signal<boolean>(false);
-
-  // Oblicza, którzy gracze ROZEGRALI jakikolwiek mecz w aktualnej kolejce
   playersWithMatchesInWeek = computed(() => {
     const week = this.activeMatchweek();
     const matchesInWeek = this.matches().filter((m) => m.matchweek === week);
@@ -114,53 +130,32 @@ export class SeasonComponent implements OnInit, OnDestroy {
     return Array.from(lockedIds);
   });
 
-  // Modal mapuje ID z visibleInModalIds na obiekty graczy i od razu ich sortuje
   modalDisplayPlayers = computed(() => {
     const visibleIds = this.visibleInModalIds();
     const presentIds = this.presentPlayerIds();
-    const lockedIds = this.playersWithMatchesInWeek(); // Opcjonalnie: zablokowani zawsze na samej górze
-
-    // 1. Wyciągamy graczy z bazy
+    const lockedIds = this.playersWithMatchesInWeek();
     const unsortedPlayers = this.allPlayers().filter((p) => visibleIds.includes(p.id));
 
-    // 2. Sortujemy:
-    // Priorytet 1: Grał w tej kolejce (zablokowany checkbox) - na samą górę
-    // Priorytet 2: Zaznaczony jako obecny (gotowy do gry)
-    // Priorytet 3: Odznaczony (wyszarzony) - spada na dół
-    // Priorytet 4: Alfabet
     return unsortedPlayers.sort((a, b) => {
       const isALocked = lockedIds.includes(a.id);
       const isBLocked = lockedIds.includes(b.id);
-
       const isAPresent = presentIds.includes(a.id);
       const isBPresent = presentIds.includes(b.id);
 
-      // Krok 1: Kto grał (Locked) ten wyżej
-      if (isALocked !== isBLocked) {
-        return isALocked ? -1 : 1;
-      }
-
-      // Krok 2: Kto jest zaznaczony ten wyżej
-      if (isAPresent !== isBPresent) {
-        return isAPresent ? -1 : 1;
-      }
-
-      // Krok 3: Jeśli status jest ten sam, sortuj alfabetycznie po aliasie
+      if (isALocked !== isBLocked) return isALocked ? -1 : 1;
+      if (isAPresent !== isBPresent) return isAPresent ? -1 : 1;
       return a.alias.localeCompare(b.alias);
     });
   });
 
   liveUrl = computed(() => {
     const code = this.season()?.liveCode;
-    if (!code) return '';
-    // window.location.origin pobiera główny adres strony (np. http://localhost:4200)
-    return `${window.location.origin}/live/${code}`;
+    return code ? `${window.location.origin}/live/${code}` : '';
   });
 
   attendanceSuggestions = computed(() => {
     const query = this.searchNewPlayerQuery().toLowerCase();
     if (query.length < 2) return [];
-
     const visibleIds = this.visibleInModalIds();
 
     return this.allPlayers()
@@ -172,15 +167,6 @@ export class SeasonComponent implements OnInit, OnDestroy {
       .slice(0, 5);
   });
 
-  newMatch: any = {
-    matchweek: 1,
-    homeSide: { teamId: '', assetId: '', teamName: '', goals: 0, players: [] },
-    awaySide: { teamId: '', assetId: '', teamName: '', goals: 0, players: [] },
-    finished: false,
-    comments: [],
-  };
-
-  // ... (Wszystkie Twoje computed() zostają BEZ ZMIAN)
   filteredPlayers = computed(() => {
     const query = this.searchPlayerQuery().toLowerCase();
     this.matchStateTrigger();
@@ -225,6 +211,48 @@ export class SeasonComponent implements OnInit, OnDestroy {
     );
   });
 
+  minAllowedMatchweek = computed(() => {
+    const m = this.matches();
+    return m.length === 0 ? 1 : Math.max(...m.map((match) => match.matchweek));
+  });
+
+  maxAllowedMatchweek = computed(() => {
+    const m = this.matches();
+    return m.length === 0 ? 1 : Math.max(...m.map((match) => match.matchweek)) + 1;
+  });
+
+  paginatedMatches = computed(() => {
+    const startIndex = (this.currentPage() - 1) * this.pageSize;
+    return this.matches().slice(startIndex, startIndex + this.pageSize);
+  });
+
+  totalPages = computed(() => Math.ceil(this.matches().length / this.pageSize));
+
+  sortedTable = computed(() => {
+    const data = [...this.tableData()];
+    const key = this.sortKey();
+    const dir = this.sortDirection();
+    return data.sort((a, b) => {
+      let valA = a[key];
+      let valB = b[key];
+      if (valA === valB) return b.points - a.points;
+      return dir === 'asc' ? valA - valB : valB - valA;
+    });
+  });
+
+  // GETTERS DLA BRAMEK I ASYST
+  get homeGoals(): number { return this.newMatch.homeSide.players.reduce((sum: number, p: any) => sum + (p.goals || 0), 0); }
+  get awayGoals(): number { return this.newMatch.awaySide.players.reduce((sum: number, p: any) => sum + (p.goals || 0), 0); }
+  get homeAssists(): number { return this.newMatch.homeSide.players.reduce((sum: number, p: any) => sum + (p.assists || 0), 0); }
+  get awayAssists(): number { return this.newMatch.awaySide.players.reduce((sum: number, p: any) => sum + (p.assists || 0), 0); }
+
+  // --- KONSTRUKTOR I CYKL ŻYCIA ---
+  constructor() {
+    this.matchweekSubject.pipe(debounceTime(400), distinctUntilChanged()).subscribe((newWeek) => {
+      this.loadAttendanceForWeek(newWeek);
+    });
+  }
+
   ngOnInit() {
     const codeParam = this.route.snapshot.paramMap.get('code');
     const id = this.route.snapshot.paramMap.get('id');
@@ -246,65 +274,42 @@ export class SeasonComponent implements OnInit, OnDestroy {
     }
   }
 
-  linkCopied = signal(false);
-  activeTooltip = signal<string | null>(null);
-
-  // Nasłuchiwanie na kliknięcie poza dymkiem, aby go zamknąć
+  // --- NASŁUCHIWANIE I TOOLTIPY ---
   @HostListener('document:click', ['$event'])
   onDocumentClick() {
     this.activeTooltip.set(null);
   }
 
-  // Przełączanie dymków
   toggleTooltip(id: string, side: 'home' | 'away', event: Event) {
-    event.stopPropagation(); // Blokuje "rozlanie się" kliknięcia na tło
+    event.stopPropagation();
     const key = `${id}-${side}`;
     this.activeTooltip.set(this.activeTooltip() === key ? null : key);
   }
 
-  // Pobieranie pełnej nazwy i aliasu z bazy załadowanych drużyn
   getFullTeamDetails(teamId: string, fallbackName: string) {
     if (!teamId) return { name: fallbackName, alias: null };
     const team = this.allTeams().find((t) => t.id === teamId);
-    return {
-      name: team?.name || fallbackName,
-      alias: team?.alias || null,
-    };
+    return { name: team?.name || fallbackName, alias: team?.alias || null };
   }
 
-  // Funkcja kopiowania linku
-  copyLiveLink() {
-    navigator.clipboard.writeText(this.liveUrl()).then(() => {
-      this.linkCopied.set(true);
-      setTimeout(() => this.linkCopied.set(false), 2000); // Ukryj po 2 sekundach
-    });
-  }
-
-  // ZAKTUALIZOWANA WERSJA
+  // --- ŁADOWANIE DANYCH ---
   private loadPublicData(code: string) {
-    // 1. Natychmiastowe pobranie danych na start (zwykły GET)
     this.liveService.getLiveResults(code).subscribe({
       next: (res) => this.applyLiveUpdate(res),
       error: (err) => console.error('Błąd inicjalnego pobierania Live:', err),
     });
 
-    // 2. Podpięcie się pod rurę strumieniową (SSE) do nasłuchiwania kolejnych bramek
     this.liveSubscription = this.liveService.streamLiveResults(code).subscribe({
       next: (res) => this.applyLiveUpdate(res),
       error: (err) => console.error('Błąd strumienia read only:', err),
     });
   }
 
-  // NOWA METODA POMOCNICZA
   private applyLiveUpdate(res: any) {
     this.season.set(res.season);
-    const sorted = res.matches.sort(
-      (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    const sorted = res.matches.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     this.matches.set(sorted);
     this.tableData.set(res.table);
-
-    // Przeładowanie statystyk
     this.statsRefreshTrigger.update((v) => v + 1);
   }
 
@@ -315,17 +320,10 @@ export class SeasonComponent implements OnInit, OnDestroy {
 
   loadSeasonData(id: string) {
     this.seasonService.getSeasonById(id).subscribe((s) => this.season.set(s));
-
     this.matchService.getMatchesBySeason(id).subscribe((m) => {
-      const sorted = m.sort(
-        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+      const sorted = m.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       this.matches.set(sorted);
-
-      // NOWE: Ustawienie aktywnej kolejki na podstawie ostatniego meczu
-      if (sorted.length > 0) {
-        this.activeMatchweek.set(sorted[0].matchweek);
-      }
+      if (sorted.length > 0) this.activeMatchweek.set(sorted[0].matchweek);
     });
 
     this.seasonService.getSeasonTable(id).subscribe({
@@ -334,68 +332,38 @@ export class SeasonComponent implements OnInit, OnDestroy {
     });
   }
 
-  // NOWE ZABEZPIECZENIE: Najniższa dozwolona kolejka (najwyższa rozegrana)
-  minAllowedMatchweek = computed(() => {
-    const m = this.matches();
-    if (m.length === 0) return 1;
-
-    // Zwracamy najwyższą rozegraną kolejkę. Nie pozwalamy cofać się poniżej niej.
-    return Math.max(...m.map((match) => match.matchweek));
-  });
-
-  // (Twój obecny maxAllowedMatchweek zostaje bez zmian)
-  maxAllowedMatchweek = computed(() => {
-    const m = this.matches();
-    if (m.length === 0) return 1;
-    const highestPlayed = Math.max(...m.map((match) => match.matchweek));
-    return highestPlayed + 1;
-  });
-
-  // BRAKUJĄCY KONSTRUKTOR DLA DEBOUNCE'A (Opóźnienia)
-  constructor() {
-    this.matchweekSubject.pipe(debounceTime(400), distinctUntilChanged()).subscribe((newWeek) => {
-      this.loadAttendanceForWeek(newWeek);
+  // --- AKCJE UI I UDOSTĘPNIANIE ---
+  copyLiveLink() {
+    navigator.clipboard.writeText(this.liveUrl()).then(() => {
+      this.linkCopied.set(true);
+      setTimeout(() => this.linkCopied.set(false), 2000);
     });
   }
 
-  // ZAKTUALIZOWANA METODA: Waliduje i blokuje złe wpisy
   onWeekChange(newWeek: number) {
     const max = this.maxAllowedMatchweek();
     const min = this.minAllowedMatchweek();
     let validWeek = newWeek;
 
-    // Blokada przed przeskakiwaniem kolejek w górę
     if (newWeek > max) {
-      alert(
-        `Błąd! Nie możesz przeskoczyć do kolejki ${newWeek}. Najpierw rozegraj kolejkę ${max - 1}.`,
-      );
+      alert(`Błąd! Nie możesz przeskoczyć do kolejki ${newWeek}. Najpierw rozegraj kolejkę ${max - 1}.`);
       validWeek = max;
-    }
-    // Blokada przed cofaniem się do zamkniętych kolejek
-    else if (newWeek < min) {
-      alert(
-        `Błąd! Kolejka ${newWeek} jest już zamknięta. Możesz zarządzać obecnością tylko dla bieżącej (${min}) lub nowej (${max}) kolejki.`,
-      );
+    } else if (newWeek < min) {
+      alert(`Błąd! Kolejka ${newWeek} jest już zamknięta. Możesz zarządzać obecnością tylko dla bieżącej (${min}) lub nowej (${max}) kolejki.`);
       validWeek = min;
-    }
-    // Zabezpieczenie przed bzdurnymi danymi
-    else if (!newWeek) {
+    } else if (!newWeek) {
       validWeek = min;
     }
 
-    // Odświeżamy UI natychmiast, żeby cofnąć błędną liczbę w inpucie
     this.activeMatchweek.set(validWeek);
-
-    // WŁĄCZAMY LOADER NATYCHMIAST (przed opóźnieniem debounce)
     this.isLoadingAttendance.set(true);
-
-    // Wysyłamy poprawną wartość do strumienia pobierającego z bazy
     this.matchweekSubject.next(validWeek);
   }
+
+  // --- OBECNOŚCI ---
   loadAttendanceForWeek(week: number) {
     if (!this.seasonId()) return;
-
-    this.isLoadingAttendance.set(true); // Upewniamy się, że loader działa przy pierwszym wejściu
+    this.isLoadingAttendance.set(true);
 
     this.matchweekService.getMatchweek(this.seasonId()!, week).subscribe({
       next: (res) => {
@@ -409,14 +377,12 @@ export class SeasonComponent implements OnInit, OnDestroy {
           m.awaySide?.players?.forEach((p: any) => playedIds.add(p.playerId));
         });
 
-        const allVisible = Array.from(new Set([...backendPresent, ...Array.from(playedIds)]));
-        this.visibleInModalIds.set(allVisible);
-
-        this.isLoadingAttendance.set(false); // WYŁĄCZAMY LOADER PO SUKCESIE
+        this.visibleInModalIds.set(Array.from(new Set([...backendPresent, ...Array.from(playedIds)])));
+        this.isLoadingAttendance.set(false);
       },
       error: (err) => {
         console.error('Błąd pobierania obecności', err);
-        this.isLoadingAttendance.set(false); // WYŁĄCZAMY LOADER W RAZIE BŁĘDU
+        this.isLoadingAttendance.set(false);
       },
     });
   }
@@ -424,199 +390,50 @@ export class SeasonComponent implements OnInit, OnDestroy {
   togglePlayerPresence(playerId: string) {
     const current = this.presentPlayerIds();
     if (current.includes(playerId)) {
-      // Odznaczamy (ale NIE USUWA to gracza z visibleInModalIds)
       this.presentPlayerIds.set(current.filter((id) => id !== playerId));
     } else {
-      // Zaznaczamy z powrotem
       this.presentPlayerIds.set([...current, playerId]);
     }
   }
 
   addPlayerToAttendance(player: any) {
-    // 1. Dodajemy do widoku modala
     const currentVisible = this.visibleInModalIds();
-    if (!currentVisible.includes(player.id)) {
-      this.visibleInModalIds.set([...currentVisible, player.id]);
-    }
-    // 2. Automatycznie zaznaczamy ptaszkiem
+    if (!currentVisible.includes(player.id)) this.visibleInModalIds.set([...currentVisible, player.id]);
     const currentPresent = this.presentPlayerIds();
-    if (!currentPresent.includes(player.id)) {
-      this.presentPlayerIds.set([...currentPresent, player.id]);
-    }
-    this.searchNewPlayerQuery.set(''); // Czyścimy input
+    if (!currentPresent.includes(player.id)) this.presentPlayerIds.set([...currentPresent, player.id]);
+    this.searchNewPlayerQuery.set('');
   }
 
-  // ==========================================
-  // RESZTA KODU POZOSTAJE BEZ ZMIAN
-  // (wklej tu wszystkie swoje stare metody onPlayerSelect, saveFullMatch, deleteMatch itd.)
-  // ==========================================
+  private saveAttendanceHidden() {
+    if (!this.seasonId()) return;
+    this.matchweekService.updateAttendance(this.seasonId()!, this.activeMatchweek(), this.presentPlayerIds()).subscribe({
+      next: () => {
+        if (this.presentPlayerIds().length >= 4) this.generateSuggestions();
+        else this.allSuggestedMatches.set([]);
+      },
+      error: (err) => console.error('Błąd cichego zapisu obecności: ', err),
+    });
+  }
 
+  togglePlayerPresenceAndSave(playerId: string) {
+    this.togglePlayerPresence(playerId);
+    this.saveAttendanceHidden();
+  }
+
+  addPlayerToAttendanceAndSave(player: any) {
+    this.addPlayerToAttendance(player);
+    this.saveAttendanceHidden();
+  }
+
+  // --- ZARZĄDZANIE FORMULARZEM MECZU ---
   onPlayerSelect(side: 'home' | 'away', event: Event) {
     const select = event.target as HTMLSelectElement;
     const playerId = select.value;
     if (!playerId) return;
 
     const player = this.allPlayers().find((p) => p.id === playerId);
-    if (player) {
-      this.addPlayerToSide(side, player);
-    }
+    if (player) this.addPlayerToSide(side, player);
     select.value = '';
-  }
-
-  removePlayer(side: 'home' | 'away', playerId: string) {
-    const target = side === 'home' ? this.newMatch.homeSide : this.newMatch.awaySide;
-    target.players = target.players.filter((p: any) => p.playerId !== playerId);
-    this.matchStateTrigger.update((v) => v + 1);
-  }
-
-  selectTeam(side: 'home' | 'away', team: any) {
-    const targetSide = side === 'home' ? this.newMatch.homeSide : this.newMatch.awaySide;
-    targetSide.teamId = team.id;
-    targetSide.assetId = team.assetId || 'default';
-    targetSide.teamName = team.alias || team.teamName || team.name;
-
-    if (side === 'home') this.searchHomeTeam.set('');
-    else this.searchAwayTeam.set('');
-
-    this.matchStateTrigger.update((v) => v + 1);
-  }
-
-  clearTeam(side: 'home' | 'away') {
-    const targetSide = side === 'home' ? this.newMatch.homeSide : this.newMatch.awaySide;
-    targetSide.teamId = '';
-    targetSide.assetId = '';
-    targetSide.teamName = '';
-    this.matchStateTrigger.update((v) => v + 1);
-  }
-
-  get homeGoals(): number {
-    return this.newMatch.homeSide.players.reduce((sum: number, p: any) => sum + (p.goals || 0), 0);
-  }
-  get awayGoals(): number {
-    return this.newMatch.awaySide.players.reduce((sum: number, p: any) => sum + (p.goals || 0), 0);
-  }
-  get homeAssists(): number {
-    return this.newMatch.homeSide.players.reduce(
-      (sum: number, p: any) => sum + (p.assists || 0),
-      0,
-    );
-  }
-  get awayAssists(): number {
-    return this.newMatch.awaySide.players.reduce(
-      (sum: number, p: any) => sum + (p.assists || 0),
-      0,
-    );
-  }
-
-  saveFullMatch() {
-    if (!this.isFormValid()) return;
-    if (this.homeAssists > this.homeGoals) {
-      alert(`BŁĄD GOSPODARZY: Zbyt dużo asyst!`);
-      return;
-    }
-    if (this.awayAssists > this.awayGoals) {
-      alert(`BŁĄD GOŚCI: Zbyt dużo asyst!`);
-      return;
-    }
-
-    this.newMatch.homeSide.goals = this.homeGoals;
-    this.newMatch.awaySide.goals = this.awayGoals;
-
-    // Gwarancja przypisania poprawnej kolejki ze zsynchronizowanego nagłówka "Kanapy"
-    this.newMatch.matchweek = this.activeMatchweek();
-
-    // ZMIANA: Jawne dodanie tablicy `comments` do payloadu wysyłanego na backend
-    const payload = {
-      ...this.newMatch,
-      seasonId: this.seasonId(),
-      comments: this.newMatch.comments || [], // Upewniamy się, że zawsze wysyłamy chociaż pustą tablicę
-    };
-
-    const request = this.editingMatch()
-      ? this.matchService.updateMatch(this.editingMatch().id, payload)
-      : this.matchService.createMatch(payload);
-
-    request.subscribe({
-      next: () => {
-        this.loadSeasonData(this.seasonId()!);
-        this.closeForm();
-        this.statsRefreshTrigger.update((v) => v + 1);
-      },
-      error: (err) => alert('Błąd zapisu: ' + (err.error?.message || 'Nieznany błąd serwera')),
-    });
-  }
-
-  addComment() {
-    const text = this.newCommentText().trim();
-    if (text) {
-      if (!this.newMatch.comments) this.newMatch.comments = [];
-      this.newMatch.comments.push(text);
-      this.newCommentText.set('');
-    }
-  }
-
-  removeComment(idx: number) {
-    this.newMatch.comments.splice(idx, 1);
-  }
-
-  isFormValid(): boolean {
-    const m = this.newMatch;
-    return !!(
-      m.homeSide.assetId &&
-      m.awaySide.assetId &&
-      m.homeSide.players.length > 0 &&
-      m.awaySide.players.length > 0
-    );
-  }
-
-  addNewMatch() {
-    this.resetForm();
-    this.showMatchForm.set(true);
-
-    // NOWE: Czyścimy stare sugestie przy otwieraniu nowego meczu
-    this.allSuggestedMatches.set([]);
-    this.currentSuggestionPage.set(0);
-
-    // Tukej wołomy zaro po liste obecności z aktywnyj kolyjki!
-    this.loadAttendanceForWeek(this.activeMatchweek());
-
-    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
-  }
-
-  editMatch(match: any) {
-    if (match.finished) return;
-    this.editingMatch.set(match);
-    this.newMatch = JSON.parse(JSON.stringify(match));
-    this.searchHomeTeam.set(match.homeSide.teamName || '');
-    this.searchAwayTeam.set(match.awaySide.teamName || '');
-
-    // Ustawiómy kolyjka na ta ze szpilu i ciągniemy z bazy szpilerów
-    this.activeMatchweek.set(match.matchweek);
-    this.loadAttendanceForWeek(match.matchweek);
-
-    this.matchStateTrigger.update((v) => v + 1);
-    this.showMatchForm.set(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    this.statsRefreshTrigger.update((v) => v + 1);
-  }
-
-  closeForm() {
-    this.showMatchForm.set(false);
-    this.resetForm();
-  }
-
-  private resetForm() {
-    this.editingMatch.set(null);
-    this.searchHomeTeam.set('');
-    this.searchAwayTeam.set('');
-    this.newMatch = {
-      matchweek: this.activeMatchweek(), // Domyślnie używamy aktywnej kolejki z sesji
-      homeSide: { assetId: '', goals: 0, players: [] },
-      awaySide: { assetId: '', goals: 0, players: [] },
-      finished: false,
-      comments: [], // <--- NOWE
-    };
   }
 
   addPlayerToSide(side: 'home' | 'away', player: any) {
@@ -636,6 +453,30 @@ export class SeasonComponent implements OnInit, OnDestroy {
     }
   }
 
+  removePlayer(side: 'home' | 'away', playerId: string) {
+    const target = side === 'home' ? this.newMatch.homeSide : this.newMatch.awaySide;
+    target.players = target.players.filter((p: any) => p.playerId !== playerId);
+    this.matchStateTrigger.update((v) => v + 1);
+  }
+
+  selectTeam(side: 'home' | 'away', team: any) {
+    const targetSide = side === 'home' ? this.newMatch.homeSide : this.newMatch.awaySide;
+    targetSide.teamId = team.id;
+    targetSide.assetId = team.assetId || 'default';
+    targetSide.teamName = team.alias || team.teamName || team.name;
+
+    side === 'home' ? this.searchHomeTeam.set('') : this.searchAwayTeam.set('');
+    this.matchStateTrigger.update((v) => v + 1);
+  }
+
+  clearTeam(side: 'home' | 'away') {
+    const targetSide = side === 'home' ? this.newMatch.homeSide : this.newMatch.awaySide;
+    targetSide.teamId = '';
+    targetSide.assetId = '';
+    targetSide.teamName = '';
+    this.matchStateTrigger.update((v) => v + 1);
+  }
+
   getSelectedPlayerIds(): string[] {
     const homeIds = this.newMatch.homeSide.players.map((p: any) => p.playerId);
     const awayIds = this.newMatch.awaySide.players.map((p: any) => p.playerId);
@@ -646,10 +487,82 @@ export class SeasonComponent implements OnInit, OnDestroy {
     if (!this.season()?.uniqueTeams) return [];
     return this.matches()
       .filter((m) => m.matchweek === this.newMatch.matchweek && m.id !== this.editingMatch()?.id)
-      .flatMap((m) => [
-        m.homeSide.teamId || m.homeSide.assetId,
-        m.awaySide.teamId || m.awaySide.assetId,
-      ]);
+      .flatMap((m) => [m.homeSide.teamId || m.homeSide.assetId, m.awaySide.teamId || m.awaySide.assetId]);
+  }
+
+  isFormValid(): boolean {
+    const m = this.newMatch;
+    return !!(m.homeSide.assetId && m.awaySide.assetId && m.homeSide.players.length > 0 && m.awaySide.players.length > 0);
+  }
+
+  addNewMatch() {
+    this.resetForm();
+    this.showMatchForm.set(true);
+    this.allSuggestedMatches.set([]);
+    this.currentSuggestionPage.set(0);
+    this.loadAttendanceForWeek(this.activeMatchweek());
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+  }
+
+  editMatch(match: any) {
+    if (match.finished) return;
+    this.editingMatch.set(match);
+    this.newMatch = JSON.parse(JSON.stringify(match));
+    this.searchHomeTeam.set(match.homeSide.teamName || '');
+    this.searchAwayTeam.set(match.awaySide.teamName || '');
+    this.activeMatchweek.set(match.matchweek);
+    this.loadAttendanceForWeek(match.matchweek);
+    this.matchStateTrigger.update((v) => v + 1);
+    this.showMatchForm.set(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.statsRefreshTrigger.update((v) => v + 1);
+  }
+
+  closeForm() {
+    this.showMatchForm.set(false);
+    this.resetForm();
+  }
+
+  private resetForm() {
+    this.editingMatch.set(null);
+    this.searchHomeTeam.set('');
+    this.searchAwayTeam.set('');
+    this.newMatch = {
+      matchweek: this.activeMatchweek(),
+      homeSide: { assetId: '', goals: 0, players: [] },
+      awaySide: { assetId: '', goals: 0, players: [] },
+      finished: false,
+      comments: [],
+    };
+  }
+
+  saveFullMatch() {
+    if (!this.isFormValid()) return;
+    if (this.homeAssists > this.homeGoals) return alert(`BŁĄD GOSPODARZY: Zbyt dużo asyst!`);
+    if (this.awayAssists > this.awayGoals) return alert(`BŁĄD GOŚCI: Zbyt dużo asyst!`);
+
+    this.newMatch.homeSide.goals = this.homeGoals;
+    this.newMatch.awaySide.goals = this.awayGoals;
+    this.newMatch.matchweek = this.activeMatchweek();
+
+    const payload = {
+      ...this.newMatch,
+      seasonId: this.seasonId(),
+      comments: this.newMatch.comments || [],
+    };
+
+    const request = this.editingMatch()
+      ? this.matchService.updateMatch(this.editingMatch().id, payload)
+      : this.matchService.createMatch(payload);
+
+    request.subscribe({
+      next: () => {
+        this.loadSeasonData(this.seasonId()!);
+        this.closeForm();
+        this.statsRefreshTrigger.update((v) => v + 1);
+      },
+      error: (err) => alert('Błąd zapisu: ' + (err.error?.message || 'Nieznany błąd serwera')),
+    });
   }
 
   deleteMatch(matchId: string) {
@@ -658,49 +571,80 @@ export class SeasonComponent implements OnInit, OnDestroy {
         this.loadSeasonData(this.seasonId()!);
         this.matchStateTrigger.update((v) => v + 1);
         if (this.editingMatch()?.id === matchId) this.closeForm();
-
         this.statsRefreshTrigger.update((v) => v + 1);
       });
     }
   }
 
+  // --- KOMENTARZE ---
+  addComment() {
+    const text = this.newCommentText().trim();
+    if (text) {
+      if (!this.newMatch.comments) this.newMatch.comments = [];
+      this.newMatch.comments.push(text);
+      this.newCommentText.set('');
+    }
+  }
+
+  removeComment(idx: number) {
+    this.newMatch.comments.splice(idx, 1);
+  }
+
+  // --- SUGESTIE MECZÓW ---
+  generateSuggestions() {
+    if (!this.seasonId()) return;
+    this.isSuggesting.set(true);
+    this.matchmakingService.suggestMatches({ seasonId: this.seasonId()!, matchweek: this.activeMatchweek() }).subscribe({
+      next: (suggestions) => {
+        this.allSuggestedMatches.set(suggestions);
+        this.currentSuggestionPage.set(0);
+        this.isSuggesting.set(false);
+      },
+      error: (err) => {
+        console.error('Błąd pobierania sugestii', err);
+        alert('Nie udało się wygenerować propozycji.');
+        this.isSuggesting.set(false);
+      },
+    });
+  }
+
+  nextSuggestions() {
+    const maxPage = Math.floor((this.allSuggestedMatches().length - 1) / 3);
+    if (this.currentSuggestionPage() < maxPage) this.currentSuggestionPage.update((p) => p + 1);
+    else this.currentSuggestionPage.set(0);
+  }
+
+  applySuggestion(suggestion: any) {
+    this.newMatch.homeSide.players = [];
+    this.newMatch.awaySide.players = [];
+    suggestion.homePlayers.forEach((p: any) => this.addPlayerToSide('home', { id: p.playerId, alias: p.alias }));
+    suggestion.awayPlayers.forEach((p: any) => this.addPlayerToSide('away', { id: p.playerId, alias: p.alias }));
+    this.matchStateTrigger.update((v) => v + 1);
+
+    setTimeout(() => {
+      const formElement = document.querySelector('.match-form-layout');
+      if (formElement) {
+        const headerOffset = 100;
+        const offsetPosition = formElement.getBoundingClientRect().top + window.scrollY - headerOffset;
+        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+      }
+    }, 60);
+  }
+
+  // --- NARZĘDZIA POMOCNICZE ---
   selectContent(event: FocusEvent) {
     const input = event.target as HTMLInputElement;
     if (input) input.select();
   }
-  protected readonly Math = Math;
-
-  sortKey = signal<string>('winRatio');
-  sortDirection = signal<'asc' | 'desc'>('desc');
-
-  sortedTable = computed(() => {
-    const data = [...this.tableData()];
-    const key = this.sortKey();
-    const dir = this.sortDirection();
-    return data.sort((a, b) => {
-      let valA = a[key];
-      let valB = b[key];
-      if (valA === valB) return b.points - a.points;
-      return dir === 'asc' ? valA - valB : valB - valA;
-    });
-  });
 
   toggleSort(key: string) {
-    if (this.sortKey() === key)
-      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+    if (this.sortKey() === key) this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
     else {
       this.sortKey.set(key);
       this.sortDirection.set('desc');
     }
   }
 
-  currentPage = signal(1);
-  pageSize = 7;
-  paginatedMatches = computed(() => {
-    const startIndex = (this.currentPage() - 1) * this.pageSize;
-    return this.matches().slice(startIndex, startIndex + this.pageSize);
-  });
-  totalPages = computed(() => Math.ceil(this.matches().length / this.pageSize));
   nextPage() {
     if (this.currentPage() < this.totalPages()) this.currentPage.update((p) => p + 1);
   }
@@ -708,109 +652,6 @@ export class SeasonComponent implements OnInit, OnDestroy {
     if (this.currentPage() > 1) this.currentPage.update((p) => p - 1);
   }
 
-  viewingMatch = signal<any | null>(null);
-  viewMatchDetails(match: any) {
-    this.viewingMatch.set(match);
-  }
-  closeMatchDetails() {
-    this.viewingMatch.set(null);
-  }
-
-  private saveAttendanceHidden() {
-    if (!this.seasonId()) return;
-    this.matchweekService
-      .updateAttendance(this.seasonId()!, this.activeMatchweek(), this.presentPlayerIds())
-      .subscribe({
-        next: () => {
-          // ZMIANA: Usunięto blokadę (this.allSuggestedMatches().length > 0).
-          // Teraz po każdej zmianie obecności, jeśli jest min. 4 graczy,
-          // system od razu generuje nowe pary.
-          if (this.presentPlayerIds().length >= 4) {
-            this.generateSuggestions();
-          } else {
-            // Jeśli spadnie poniżej 4 graczy, czyścimy sugestie
-            this.allSuggestedMatches.set([]);
-          }
-        },
-        error: (err) => console.error('Błąd cichego zapisu obecności: ', err),
-      });
-  }
-
-  // NOWA: Autozapis po zmianie checkboxa
-  togglePlayerPresenceAndSave(playerId: string) {
-    this.togglePlayerPresence(playerId);
-    this.saveAttendanceHidden();
-  }
-
-  // NOWA: Autozapis po dodaniu z wyszukiwarki
-  addPlayerToAttendanceAndSave(player: any) {
-    this.addPlayerToAttendance(player);
-    this.saveAttendanceHidden();
-  }
-
-  generateSuggestions() {
-    if (!this.seasonId()) return;
-
-    this.isSuggesting.set(true);
-    this.matchmakingService
-      .suggestMatches({
-        seasonId: this.seasonId()!,
-        matchweek: this.activeMatchweek(),
-      })
-      .subscribe({
-        next: (suggestions) => {
-          this.allSuggestedMatches.set(suggestions);
-          this.currentSuggestionPage.set(0); // Zawsze resetuj do strony pierwszej
-          this.isSuggesting.set(false);
-        },
-        error: (err) => {
-          console.error('Błąd pobierania sugestii', err);
-          alert('Nie udało się wygenerować propozycji. Sprawdź konsole.');
-          this.isSuggesting.set(false);
-        },
-      });
-  }
-
-  // Funkcja "Pokaż następne" z wytycznych
-  nextSuggestions() {
-    const maxPage = Math.floor((this.allSuggestedMatches().length - 1) / 3);
-    if (this.currentSuggestionPage() < maxPage) {
-      this.currentSuggestionPage.update((p) => p + 1);
-    } else {
-      this.currentSuggestionPage.set(0); // Zapętl do początku, jeśli kliknie na ostatniej stronie
-    }
-  }
-
-  applySuggestion(suggestion: any) {
-    // 1. Czyścimy obecne składy w formularzu
-    this.newMatch.homeSide.players = [];
-    this.newMatch.awaySide.players = [];
-
-    // 2. Dodajemy wybraną czwórkę (symulując ręczne dodawanie)
-    suggestion.homePlayers.forEach((p: any) => {
-      this.addPlayerToSide('home', { id: p.playerId, alias: p.alias });
-    });
-    suggestion.awayPlayers.forEach((p: any) => {
-      this.addPlayerToSide('away', { id: p.playerId, alias: p.alias });
-    });
-
-    // PRZYWRÓCONE: Wymuszenie aktualizacji stanu triggera
-    this.matchStateTrigger.update((v) => v + 1);
-
-    // Automatyczny, płynny scroll do sekcji formularza meczowego
-    setTimeout(() => {
-      const formElement = document.querySelector('.match-form-layout');
-      if (formElement) {
-        // Zdefiniuj wysokość swojego headera + trochę luzu (np. 100px)
-        const headerOffset = 100;
-        const elementPosition = formElement.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.scrollY - headerOffset;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth',
-        });
-      }
-    }, 60);
-  }
+  viewMatchDetails(match: any) { this.viewingMatch.set(match); }
+  closeMatchDetails() { this.viewingMatch.set(null); }
 }

@@ -8,412 +8,409 @@
   </app-header>
 
   @if (!isReadOnly() && season()?.liveCode) {
-    <section class="card share-panel animate-in compact-share">
-      <div class="share-info">
-        <h3>📡 Śledzenie na żywo</h3>
-        <p>Zeskanuj QR lub kliknij kod, aby skopiować link do przeglądarki:</p>
-        <div class="live-code-badge" (click)="copyLiveLink()" title="Kopiuj kod">
-          {{ season()?.liveCode }} 📋
-        </div>
+  <section class="card share-panel animate-in compact-share">
+    <div class="share-info">
+      <h3>📡 Śledzenie na żywo</h3>
+      <p>Zeskanuj QR lub kliknij aby skopiować link do przeglądarki:</p>
+    </div>
+    <div class="qr-container" (click)="copyLiveLink()" title="Kliknij, aby skopiować URL">
+      <qrcode
+        [qrdata]="liveUrl()"
+        [width]="70"
+        [errorCorrectionLevel]="'M'"
+        colorDark="#4a3427"
+        colorLight="#ffffff">
+      </qrcode>
+      <div class="copy-overlay">
+        <span>{{ linkCopied() ? 'Skopiowano!' : '' }}</span>
       </div>
-      <div class="qr-container" (click)="copyLiveLink()" title="Kliknij, aby skopiować URL">
-        <qrcode
-          [qrdata]="liveUrl()"
-          [width]="70"
-          [errorCorrectionLevel]="'M'"
-          colorDark="#4a3427"
-          colorLight="#ffffff">
-        </qrcode>
-        <div class="copy-overlay">
-          <span>{{ linkCopied() ? 'Skopiowano!' : 'Kopiuj Link' }}</span>
-        </div>
-      </div>
-    </section>
+    </div>
+  </section>
   }
 
   @if (showMatchForm()) {
-    <section class="card match-form-panel animate-in">
-      <div class="form-header">
-        <div class="time-stamp">
-          <span class="date">{{ today | date:'dd.MM.yyyy' }}</span>
-          <span class="time">{{ today | date:'HH:mm' }}</span>
-        </div>
-        <h2>{{ editingMatch() ? 'Edytuj Mecz' : 'Nowy Mecz' }}</h2>
-        <button class="btn-close" (click)="closeForm()">✕</button>
+  <section class="card match-form-panel animate-in">
+    <div class="form-header">
+      <div class="time-stamp">
+        <span class="date">{{ today | date:'dd.MM.yyyy' }}</span>
+        <span class="time">{{ today | date:'HH:mm' }}</span>
       </div>
-      @if (!editingMatch()) {
-      <div class="form-section-kanapa">
-        <div class="kanapa-header">
-          <h3>🛋️ Kanapa (Obecni na Kolejce {{ activeMatchweek() }})</h3>
-          <div class="week-selector-inline">
-            <label>Zmień kolejkę:</label>
-            <input type="number"
-                   [ngModel]="activeMatchweek()"
-                   (ngModelChange)="onWeekChange($event)"
-                   [min]="minAllowedMatchweek()"
-                   [max]="maxAllowedMatchweek()"
-                   class="week-input-mini">
-          </div>
+      <h2>{{ editingMatch() ? 'Edytuj Mecz' : 'Nowy Mecz' }}</h2>
+      <button class="btn-close" (click)="closeForm()">✕</button>
+    </div>
+    @if (!editingMatch()) {
+    <div class="form-section-squad">
+      <div class="squad-header">
+        <h3>🎮️ Skład (Kolejce {{ activeMatchweek() }})</h3>
+        <div class="week-selector-inline">
+          <label>Zmień kolejkę:</label>
+          <input type="number"
+                 [ngModel]="activeMatchweek()"
+                 (ngModelChange)="onWeekChange($event)"
+                 [min]="minAllowedMatchweek()"
+                 [max]="maxAllowedMatchweek()"
+                 class="week-input-mini">
         </div>
-
-        <div class="kanapa-layout">
-
-          @if (isLoadingAttendance()) {
-            <app-fifa-loader></app-fifa-loader>
-          } @else {
-            <div class="attendance-grid-mini">
-              @for (p of modalDisplayPlayers(); track p.id) {
-                <label class="attendance-item-mini"
-                       [class.selected]="presentPlayerIds().includes(p.id)"
-                       [class.absent]="!presentPlayerIds().includes(p.id)">
-
-                  <input type="checkbox"
-                         [checked]="presentPlayerIds().includes(p.id)"
-                         (change)="togglePlayerPresenceAndSave(p.id)">
-
-                  <app-player-avatar
-                    [alias]="p.alias"
-                    [imageUrl]="p.imageUrl"
-                    fontSize="0.85rem">
-                  </app-player-avatar>
-                </label>
-              } @empty {
-                <div class="empty-state-mini">Brak graczy. Wyszukaj i dodaj obok!</div>
-              }
-            </div>
-
-            <div class="attendance-search-mini">
-              <input type="text"
-                     class="search-input"
-                     [ngModel]="searchNewPlayerQuery()"
-                     (ngModelChange)="searchNewPlayerQuery.set($event)"
-                     placeholder="🔍 Dodaj z bazy...">
-              @if (attendanceSuggestions().length > 0) {
-                <div class="suggestions">
-                  @for (s of attendanceSuggestions(); track s.id) {
-                    <div class="s-item" (click)="addPlayerToAttendanceAndSave(s)">
-                      {{ s.alias }}
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          } </div>
       </div>
 
-      <div class="form-section-suggestions">
-        <div class="suggestions-header">
-          <h3>✨ Sugerowane mecze</h3>
+      <div class="squad-layout">
 
-          <div style="display: flex; gap: 10px;">
-            @if (allSuggestedMatches().length > 3) {
-              <button class="btn-secondary btn-sm" (click)="nextSuggestions()">Pokaż następne 🔄</button>
-            }
-            <button class="btn-magic btn-sm"
-                    (click)="generateSuggestions()"
-                    [disabled]="isSuggesting() || presentPlayerIds().length < 4">
-              {{ isSuggesting() ? 'Myślę...' : 'Zaproponuj' }}
-            </button>
-          </div>
-        </div>
+        @if (isLoadingAttendance()) {
+        <app-fifa-loader></app-fifa-loader>
+        } @else {
+        <div class="attendance-grid-mini">
+          @for (p of modalDisplayPlayers(); track p.id) {
+          <label class="attendance-item-mini"
+                 [class.selected]="presentPlayerIds().includes(p.id)"
+                 [class.absent]="!presentPlayerIds().includes(p.id)">
 
-        <div class="suggestions-cards">
+            <input type="checkbox"
+                   [checked]="presentPlayerIds().includes(p.id)"
+                   (change)="togglePlayerPresenceAndSave(p.id)">
 
-          @if (allSuggestedMatches().length === 0) {
-            <div class="suggestion-card placeholder">
-              <div class="s-teams">Kliknij "Zaproponuj", aby algorytm dobrał pary z "Kanapy" ↑<br><small>(Wymagane min. 4 osoby)</small></div>
-            </div>
-          } @else {
-            @for (s of suggestedMatches(); track $index) {
-              <div class="suggestion-card active-card" (click)="applySuggestion(s)">
-
-                <div class="s-score-badge" [style.background]="s.matchScore <= 0 ? '#22c55e' : 'var(--beer-gold)'">
-                  {{ s.matchScore <= 0 ? '🏆 Perfekcyjny Match' : 'Punkty Karne: ' + (s.matchScore | number:'1.0-0') }}
-                </div>
-
-                <div class="s-matchup">
-                  <div class="s-team home">
-                    @for (p of s.homePlayers; track p.playerId) { <span class="s-player"><app-player-avatar
-                      [alias]="p.alias"
-                      [imageUrl]="p.imageUrl"
-                      fontSize="0.85rem">
-                        </app-player-avatar></span> }
-                  </div>
-                  <div class="s-vs">vs</div>
-                  <div class="s-team away">
-                    @for (p of s.awayPlayers; track p.playerId) { <span class="s-player"><app-player-avatar
-                      [alias]="p.alias"
-                      [imageUrl]="p.imageUrl"
-                      fontSize="0.85rem">
-                        </app-player-avatar></span> }
-                  </div>
-                </div>
-
-                <div class="s-reason">{{ s.matchReason }}</div>
-              </div>
-            }
+            <app-player-avatar
+              [alias]="p.alias"
+              [imageUrl]="p.imageUrl"
+              fontSize="0.85rem">
+            </app-player-avatar>
+          </label>
+          } @empty {
+          <div class="empty-state-mini">Brak graczy. Wyszukaj i dodaj obok!</div>
           }
         </div>
-      </div>
-      }
-      <div class="match-form-layout">
 
-        <div class="form-sides-grid">
-
-          <div class="team-column">
-            <h3 class="side-title">Gospodarze</h3>
-
-            @if (!newMatch.homeSide.teamId) {
-              <div class="input-group">
-                <input class="search-input" type="text"
-                       [ngModel]="searchHomeTeam()"
-                       (ngModelChange)="searchHomeTeam.set($event)"
-                       placeholder="Szukaj drużyny...">
-                @if (homeTeamSuggestions().length > 0) {
-                  <div class="suggestions">
-                    @for (t of homeTeamSuggestions(); track t.id) {
-                      <div class="s-item" (click)="selectTeam('home', t)">
-                        <img [src]="'/logos/light/' + (t.assetId || 'default') + '.png'" width="20">
-                        {{ t.alias || t.teamName || t.name }}
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            } @else {
-              <div class="locked-team">
-                <div class="team-info">
-                  <img [src]="'/logos/light/' + (newMatch.homeSide.assetId || 'default') + '.png'">
-                  <strong>{{ newMatch.homeSide.teamName }}</strong>
-                </div>
-                <button class="btn-change-team" (click)="clearTeam('home')">Zmień</button>
-              </div>
-            }
-
-            <div class="players-selection">
-              @for (p of newMatch.homeSide.players; track p.playerId) {
-                <div class="player-card-edit">
-                  <div class="player-header">
-                    <app-player-avatar
-                      [alias]="p.alias"
-                      [imageUrl]="p.imageUrl">
-                    </app-player-avatar>
-                    <span class="remove-btn" (click)="removePlayer('home', p.playerId)">✕</span>
-                  </div>
-                  <div class="player-stats-inputs">
-                    <div class="stat-stepper">
-                      <label>⚽</label>
-                      <div class="stepper-controls">
-                        <button type="button" (click)="p.goals = Math.max(0, (p.goals || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.goals" min="0" max="99" (focus)="selectContent($event)" (blur)="p.goals = Math.min(99, Math.max(0, p.goals || 0))">
-                        <button type="button" (click)="p.goals = Math.min(99, (p.goals || 0) + 1)">+</button>
-                      </div>
-                    </div>
-
-                    <div class="stat-stepper">
-                      <label>🟨</label>
-                      <div class="stepper-controls">
-                        <button type="button" (click)="p.yellowCards = Math.max(0, (p.yellowCards || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.yellowCards" min="0" max="20" (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(20, Math.max(0, p.yellowCards || 0))">
-                        <button type="button" (click)="p.yellowCards = Math.min(20, (p.yellowCards || 0) + 1)">+</button>
-                      </div>
-                    </div>
-                    <div class="stat-stepper">
-                      <label>👟</label>
-                      <div class="stepper-controls">
-                        <button type="button" (click)="p.assists = Math.max(0, (p.assists || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.assists" min="0" max="99" (focus)="selectContent($event)" (blur)="p.assists = Math.min(99, Math.max(0, p.assists || 0))">
-                        <button type="button" (click)="p.assists = Math.min(99, (p.assists || 0) + 1)">+</button>
-                      </div>
-                    </div>
-                    <div class="stat-stepper">
-                      <label>🟥</label>
-                      <div class="stepper-controls">
-                        <button type="button" (click)="p.redCards = Math.max(0, (p.redCards || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.redCards" min="0" max="20" (focus)="selectContent($event)" (blur)="p.redCards = Math.min(20, Math.max(0, p.redCards || 0))">
-                        <button type="button" (click)="p.redCards = Math.min(20, (p.redCards || 0) + 1)">+</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              }
-              @if (newMatch.homeSide.players.length < 2) {
-                <select class="player-select" (change)="onPlayerSelect('home', $event)">
-                  <option value="">+ Gracz...</option>
-                  @for (p of filteredPlayers(); track p.id) {
-                    <option [value]="p.id">{{ p.alias }}</option>
-                  }
-                </select>
-              }
-            </div>
-          </div>
-
-          <div class="form-center-meta">
-            <div class="meta-item">
-              <label>Kolejka</label>
-              <span class="week-display">{{ activeMatchweek() }}</span>
-            </div>
-            <div class="meta-item score-item">
-              <div class="score-display">{{ homeGoals }}</div>
-              <span class="separator">:</span>
-              <div class="score-display">{{ awayGoals }}</div>
-            </div>
-          </div>
-
-          <div class="team-column">
-            <h3 class="side-title">Goście</h3>
-
-            @if (!newMatch.awaySide.teamId) {
-              <div class="input-group">
-                <input class="search-input" type="text"
-                       [ngModel]="searchAwayTeam()"
-                       (ngModelChange)="searchAwayTeam.set($event)"
-                       placeholder="Szukaj drużyny...">
-                @if (awayTeamSuggestions().length > 0) {
-                  <div class="suggestions">
-                    @for (t of awayTeamSuggestions(); track t.id) {
-                      <div class="s-item" (click)="selectTeam('away', t)">
-                        <img [src]="'/logos/light/' + (t.assetId || 'default') + '.png'" width="20">
-                        {{ t.alias || t.teamName || t.name }}
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            } @else {
-              <div class="locked-team">
-                <div class="team-info">
-                  <img [src]="'/logos/light/' + (newMatch.awaySide.assetId || 'default') + '.png'">
-                  <strong>{{ newMatch.awaySide.teamName }}</strong>
-                </div>
-                <button class="btn-change-team" (click)="clearTeam('away')">Zmień</button>
-              </div>
-            }
-
-            <div class="players-selection">
-              @for (p of newMatch.awaySide.players; track p.playerId) {
-                <div class="player-card-edit">
-                  <div class="player-header">
-                    <app-player-avatar
-                      [alias]="p.alias"
-                      [imageUrl]="p.imageUrl">
-                    </app-player-avatar>
-                    <span class="remove-btn" (click)="removePlayer('away', p.playerId)">✕</span>
-                  </div>
-                  <div class="player-stats-inputs">
-                    <div class="stat-stepper">
-                      <label>⚽</label>
-                      <div class="stepper-controls">
-                        <button type="button" (click)="p.goals = Math.max(0, (p.goals || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.goals" min="0" max="99" (focus)="selectContent($event)" (blur)="p.goals = Math.min(99, Math.max(0, p.goals || 0))">
-                        <button type="button" (click)="p.goals = Math.min(99, (p.goals || 0) + 1)">+</button>
-                      </div>
-                    </div>
-
-                    <div class="stat-stepper">
-                      <label>🟨</label>
-                      <div class="stepper-controls">
-                        <button type="button" (click)="p.yellowCards = Math.max(0, (p.yellowCards || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.yellowCards" min="0" max="20" (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(20, Math.max(0, p.yellowCards || 0))">
-                        <button type="button" (click)="p.yellowCards = Math.min(20, (p.yellowCards || 0) + 1)">+</button>
-                      </div>
-                    </div>
-                    <div class="stat-stepper">
-                      <label>👟</label>
-                      <div class="stepper-controls">
-                        <button type="button" (click)="p.assists = Math.max(0, (p.assists || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.assists" min="0" max="99" (focus)="selectContent($event)" (blur)="p.assists = Math.min(99, Math.max(0, p.assists || 0))">
-                        <button type="button" (click)="p.assists = Math.min(99, (p.assists || 0) + 1)">+</button>
-                      </div>
-                    </div>
-                    <div class="stat-stepper">
-                      <label>🟥</label>
-                      <div class="stepper-controls">
-                        <button type="button" (click)="p.redCards = Math.max(0, (p.redCards || 0) - 1)">-</button>
-                        <input type="number" [(ngModel)]="p.redCards" min="0" max="20" (focus)="selectContent($event)" (blur)="p.redCards = Math.min(20, Math.max(0, p.redCards || 0))">
-                        <button type="button" (click)="p.redCards = Math.min(20, (p.redCards || 0) + 1)">+</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              }
-              @if (newMatch.awaySide.players.length < 2) {
-                <select class="player-select" (change)="onPlayerSelect('away', $event)">
-                  <option value="">+ Gracz...</option>
-                  @for (p of filteredPlayers(); track p.id) {
-                    <option [value]="p.id">{{ p.alias }}</option>
-                  }
-                </select>
-              }
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="comments-input-section">
-        <h3 class="side-title">📝 Komentarze (Opcjonalne)</h3>
-        <div class="comment-input-row">
+        <div class="attendance-search-mini">
           <input type="text"
                  class="search-input"
-                 [ngModel]="newCommentText()"
-                 (ngModelChange)="newCommentText.set($event)"
-                 (keyup.enter)="addComment()"
-                 placeholder="Wpisz komentarz (np. 'Bramka nożycami', 'Krzysiek bez formy')...">
-
-          @if (!isReadOnly()) {
-          <button class="btn-primary" (click)="addComment()">Dodaj</button>
-          }
-        </div>
-        <div class="comments-list">
-          @for (c of newMatch.comments; track $index) {
-          <div class="comment-pill">
-            <span>{{ c }}</span>
-            <button class="remove-btn" (click)="removeComment($index)">✕</button>
+                 [ngModel]="searchNewPlayerQuery()"
+                 (ngModelChange)="searchNewPlayerQuery.set($event)"
+                 placeholder="🔍 Dodaj z bazy...">
+          @if (attendanceSuggestions().length > 0) {
+          <div class="suggestions">
+            @for (s of attendanceSuggestions(); track s.id) {
+            <div class="s-item" (click)="addPlayerToAttendanceAndSave(s)">
+              {{ s.alias }}
+            </div>
+            }
           </div>
           }
         </div>
+        } </div>
+    </div>
+
+    <div class="form-section-suggestions">
+      <div class="suggestions-header">
+        <h3>✨ Sugerowane mecze</h3>
+
+        <div style="display: flex; gap: 10px;">
+          @if (allSuggestedMatches().length > 3) {
+          <button class="btn-secondary btn-sm" (click)="nextSuggestions()">Pokaż następne 🔄</button>
+          }
+          <button class="btn-magic btn-sm"
+                  (click)="generateSuggestions()"
+                  [disabled]="isSuggesting() || presentPlayerIds().length < 4">
+            {{ isSuggesting() ? 'Myślę...' : 'Zaproponuj' }}
+          </button>
+        </div>
       </div>
 
-      <div class="form-actions">
-        <div class="status-toggle-wrapper">
-          <label class="switch">
-            <input type="checkbox" [(ngModel)]="newMatch.finished">
-            <span class="slider round"></span>
-          </label>
-          <span class="status-label" [class.is-finished]="newMatch.finished">
-            {{ newMatch.finished ? 'Zakończ 🔒' : 'W trakcie ⚽' }}
-          </span>
-        </div>
+      <div class="suggestions-cards">
 
-        <div class="btn-group">
-          <button class="btn-secondary btn-sm" (click)="closeForm()">Anuluj</button>
-          <button class="btn-primary btn-sm" [disabled]="!isFormValid()" (click)="saveFullMatch()">Zapisz</button>
+        @if (allSuggestedMatches().length === 0) {
+        <div class="suggestion-card placeholder">
+          <div class="s-teams">Kliknij "Zaproponuj", aby algorytm dobrał pary z "Kanapy" ↑<br><small>(Wymagane min. 4 osoby)</small></div>
         </div>
+        } @else {
+        @for (s of suggestedMatches(); track $index) {
+        <div class="suggestion-card active-card" (click)="applySuggestion(s)">
+
+          <div class="s-score-badge" [style.background]="s.matchScore <= 0 ? '#22c55e' : 'var(--beer-gold)'">
+            {{ s.matchScore <= 0 ? '🏆 Perfekcyjny Match' : 'Punkty Karne: ' + (s.matchScore | number:'1.0-0') }}
+          </div>
+
+          <div class="s-matchup">
+            <div class="s-team home">
+              @for (p of s.homePlayers; track p.playerId) { <span class="s-player"><app-player-avatar
+              [alias]="p.alias"
+              [imageUrl]="p.imageUrl"
+              fontSize="0.85rem">
+                        </app-player-avatar></span> }
+            </div>
+            <div class="s-vs">vs</div>
+            <div class="s-team away">
+              @for (p of s.awayPlayers; track p.playerId) { <span class="s-player"><app-player-avatar
+              [alias]="p.alias"
+              [imageUrl]="p.imageUrl"
+              fontSize="0.85rem">
+                        </app-player-avatar></span> }
+            </div>
+          </div>
+
+          <div class="s-reason">{{ s.matchReason }}</div>
+        </div>
+        }
+        }
       </div>
-    </section>
-  }
+    </div>
+    }
+    <div class="match-form-layout">
 
-  <div [class.content-blurred]="showMatchForm()">
-  <div class="grid-layout">
+      <div class="form-sides-grid">
 
-    <section class="card matches-panel">
-      <div class="panel-header matches-header">
-        <h2>
-          ⚽ Mecze
-          <span class="active-week-badge" title="Zmienisz ją w formularzu dodawania meczu">Kolejka: {{ activeMatchweek() }}</span>
-        </h2>
+        <div class="team-column">
+          <h3 class="side-title">Gospodarze</h3>
 
-        @if (!isReadOnly() && !showMatchForm()) {
-        <div class="header-actions">
-          <button class="btn-primary btn-sm" (click)="addNewMatch()">+ Dodaj Mecz</button>
+          @if (!newMatch.homeSide.teamId) {
+          <div class="input-group">
+            <input class="search-input" type="text"
+                   [ngModel]="searchHomeTeam()"
+                   (ngModelChange)="searchHomeTeam.set($event)"
+                   placeholder="Szukaj drużyny...">
+            @if (homeTeamSuggestions().length > 0) {
+            <div class="suggestions">
+              @for (t of homeTeamSuggestions(); track t.id) {
+              <div class="s-item" (click)="selectTeam('home', t)">
+                <img [src]="'/logos/light/' + (t.assetId || 'default') + '.png'" width="20">
+                {{ t.alias || t.teamName || t.name }}
+              </div>
+              }
+            </div>
+            }
+          </div>
+          } @else {
+          <div class="locked-team">
+            <div class="team-info">
+              <img [src]="'/logos/light/' + (newMatch.homeSide.assetId || 'default') + '.png'">
+              <strong>{{ newMatch.homeSide.teamName }}</strong>
+            </div>
+            <button class="btn-change-team" (click)="clearTeam('home')">Zmień</button>
+          </div>
+          }
+
+          <div class="players-selection">
+            @for (p of newMatch.homeSide.players; track p.playerId) {
+            <div class="player-card-edit">
+              <div class="player-header">
+                <app-player-avatar
+                  [alias]="p.alias"
+                  [imageUrl]="p.imageUrl">
+                </app-player-avatar>
+                <span class="remove-btn" (click)="removePlayer('home', p.playerId)">✕</span>
+              </div>
+              <div class="player-stats-inputs">
+                <div class="stat-stepper">
+                  <label>⚽</label>
+                  <div class="stepper-controls">
+                    <button type="button" (click)="p.goals = Math.max(0, (p.goals || 0) - 1)">-</button>
+                    <input type="number" [(ngModel)]="p.goals" min="0" max="99" (focus)="selectContent($event)" (blur)="p.goals = Math.min(99, Math.max(0, p.goals || 0))">
+                    <button type="button" (click)="p.goals = Math.min(99, (p.goals || 0) + 1)">+</button>
+                  </div>
+                </div>
+
+                <div class="stat-stepper">
+                  <label>🟨</label>
+                  <div class="stepper-controls">
+                    <button type="button" (click)="p.yellowCards = Math.max(0, (p.yellowCards || 0) - 1)">-</button>
+                    <input type="number" [(ngModel)]="p.yellowCards" min="0" max="20" (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(20, Math.max(0, p.yellowCards || 0))">
+                    <button type="button" (click)="p.yellowCards = Math.min(20, (p.yellowCards || 0) + 1)">+</button>
+                  </div>
+                </div>
+                <div class="stat-stepper">
+                  <label>👟</label>
+                  <div class="stepper-controls">
+                    <button type="button" (click)="p.assists = Math.max(0, (p.assists || 0) - 1)">-</button>
+                    <input type="number" [(ngModel)]="p.assists" min="0" max="99" (focus)="selectContent($event)" (blur)="p.assists = Math.min(99, Math.max(0, p.assists || 0))">
+                    <button type="button" (click)="p.assists = Math.min(99, (p.assists || 0) + 1)">+</button>
+                  </div>
+                </div>
+                <div class="stat-stepper">
+                  <label>🟥</label>
+                  <div class="stepper-controls">
+                    <button type="button" (click)="p.redCards = Math.max(0, (p.redCards || 0) - 1)">-</button>
+                    <input type="number" [(ngModel)]="p.redCards" min="0" max="20" (focus)="selectContent($event)" (blur)="p.redCards = Math.min(20, Math.max(0, p.redCards || 0))">
+                    <button type="button" (click)="p.redCards = Math.min(20, (p.redCards || 0) + 1)">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            }
+            @if (newMatch.homeSide.players.length < 2) {
+            <select class="player-select" (change)="onPlayerSelect('home', $event)">
+              <option value="">+ Gracz...</option>
+              @for (p of filteredPlayers(); track p.id) {
+              <option [value]="p.id">{{ p.alias }}</option>
+              }
+            </select>
+            }
+          </div>
+        </div>
+
+        <div class="form-center-meta">
+          <div class="meta-item">
+            <label>Kolejka</label>
+            <span class="week-display">{{ activeMatchweek() }}</span>
+          </div>
+          <div class="meta-item score-item">
+            <div class="score-display">{{ homeGoals }}</div>
+            <span class="separator">:</span>
+            <div class="score-display">{{ awayGoals }}</div>
+          </div>
+        </div>
+
+        <div class="team-column">
+          <h3 class="side-title">Goście</h3>
+
+          @if (!newMatch.awaySide.teamId) {
+          <div class="input-group">
+            <input class="search-input" type="text"
+                   [ngModel]="searchAwayTeam()"
+                   (ngModelChange)="searchAwayTeam.set($event)"
+                   placeholder="Szukaj drużyny...">
+            @if (awayTeamSuggestions().length > 0) {
+            <div class="suggestions">
+              @for (t of awayTeamSuggestions(); track t.id) {
+              <div class="s-item" (click)="selectTeam('away', t)">
+                <img [src]="'/logos/light/' + (t.assetId || 'default') + '.png'" width="20">
+                {{ t.alias || t.teamName || t.name }}
+              </div>
+              }
+            </div>
+            }
+          </div>
+          } @else {
+          <div class="locked-team">
+            <div class="team-info">
+              <img [src]="'/logos/light/' + (newMatch.awaySide.assetId || 'default') + '.png'">
+              <strong>{{ newMatch.awaySide.teamName }}</strong>
+            </div>
+            <button class="btn-change-team" (click)="clearTeam('away')">Zmień</button>
+          </div>
+          }
+
+          <div class="players-selection">
+            @for (p of newMatch.awaySide.players; track p.playerId) {
+            <div class="player-card-edit">
+              <div class="player-header">
+                <app-player-avatar
+                  [alias]="p.alias"
+                  [imageUrl]="p.imageUrl">
+                </app-player-avatar>
+                <span class="remove-btn" (click)="removePlayer('away', p.playerId)">✕</span>
+              </div>
+              <div class="player-stats-inputs">
+                <div class="stat-stepper">
+                  <label>⚽</label>
+                  <div class="stepper-controls">
+                    <button type="button" (click)="p.goals = Math.max(0, (p.goals || 0) - 1)">-</button>
+                    <input type="number" [(ngModel)]="p.goals" min="0" max="99" (focus)="selectContent($event)" (blur)="p.goals = Math.min(99, Math.max(0, p.goals || 0))">
+                    <button type="button" (click)="p.goals = Math.min(99, (p.goals || 0) + 1)">+</button>
+                  </div>
+                </div>
+
+                <div class="stat-stepper">
+                  <label>🟨</label>
+                  <div class="stepper-controls">
+                    <button type="button" (click)="p.yellowCards = Math.max(0, (p.yellowCards || 0) - 1)">-</button>
+                    <input type="number" [(ngModel)]="p.yellowCards" min="0" max="20" (focus)="selectContent($event)" (blur)="p.yellowCards = Math.min(20, Math.max(0, p.yellowCards || 0))">
+                    <button type="button" (click)="p.yellowCards = Math.min(20, (p.yellowCards || 0) + 1)">+</button>
+                  </div>
+                </div>
+                <div class="stat-stepper">
+                  <label>👟</label>
+                  <div class="stepper-controls">
+                    <button type="button" (click)="p.assists = Math.max(0, (p.assists || 0) - 1)">-</button>
+                    <input type="number" [(ngModel)]="p.assists" min="0" max="99" (focus)="selectContent($event)" (blur)="p.assists = Math.min(99, Math.max(0, p.assists || 0))">
+                    <button type="button" (click)="p.assists = Math.min(99, (p.assists || 0) + 1)">+</button>
+                  </div>
+                </div>
+                <div class="stat-stepper">
+                  <label>🟥</label>
+                  <div class="stepper-controls">
+                    <button type="button" (click)="p.redCards = Math.max(0, (p.redCards || 0) - 1)">-</button>
+                    <input type="number" [(ngModel)]="p.redCards" min="0" max="20" (focus)="selectContent($event)" (blur)="p.redCards = Math.min(20, Math.max(0, p.redCards || 0))">
+                    <button type="button" (click)="p.redCards = Math.min(20, (p.redCards || 0) + 1)">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            }
+            @if (newMatch.awaySide.players.length < 2) {
+            <select class="player-select" (change)="onPlayerSelect('away', $event)">
+              <option value="">+ Gracz...</option>
+              @for (p of filteredPlayers(); track p.id) {
+              <option [value]="p.id">{{ p.alias }}</option>
+              }
+            </select>
+            }
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="comments-input-section">
+      <h3 class="side-title">📝 Komentarze (Opcjonalne)</h3>
+      <div class="comment-input-row">
+        <input type="text"
+               class="search-input"
+               [ngModel]="newCommentText()"
+               (ngModelChange)="newCommentText.set($event)"
+               (keyup.enter)="addComment()"
+               placeholder="Wpisz komentarz (np. 'Bramka nożycami', 'Krzysiek bez formy')...">
+
+        @if (!isReadOnly()) {
+        <button class="btn-primary" (click)="addComment()">Dodaj</button>
+        }
+      </div>
+      <div class="comments-list">
+        @for (c of newMatch.comments; track $index) {
+        <div class="comment-pill">
+          <span>{{ c }}</span>
+          <button class="remove-btn" (click)="removeComment($index)">✕</button>
         </div>
         }
       </div>
+    </div>
 
-      <br>
-      <div class="match-list">
-        @for (m of paginatedMatches(); track m.id) {
+    <div class="form-actions">
+      <div class="status-toggle-wrapper">
+        <label class="switch">
+          <input type="checkbox" [(ngModel)]="newMatch.finished">
+          <span class="slider round"></span>
+        </label>
+        <span class="status-label" [class.is-finished]="newMatch.finished">
+            {{ newMatch.finished ? 'Zakończ 🔒' : 'W trakcie ⚽' }}
+          </span>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-secondary btn-sm" (click)="closeForm()">Anuluj</button>
+        <button class="btn-primary btn-sm" [disabled]="!isFormValid()" (click)="saveFullMatch()">Zapisz</button>
+      </div>
+    </div>
+  </section>
+  }
+
+  <div [class.content-blurred]="showMatchForm()">
+    <div class="grid-layout">
+
+      <section class="card matches-panel">
+        <div class="panel-header matches-header">
+          <h2>
+            ⚽ Mecze
+            <span class="active-week-badge" title="Zmienisz ją w formularzu dodawania meczu">Kolejka: {{ activeMatchweek() }}</span>
+          </h2>
+
+          @if (!isReadOnly() && !showMatchForm()) {
+          <div class="header-actions">
+            <button class="btn-primary btn-sm" (click)="addNewMatch()">+ Dodaj Mecz</button>
+          </div>
+          }
+        </div>
+
+        <br>
+        <div class="match-list">
+          @for (m of paginatedMatches(); track m.id) {
           <div class="match-element animate-in" [class.finished]="m.finished">
 
             <div class="match-header-row">
@@ -421,366 +418,334 @@
 
               <div class="match-status-center">
                 @if (m.finished) {
-                  <span class="status-tag">Zakończony 🔒</span>
+                <span class="status-tag">Zakończony 🔒</span>
                 } @else {
-                  <span class="status-tag active">W trakcie...
+                <span class="status-tag active">W trakcie...
                     <span class="blinking-ball"><img src="/trionda.png"></span></span>
                 }
               </div>
 
               <div class="header-right-actions">
                 @if (m.finished) {
-                  <button class="btn-icon view" (click)="viewMatchDetails(m)" title="Szczegóły meczu">👁️</button>
-                  @if (!isReadOnly()) {
-                  <button class="btn-icon delete" (click)="deleteMatch(m.id)" title="Usuń ten mecz">🗑️</button>
-                  }
-                  } @else {
-                  <button class="btn-icon view" (click)="viewMatchDetails(m)" title="Szczegóły meczu">👁️</button>
-                  @if (!isReadOnly()) {
-                  <button class="btn-icon edit" (click)="editMatch(m)" title="Edytuj mecz">✏️</button>
+                <button class="btn-icon view" (click)="viewMatchDetails(m)" title="Szczegóły meczu">👁️</button>
+                @if (!isReadOnly()) {
+                <button class="btn-icon delete" (click)="deleteMatch(m.id)" title="Usuń ten mecz">🗑️</button>
+                }
+                } @else {
+                <button class="btn-icon view" (click)="viewMatchDetails(m)" title="Szczegóły meczu">👁️</button>
+                @if (!isReadOnly()) {
+                <button class="btn-icon edit" (click)="editMatch(m)" title="Edytuj mecz">✏️</button>
                 }}
               </div>
             </div>
 
-            <!-- NOWY DESIGN MECZU (MUNDIAL 2026) -->
-            <div class="wc26-scoreboard-wrapper">
+            <div class="scoreboard-container">
 
-              <div class="wc26-timer">{{ m.createdAt | date:'dd MMM, HH:mm' }}</div>
-
-              <div class="wc26-border-wrapper">
-                <div class="wc26-inner-bg">
-
-                  <!-- Gospodarze z eventem kliknięcia -->
-                  <div class="wc26-team home" (click)="toggleTooltip(m.id, 'home', $event)">
-                    <img [src]="'/logos/light/' + m.homeSide.assetId + '.png'" class="team-logo">
-                    <span class="team-name">{{ m.homeSide.teamName }}</span>
-
-                    <!-- Dymek Gospodarzy -->
-                    @if (activeTooltip() === m.id + '-home') {
+              <div class="wc26-scoreboard-wrapper desktop-scoreboard">
+                <div class="wc26-timer">{{ m.createdAt | date:'dd MMM, HH:mm' }}</div>
+                <div class="wc26-border-wrapper">
+                  <div class="wc26-inner-bg">
+                    <div class="wc26-team home" (click)="toggleTooltip(m.id, 'home', $event)">
+                      <img [src]="'/logos/light/' + m.homeSide.assetId + '.png'" class="team-logo">
+                      <span class="team-name">{{ m.homeSide.teamName }}</span>
+                      @if (activeTooltip() === m.id + '-home') {
                       <div class="mobile-tooltip">
                         <div class="full-name">{{ getFullTeamDetails(m.homeSide.teamId, m.homeSide.teamName).name }}</div>
                         @if (getFullTeamDetails(m.homeSide.teamId, m.homeSide.teamName).alias) {
-                          <div class="alias">"{{ getFullTeamDetails(m.homeSide.teamId, m.homeSide.teamName).alias }}"</div>
+                        <div class="alias">"{{ getFullTeamDetails(m.homeSide.teamId, m.homeSide.teamName).alias }}"</div>
                         }
                       </div>
-                    }
-                  </div>
+                      }
+                    </div>
 
-                  <!-- Goście z eventem kliknięcia -->
-                  <div class="wc26-team away" (click)="toggleTooltip(m.id, 'away', $event)">
-                    <span class="team-name">{{ m.awaySide.teamName }}</span>
-                    <img [src]="'/logos/light/' + m.awaySide.assetId + '.png'" class="team-logo">
-
-                    <!-- Dymek Gości -->
-                    @if (activeTooltip() === m.id + '-away') {
+                    <div class="wc26-team away" (click)="toggleTooltip(m.id, 'away', $event)">
+                      <span class="team-name">{{ m.awaySide.teamName }}</span>
+                      <img [src]="'/logos/light/' + m.awaySide.assetId + '.png'" class="team-logo">
+                      @if (activeTooltip() === m.id + '-away') {
                       <div class="mobile-tooltip">
                         <div class="full-name">{{ getFullTeamDetails(m.awaySide.teamId, m.awaySide.teamName).name }}</div>
                         @if (getFullTeamDetails(m.awaySide.teamId, m.awaySide.teamName).alias) {
-                          <div class="alias">"{{ getFullTeamDetails(m.awaySide.teamId, m.awaySide.teamName).alias }}"</div>
+                        <div class="alias">"{{ getFullTeamDetails(m.awaySide.teamId, m.awaySide.teamName).alias }}"</div>
                         }
                       </div>
-                    }
+                      }
+                    </div>
                   </div>
-
+                </div>
+                <div class="wc26-center-score">
+                  <div class="wc26-score-digit">{{ m.homeSide.goals }}</div>
+                  <div class="wc26-logo-box">
+                    <img src="/wc-logo.png" alt="WC26" class="desktop-logo">
+                    <span class="mobile-colon">:</span>
+                  </div>
+                  <div class="wc26-score-digit">{{ m.awaySide.goals }}</div>
                 </div>
               </div>
 
-              <div class="wc26-center-score">
-                <div class="wc26-score-digit">{{ m.homeSide.goals }}</div>
-                <div class="wc26-logo-box">
-                  <img src="/wc-logo.png" alt="WC26">
+              <div class="mobile-scoreboard">
+                <div class="ms-team home" (click)="toggleTooltip(m.id, 'home', $event)">
+                  <img [src]="'/logos/light/' + m.homeSide.assetId + '.png'" class="ms-logo">
+                  <span class="ms-name">{{ m.homeSide.teamName }}</span>
+                  @if (activeTooltip() === m.id + '-home') {
+                    <div class="mobile-tooltip center-align">
+                      <div class="full-name">{{ getFullTeamDetails(m.homeSide.teamId, m.homeSide.teamName).name }}</div>
+                    </div>
+                  }
                 </div>
-                <div class="wc26-score-digit">{{ m.awaySide.goals }}</div>
+
+                <div class="ms-center-score">
+                  <span class="ms-score">{{ m.homeSide.goals }}</span>
+                  <span class="ms-colon">:</span>
+                  <span class="ms-score">{{ m.awaySide.goals }}</span>
+                </div>
+
+                <div class="ms-team away" (click)="toggleTooltip(m.id, 'away', $event)">
+                  <img [src]="'/logos/light/' + m.awaySide.assetId + '.png'" class="ms-logo">
+                  <span class="ms-name">{{ m.awaySide.teamName }}</span>
+                  @if (activeTooltip() === m.id + '-away') {
+                    <div class="mobile-tooltip center-align">
+                      <div class="full-name">{{ getFullTeamDetails(m.awaySide.teamId, m.awaySide.teamName).name }}</div>
+                    </div>
+                  }
+                </div>
               </div>
+
             </div>
-
-            <!-- Strzelcy bramek pod spodem (Opcjonalne, zachowane z Twojego starego kodu) -->
             <div style="display: flex; justify-content: space-between; padding: 0 10px; margin-top: 5px;">
               <div class="players-col home-players">
                 @for (p of m.homeSide.players; track p.playerId) {
-                  <div class="player-entry">
-                    <span class="player-alias">{{ p.alias }}</span>
-                    <span class="player-stats-mini">
+                <div class="player-entry">
+                  <span class="player-alias">{{ p.alias }}</span>
+                  <span class="player-stats-mini">
                       @if (p.goals > 0) { <small>⚽{{p.goals}}</small> }
-                      @if (p.assists > 0) { <small>👟{{p.assists}}</small> }
+                        @if (p.assists > 0) { <small>👟{{p.assists}}</small> }
                     </span>
-                  </div>
+                </div>
                 }
               </div>
               <div class="players-col away-players">
                 @for (p of m.awaySide.players; track p.playerId) {
-                  <div class="player-entry">
+                <div class="player-entry">
                     <span class="player-stats-mini">
                       @if (p.assists > 0) { <small>👟{{p.assists}}</small> }
                       @if (p.goals > 0) { <small>⚽{{p.goals}}</small> }
                     </span>
-                    <span class="player-alias">{{ p.alias }}</span>
-                  </div>
+                  <span class="player-alias">{{ p.alias }}</span>
+                </div>
                 }
               </div>
             </div>
 
-<!--            <div class="match-content compact-mode">-->
-<!--              <div class="players-col home-players">-->
-<!--                @for (p of m.homeSide.players; track p.playerId) {-->
-<!--                  <div class="player-entry">-->
-<!--                    <span class="player-alias">{{ p.alias }}</span>-->
-<!--                    <span class="player-stats-mini">-->
-<!--                      @if (p.goals > 0) { <small>⚽{{p.goals}}</small> }-->
-<!--                      @if (p.assists > 0) { <small>👟{{p.assists}}</small> }-->
-<!--                    </span>-->
-<!--                  </div>-->
-<!--                }-->
-<!--              </div>-->
-
-<!--              <div class="team-block">-->
-<!--                <img [src]="'/logos/light/' + m.homeSide.assetId + '.png'" class="team-logo">-->
-<!--                <span class="team-name">{{ m.homeSide.teamName }}</span>-->
-<!--              </div>-->
-
-<!--              <div class="score-center">-->
-<!--                <span class="score">{{ m.homeSide.goals }}</span>-->
-<!--                <span class="separator">:</span>-->
-<!--                <span class="score">{{ m.awaySide.goals }}</span>-->
-<!--              </div>-->
-
-<!--              <div class="team-block">-->
-<!--                <img [src]="'/logos/light/' + m.awaySide.assetId + '.png'" class="team-logo">-->
-<!--                <span class="team-name">{{ m.awaySide.teamName }}</span>-->
-<!--              </div>-->
-
-<!--              <div class="players-col away-players">-->
-<!--                @for (p of m.awaySide.players; track p.playerId) {-->
-<!--                  <div class="player-entry">-->
-<!--                    <span class="player-stats-mini">-->
-<!--                      @if (p.assists > 0) { <small>👟{{p.assists}}</small> }-->
-<!--                      @if (p.goals > 0) { <small>⚽{{p.goals}}</small> }-->
-<!--                    </span>-->
-<!--                    <span class="player-alias">{{ p.alias }}</span>-->
-<!--                  </div>-->
-<!--                }-->
-<!--              </div>-->
-<!--            </div>-->
           </div>
-        } @empty {
+          } @empty {
           <div class="empty-state">Brak meczów. Dodaj pierwszy!</div>
-        }
-      </div>
+          }
+        </div>
 
-      @if (totalPages() > 1) {
+        @if (totalPages() > 1) {
         <div class="pagination-wrapper">
           <button class="btn-page" (click)="prevPage()" [disabled]="currentPage() === 1">◀</button>
           <span class="page-info">Strona <strong>{{ currentPage() }}</strong> z {{ totalPages() }}</span>
           <button class="btn-page" (click)="nextPage()" [disabled]="currentPage() === totalPages()">▶</button>
         </div>
-      }
-    </section>
+        }
+      </section>
 
-    <section class="card stats-panel">
-      <div class="panel-header">
-        <h2>📊 Tabela</h2>
-      </div>
-      <table class="wietek-table">
-        <thead>
-        <tr>
-          <th>Poz</th>
-          <th (click)="toggleSort('alias')" class="sortable">
-            Gracz @if(sortKey() === 'alias'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-          <th (click)="toggleSort('matchesPlayed')" class="sortable center">
-            M @if(sortKey() === 'matchesPlayed'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-          <th (click)="toggleSort('points')" class="sortable center">
-            Pkt @if(sortKey() === 'points'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-          <th (click)="toggleSort('goalsScored')" class="sortable center">
-            ⚽ @if(sortKey() === 'goalsScored'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-          <th (click)="toggleSort('assists')" class="sortable center">
-            👟 @if(sortKey() === 'assists'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-          <th (click)="toggleSort('goalsLost')" class="sortable center">
-            BS @if(sortKey() === 'goalsLost'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-          <th (click)="toggleSort('goalDifference')" class="sortable center">
-            +/- @if(sortKey() === 'goalDifference'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-          <th (click)="toggleSort('yellowCards')" class="sortable center">
-            🟨 @if(sortKey() === 'yellowCards'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-          <th (click)="toggleSort('redCards')" class="sortable center">
-            🟥 @if(sortKey() === 'redCards'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-          <th (click)="toggleSort('currentElo')" class="sortable center highlight">
-            RATING @if(sortKey() === 'currentElo'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-          <th (click)="toggleSort('winRatio')" class="sortable highlight">
-            WSP.W @if(sortKey() === 'winRatio'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
-          </th>
-        </tr>
-        </thead>
-        <tbody>
+      <section class="card stats-panel">
+        <div class="panel-header">
+          <h2>📊 Tabela</h2>
+        </div>
+        <table class="wietek-table">
+          <thead>
+          <tr>
+            <th>Poz</th>
+            <th (click)="toggleSort('alias')" class="sortable">
+              Gracz @if(sortKey() === 'alias'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+            <th (click)="toggleSort('matchesPlayed')" class="sortable center">
+              M @if(sortKey() === 'matchesPlayed'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+            <th (click)="toggleSort('points')" class="sortable center">
+              Pkt @if(sortKey() === 'points'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+            <th (click)="toggleSort('goalsScored')" class="sortable center">
+              ⚽ @if(sortKey() === 'goalsScored'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+            <th (click)="toggleSort('assists')" class="sortable center">
+              👟 @if(sortKey() === 'assists'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+            <th (click)="toggleSort('goalsLost')" class="sortable center">
+              BS @if(sortKey() === 'goalsLost'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+            <th (click)="toggleSort('goalDifference')" class="sortable center">
+              +/- @if(sortKey() === 'goalDifference'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+            <th (click)="toggleSort('yellowCards')" class="sortable center">
+              🟨 @if(sortKey() === 'yellowCards'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+            <th (click)="toggleSort('redCards')" class="sortable center">
+              🟥 @if(sortKey() === 'redCards'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+            <th (click)="toggleSort('currentElo')" class="sortable center highlight">
+              RATING @if(sortKey() === 'currentElo'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+            <th (click)="toggleSort('winRatio')" class="sortable highlight">
+              WSP.W @if(sortKey() === 'winRatio'){ {{ sortDirection() === 'asc' ? '▲' : '▼' }} }
+            </th>
+          </tr>
+          </thead>
+          <tbody>
           @for (row of sortedTable(); track row.playerId; let i = $index) {
-            <tr class="animate-in">
-              <td>{{ i + 1 }}</td>
-
-              <!-- ZAKTUALIZOWANA KOMÓRKA Z AVATAREM I ALIASEM -->
-              <td>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <app-player-avatar
-                    [alias]="row.alias"
-                    [imageUrl]="row.imageUrl"
-                    fontSize="0.95rem">
-                  </app-player-avatar>
-                </div>
-              </td>
-              <!-- KONIEC ZAKTUALIZOWANEJ KOMÓRKI -->
-
-              <td>{{ row.matchesPlayed }}</td>
-              <td>{{ row.points }}</td>
-
-              <td>{{ row.goalsScored }}</td>
-              <td>{{ row.assists }}</td>
-              <td>{{ row.goalsLost }}</td>
-
-              <td [style.color]="row.goalDifference > 0 ? '#22c55e' : (row.goalDifference < 0 ? '#ef4444' : '#94a3b8')">
-                {{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }}
-              </td>
-              <td>{{row.yellowCards}}</td>
-              <td>{{row.redCards}}</td>
-
-              <td class="center" style="font-weight: 700;">
-                <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
-                  <span style="color: var(--primary-brown);">{{ (row.currentElo || 1000) | number:'1.0-0' }}</span>
-                  @if (row.eloDifference !== 0) {
-                    <small [style.color]="row.eloDifference > 0 ? '#22c55e' : '#ef4444'" style="font-size: 0.65rem;">
-                      {{ row.eloDifference > 0 ? '+' : '' }}{{ row.eloDifference | number:'1.0-0' }}
-                    </small>
-                  }
-                </div>
-              </td>
-
-              <td class="highlight-val">{{ row.winRatio | number:'1.2-2' }}</td>
-            </tr>
+          <tr class="animate-in">
+            <td>{{ i + 1 }}</td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <app-player-avatar
+                  [alias]="row.alias"
+                  [imageUrl]="row.imageUrl"
+                  fontSize="0.95rem">
+                </app-player-avatar>
+              </div>
+            </td>
+            <td>{{ row.matchesPlayed }}</td>
+            <td>{{ row.points }}</td>
+            <td>{{ row.goalsScored }}</td>
+            <td>{{ row.assists }}</td>
+            <td>{{ row.goalsLost }}</td>
+            <td [style.color]="row.goalDifference > 0 ? '#22c55e' : (row.goalDifference < 0 ? '#ef4444' : '#94a3b8')">
+              {{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }}
+            </td>
+            <td>{{row.yellowCards}}</td>
+            <td>{{row.redCards}}</td>
+            <td class="center" style="font-weight: 700;">
+              <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                <span style="color: var(--primary-brown);">{{ (row.currentElo || 1000) | number:'1.0-0' }}</span>
+                @if (row.eloDifference !== 0) {
+                <small [style.color]="row.eloDifference > 0 ? '#22c55e' : '#ef4444'" style="font-size: 0.65rem;">
+                  {{ row.eloDifference > 0 ? '+' : '' }}{{ row.eloDifference | number:'1.0-0' }}
+                </small>
+                }
+              </div>
+            </td>
+            <td class="highlight-val">{{ row.winRatio | number:'1.2-2' }}</td>
+          </tr>
           }
-        </tbody>
-      </table>
-    </section>
-  </div>
+          </tbody>
+        </table>
+      </section>
+    </div>
 
-
-
-  @if (season()?.leagueId) {
-  <app-stats
-    [leagueId]="season()?.leagueId"
-    [seasonId]="seasonId()"
-    [refreshTrigger]="statsRefreshTrigger()">
-  </app-stats>
+    @if (season()?.leagueId) {
+    <app-stats
+      [leagueId]="season()?.leagueId"
+      [seasonId]="seasonId()"
+      [refreshTrigger]="statsRefreshTrigger()">
+    </app-stats>
     <app-team-stats
       [leagueId]="season()?.leagueId"
       [seasonId]="seasonId()"
       [refreshTrigger]="statsRefreshTrigger()">
     </app-team-stats>
-  }
+    }
 
-</div>
-
+  </div>
 </div>
 
 @if (viewingMatch()) {
-  <div class="modal-overlay" (click)="closeMatchDetails()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>Szczegóły Meczu (Kolejka {{ viewingMatch()?.matchweek || '-' }})</h3>
-        <button class="btn-close" (click)="closeMatchDetails()">✕</button>
-      </div>
+<div class="modal-overlay" (click)="closeMatchDetails()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Szczegóły Meczu (Kolejka {{ viewingMatch()?.matchweek || '-' }})</h3>
+      <button class="btn-close" (click)="closeMatchDetails()">✕</button>
+    </div>
 
-      <div class="modal-body">
+    <div class="modal-body">
 
-        <!-- ZAKTUALIZOWANY SCOREBOARD W MODALU (MUNDIAL 2026) -->
-        <div class="wc26-scoreboard-wrapper" style="margin-top: 15px; margin-bottom: 30px;">
-
-          <!-- Timer wyświetlający dokładną datę rozegrania meczu -->
+      <div class="scoreboard-container" style="margin-top: 15px; margin-bottom: 30px;">
+        <div class="wc26-scoreboard-wrapper desktop-scoreboard">
           <div class="wc26-timer">{{ viewingMatch().createdAt | date:'dd.MM.yyyy, HH:mm' }}</div>
-
           <div class="wc26-border-wrapper">
             <div class="wc26-inner-bg">
               <div class="wc26-team home">
                 <img [src]="'/logos/light/' + viewingMatch().homeSide.assetId + '.png'" class="team-logo">
                 <span class="team-name">{{ viewingMatch().homeSide.teamName }}</span>
               </div>
-
               <div class="wc26-team away">
                 <span class="team-name">{{ viewingMatch().awaySide.teamName }}</span>
                 <img [src]="'/logos/light/' + viewingMatch().awaySide.assetId + '.png'" class="team-logo">
               </div>
             </div>
           </div>
-
           <div class="wc26-center-score">
             <div class="wc26-score-digit">{{ viewingMatch().homeSide.goals }}</div>
             <div class="wc26-logo-box">
-              <img src="/wc-logo.png" alt="WC26">
+              <img src="/wc-logo.png" alt="WC26" class="desktop-logo">
+              <span class="mobile-colon">:</span>
             </div>
             <div class="wc26-score-digit">{{ viewingMatch().awaySide.goals }}</div>
           </div>
         </div>
 
-<!--        <div class="details-score-board">-->
-<!--          <div class="team">-->
-<!--            <img [src]="'/logos/light/' + viewingMatch().homeSide.assetId + '.png'" alt="Home Team">-->
-<!--            <span>{{ viewingMatch().homeSide.teamName }}</span>-->
-<!--          </div>-->
-<!--          <div class="score">-->
-<!--            {{ viewingMatch().homeSide.goals }} : {{ viewingMatch().awaySide.goals }}-->
-<!--          </div>-->
-<!--          <div class="team">-->
-<!--            <img [src]="'/logos/light/' + viewingMatch().awaySide.assetId + '.png'" alt="Away Team">-->
-<!--            <span>{{ viewingMatch().awaySide.teamName }}</span>-->
-<!--          </div>-->
-<!--        </div>-->
-
-        <div class="flashscore-grid">
-          <div class="fs-side fs-home">
-            @for (p of viewingMatch().homeSide.players; track p.playerId) {
-              <div class="fs-player-row">
-                <strong>{{ p.alias }}</strong>
-                <div class="stats-badges">
-                  @if (p.goals > 0) { <span class="badge goal" title="Gole">⚽ {{p.goals}}</span> }
-                  @if (p.assists > 0) { <span class="badge assist" title="Asysty">👟 {{p.assists}}</span> }
-                  @if (p.yellowCards > 0) { <span class="badge yellow" title="Żółte kartki">🟨 {{p.yellowCards}}</span> }
-                  @if (p.redCards > 0) { <span class="badge red" title="Czerwone kartki">🟥 {{p.redCards}}</span> }
-                </div>
-              </div>
-            }
+        <div class="mobile-scoreboard">
+          <div class="ms-team home">
+            <img [src]="'/logos/light/' + viewingMatch().homeSide.assetId + '.png'" class="ms-logo">
+            <span class="ms-name">{{ viewingMatch().homeSide.teamName }}</span>
           </div>
 
-          <div class="fs-side fs-away">
-            @for (p of viewingMatch().awaySide.players; track p.playerId) {
-              <div class="fs-player-row">
-                <div class="stats-badges">
-                  @if (p.yellowCards > 0) { <span class="badge yellow" title="Żółte kartki">🟨 {{p.yellowCards}}</span> }
-                  @if (p.redCards > 0) { <span class="badge red" title="Czerwone kartki">🟥 {{p.redCards}}</span> }
-                  @if (p.assists > 0) { <span class="badge assist" title="Asysty">👟 {{p.assists}}</span> }
-                  @if (p.goals > 0) { <span class="badge goal" title="Gole">⚽ {{p.goals}}</span> }
-                </div>
-                <strong>{{ p.alias }}</strong>
-              </div>
-            }
+          <div class="ms-center-score">
+            <span class="ms-score">{{ viewingMatch().homeSide.goals }}</span>
+            <span class="ms-colon">:</span>
+            <span class="ms-score">{{ viewingMatch().awaySide.goals }}</span>
+          </div>
+
+          <div class="ms-team away">
+            <img [src]="'/logos/light/' + viewingMatch().awaySide.assetId + '.png'" class="ms-logo">
+            <span class="ms-name">{{ viewingMatch().awaySide.teamName }}</span>
           </div>
         </div>
-
-        @if (viewingMatch().comments && viewingMatch().comments.length > 0) {
-          <div class="match-comments-display">
-            <h4>🎙️ Komentarz meczowy</h4>
-            <ul>
-              @for (c of viewingMatch().comments; track $index) {
-                <li>{{ c }}</li>
-              }
-            </ul>
-          </div>
-        }
       </div>
+
+      <div class="flashscore-grid">
+        <div class="fs-side fs-home">
+          @for (p of viewingMatch().homeSide.players; track p.playerId) {
+          <div class="fs-player-row">
+            <strong>{{ p.alias }}</strong>
+            <div class="stats-badges">
+              @if (p.goals > 0) { <span class="badge goal" title="Gole">⚽ {{p.goals}}</span> }
+              @if (p.assists > 0) { <span class="badge assist" title="Asysty">👟 {{p.assists}}</span> }
+              @if (p.yellowCards > 0) { <span class="badge yellow" title="Żółte kartki">🟨 {{p.yellowCards}}</span> }
+              @if (p.redCards > 0) { <span class="badge red" title="Czerwone kartki">🟥 {{p.redCards}}</span> }
+            </div>
+          </div>
+          }
+        </div>
+
+        <div class="fs-side fs-away">
+          @for (p of viewingMatch().awaySide.players; track p.playerId) {
+          <div class="fs-player-row">
+            <div class="stats-badges">
+              @if (p.yellowCards > 0) { <span class="badge yellow" title="Żółte kartki">🟨 {{p.yellowCards}}</span> }
+              @if (p.redCards > 0) { <span class="badge red" title="Czerwone kartki">🟥 {{p.redCards}}</span> }
+              @if (p.assists > 0) { <span class="badge assist" title="Asysty">👟 {{p.assists}}</span> }
+              @if (p.goals > 0) { <span class="badge goal" title="Gole">⚽ {{p.goals}}</span> }
+            </div>
+            <strong>{{ p.alias }}</strong>
+          </div>
+          }
+        </div>
+      </div>
+
+      @if (viewingMatch().comments && viewingMatch().comments.length > 0) {
+      <div class="match-comments-display">
+        <h4>🎙️ Komentarz meczowy</h4>
+        <ul>
+          @for (c of viewingMatch().comments; track $index) {
+          <li>{{ c }}</li>
+          }
+        </ul>
+      </div>
+      }
     </div>
   </div>
+</div>
 }

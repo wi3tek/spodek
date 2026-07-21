@@ -14,7 +14,7 @@
 .card {
   background: white;
   border-radius: var(--border-radius, 10px);
-  padding: 24px;
+  padding: 5px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
   border: 1px solid #f1f5f9;
 
@@ -333,16 +333,21 @@
 
 /* Gracze i Steppery */
 .players-selection {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Dwa kafelki graczy obok siebie */
+  gap: 12px;
   padding: 10px;
   background: #f8fafc;
   border-radius: 6px;
   border: 1px dashed #cbd5e1;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr 1fr; /* Na telefonach wracamy do pionu z braku miejsca */
+  }
 }
 
 .player-select {
+  grid-column: 1 / -1; /* Dropdown dodawania gracza rozciąga się na całą szerokość */
   width: 100%;
   padding: 8px;
   border: 1px solid #cbd5e1;
@@ -1436,10 +1441,10 @@
 /* ==========================================================================
    NOWA KANAPA W FORMULARZU MECZU
    ========================================================================== */
-.form-section-kanapa, .form-section-suggestions {
+.form-section-squad, .form-section-suggestions {
   background: white;
   border-radius: 8px;
-  padding: 15px;
+  padding: 10px;
   margin-bottom: 20px;
   border: 1px solid #e2e8f0;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
@@ -1454,7 +1459,7 @@
   }
 }
 
-.kanapa-header {
+.squad-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1481,7 +1486,7 @@
   }
 }
 
-.kanapa-layout {
+.squad-layout {
   display: flex;
   gap: 15px;
   align-items: flex-start;
@@ -1575,21 +1580,22 @@
   scroll-snap-type: x mandatory;
 
   @media (max-width: 768px) {
-    flex-direction: column; /* Na mobile ustawiamy pionowo */
-    overflow-x: hidden;     /* Wyłączamy poziomy pasek */
+    flex-direction: column; /* Wymusza układ pionowy: kafelki spadają jeden pod drugi */
+    overflow-x: visible;    /* Wyłącza przewijanie poziome */
+    width: 100%;            /* Pilnuje, żeby kontener nie był szerszy niż ekran */
+    box-sizing: border-box;
   }
 }
 
 .suggestion-card {
   flex: 1;
-  min-width: 200px; /* Minimalna szerokość kafelka, żeby nie był za chudy na telefonie */
+  min-width: 200px;
   padding: 5px;
-  margin: 2px;
   background: #f8fafc;
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
   text-align: center;
-  scroll-snap-align: start; /* Przyklejanie kafelka do lewej krawędzi przy swipe'owaniu */
+  scroll-snap-align: start;
 
   &.placeholder {
     color: #94a3b8;
@@ -1602,8 +1608,9 @@
   }
 
   @media (max-width: 768px) {
-    width: 100%; /* Na mobile zajmuje całą szerokość */
-    min-width: unset;
+    width: 100%;            /* Rozciąga kafelek na pełną szerokość ekranu */
+    min-width: unset;       /* Kasuje blokadę z desktopu */
+    box-sizing: border-box; /* NAJWAŻNIEJSZE: Wlicza ramkę i padding do 100%, dzięki czemu prawy border już nie ucieka za ekran */
   }
 }
 
@@ -1895,18 +1902,17 @@
 }
 
 /* ==========================================================================
-   SCOREBOARD MUNDIAL 2026 🏆
+   SCOREBOARD MUNDIAL 2026 🏆 (ZOPTYMALIZOWANY RWD I FLEXBOX)
    ========================================================================== */
 .wc26-scoreboard-wrapper {
   position: relative;
   width: 100%;
   max-width: 650px;
-  margin: 30px auto 15px auto; /* Margines górny na wystający timer */
+  margin: 30px auto 15px auto;
   font-family: 'Inter', system-ui, sans-serif;
   user-select: none;
 }
 
-/* Wystający na górze timer / data */
 .wc26-timer {
   position: absolute;
   top: -24px;
@@ -1922,7 +1928,6 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   white-space: nowrap;
 
-  /* RWD dla timera */
   @media (max-width: 600px) {
     font-size: 0.75rem;
     padding: 3px 12px;
@@ -1930,70 +1935,77 @@
   }
 }
 
-/* Magia 5-kolorowej ramki za pomocą tła i paddingu + calc() */
 .wc26-border-wrapper {
   position: relative;
   width: 100%;
   border-radius: 50px;
-  padding: 3px; /* Grubość kolorowej ramki */
-
-  /* Gradient z twardymi odcięciami bazujący na PIKSELACH OD ŚRODKA.
-     Gwarantuje to, że czerwone pole idealnie przykrywa tylko środek! */
+  padding: 3px;
   background: linear-gradient(90deg,
-  #42d3e6 0px, #42d3e6 35px,                 /* 1. Jasny błękit/turkus (lewy brzeg) */
-  #0047fa 35px, #0047fa calc(50% - 68px),    /* 2. Głębszy niebieski (pod Gospodarzami) */
-  #ef4444 calc(50% - 68px), #ef4444 calc(50% + 70px), /* 3. Czerwony (IDEALNIE pod wynikiem) */
-  #b0ff00 calc(50% + 68px), #b0ff00 calc(100% - 35px),/* 4. Jaskrawy zielony (pod Gośćmi) */
-  #0080ff calc(100% - 35px), #0080ff 100%    /* 5. Jasny niebieski (prawy brzeg) */
+  #42d3e6 0px, #42d3e6 35px,
+  #0047fa 35px, #0047fa calc(50% - 68px),
+  #ef4444 calc(50% - 68px), #ef4444 calc(50% + 70px),
+  #b0ff00 calc(50% + 68px), #b0ff00 calc(100% - 35px),
+  #0080ff calc(100% - 35px), #0080ff 100%
   );
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   z-index: 2;
 
-  /* RWD Ramki: na telefonie moduł wyniku jest mniejszy, więc zwężamy czerwony środek */
-  @media (max-width: 600px) {
+  @media (max-width: 450px) {
+    /* Na małych mobilkach środek wyniku staje się malutki (bo ucinamy obrazek logo), zwężamy czerwone pasmo */
     background: linear-gradient(90deg,
     #42d3e6 0px, #42d3e6 20px,
-    #0047fa 20px, #0047fa calc(50% - 50px),
-    #ef4444 calc(50% - 50px), #ef4444 calc(50% + 50px),
-    #b0ff00 calc(50% + 50px), #b0ff00 calc(100% - 20px),
+    #0047fa 20px, #0047fa calc(50% - 35px),
+    #ef4444 calc(50% - 35px), #ef4444 calc(50% + 35px),
+    #b0ff00 calc(50% + 35px), #b0ff00 calc(100% - 20px),
     #0080ff calc(100% - 20px), #0080ff 100%
     );
   }
 }
 
-/* Czarne tło pod nazwami drużyn */
 .wc26-inner-bg {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   background: #111111;
-  border-radius: 47px; /* Zgrane z zewnętrznym border-radiusem */
-  height: 40px;
-  padding: 0 20px;
+  border-radius: 47px;
+  height: 44px; /* Ociupinkę wyższy żeby dawał miejsce na oddech */
+  padding: 0 15px;
   box-sizing: border-box;
 
-  /* RWD dla wnętrza paska */
   @media (max-width: 600px) {
     padding: 0 10px;
-    height: 42px;
+    height: 40px;
   }
 }
 
-/* Sekcje drużyn (logo + nazwa) */
 .wc26-team {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  gap: 10px;
+  flex: 1;          /* Obydwie drużyny dostają po równo całe dostępne miejsce! */
+  min-width: 0;     /* MEGA WAŻNE: Pozwala w flexboxie ucinać tekst przez ellipsis zamiast pchać kontener */
+  position: relative;
+  cursor: pointer;
 
-  &.home { justify-content: flex-start; }
-  &.away { justify-content: flex-end; }
+  /* WAŻNY TRIK NA ZAKŁADANIE SIĘ TEKSTÓW:
+     Dajemy wewnętrzny padding (puste pole) od strony wyników,
+     przez co flexbox zarezerwuje bezpieczną strefę pod wynik i nigdy się nie nałoży. */
+  &.home { justify-content: flex-start; padding-right: 50px; }
+  &.away { justify-content: flex-end; padding-left: 50px; }
+
+  @media (max-width: 450px) {
+    /* Mniejszy bezpieczny padding bo środek jest na malutkich ekranach mniejszy */
+    &.home { padding-right: 25px; }
+    &.away { padding-left: 25px; }
+    gap: 6px;
+  }
 
   .team-logo {
     width: 26px;
     height: 26px;
     object-fit: contain;
+    flex-shrink: 0;
 
     @media (max-width: 600px) {
       width: 20px;
@@ -2007,44 +2019,40 @@
     font-size: 0.9rem;
     letter-spacing: 0.4px;
     text-transform: uppercase;
+
+    /* Elastyczne cięcie długiego tekstu */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 160px; /* Zabezpieczenie przed za długimi nazwami */
 
-    /* Agresywne RWD dla długich nazw na komórkach */
     @media (max-width: 600px) {
       font-size: 0.8rem;
       letter-spacing: 0px;
-      max-width: 80px;
     }
-    @media (max-width: 400px) {
+    @media (max-width: 450px) {
       font-size: 0.75rem;
-      max-width: 60px;
     }
   }
 }
 
-/* Centralny wystający turkusowy element z wynikiem */
 .wc26-center-score {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  background: #2dd4bf; /* Turkusowy kolor z obrazka */
+  background: #2dd4bf;
   border-radius: 12px;
   display: flex;
   align-items: center;
   padding: 0 6px;
-  height: 51px; /* Wyższy niż czarny pasek bazowy */
+  height: 51px;
   z-index: 3;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 
-  /* Mniejszy moduł na komórki */
-  @media (max-width: 600px) {
-    height: 40px;
+  @media (max-width: 450px) {
+    height: 36px;
     border-radius: 10px;
-    padding: 0 4px;
+    padding: 0 2px;
   }
 }
 
@@ -2056,12 +2064,13 @@
   text-align: center;
   line-height: 1;
 
-  @media (max-width: 600px) {
-    font-size: 1.6rem;
-    width: 28px;
+  @media (max-width: 450px) {
+    font-size: 1.3rem;
+    width: 20px;
   }
 }
 
+/* Moduł loga WorldCup i Dwukropka fallbacku dla komórek */
 .wc26-logo-box {
   background: #111111;
   border-radius: 8px;
@@ -2072,18 +2081,93 @@
   justify-content: center;
   height: 44px;
 
-  img {
+  .desktop-logo {
     height: 36px;
     object-fit: contain;
+    display: block;
   }
 
-  @media (max-width: 600px) {
-    height: 30px;
-    padding: 3px 5px;
-    margin: 0 2px;
-    img {
-      height: 28px;
-    }
+  .mobile-colon {
+    display: none;
+    color: #111111;
+    font-weight: 900;
+    font-size: 1.3rem;
+    padding: 0 2px;
+    line-height: 1;
+  }
+
+  /* Ultra wąskie ekrany - pozbywamy się obrazka, zostawiamy dwukropek, oszczędzamy mnóstwo pikseli! */
+  @media (max-width: 450px) {
+    background: transparent; /* kasujemy czarne tło między wynikami */
+    padding: 0;
+    margin: 0;
+    height: auto;
+
+    .desktop-logo { display: none; }
+    .mobile-colon { display: block; }
+  }
+}
+
+/* ==========================================================================
+   DYMKI (TOOLTIPY)
+   ========================================================================== */
+.mobile-tooltip {
+  position: absolute;
+  bottom: 130%;
+  background: #0f172a;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  z-index: 100;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  animation: tooltipFade 0.2s ease-out;
+  pointer-events: none;
+
+  .full-name {
+    font-weight: 800;
+    font-size: 0.85rem;
+  }
+
+  .alias {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    border-width: 6px;
+    border-style: solid;
+    border-color: #0f172a transparent transparent transparent;
+  }
+}
+
+.wc26-team.home .mobile-tooltip {
+  left: 0;
+  &::after { left: 20%; transform: translateX(-50%); }
+}
+
+.wc26-team.away .mobile-tooltip {
+  right: 0;
+  &::after { right: 20%; transform: translateX(50%); }
+}
+
+@keyframes tooltipFade {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 400px) {
+  .mobile-tooltip {
+    white-space: normal;
+    min-width: 150px;
+    .full-name { font-size: 0.75rem; }
+    .alias { font-size: 0.65rem; }
   }
 }
 
@@ -2207,5 +2291,102 @@
     min-width: 150px;
     .full-name { font-size: 0.75rem; }
     .alias { font-size: 0.65rem; }
+  }
+}
+
+/* ==========================================================================
+   PRZEŁĄCZANIE WIDOKÓW WYNIKÓW (DESKTOP VS MOBILE)
+   ========================================================================== */
+.scoreboard-container {
+  width: 100%;
+}
+
+.desktop-scoreboard {
+  display: block;
+}
+
+.mobile-scoreboard {
+  display: none;
+}
+/* WIDOK DLA TELEFONÓW (< 650px) */
+@media (max-width: 650px) {
+
+  /* Ukrywamy skomplikowany, desktopowy komponent */
+  .desktop-scoreboard {
+    display: none;
+  }
+
+  /* Nowy mobilny układ poziomy (Herb nad nazwą) */
+  .mobile-scoreboard {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start; /* Pozwala drużynom z długimi nazwami rosnąć w dół */
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 10px;
+    margin: 15px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+
+    .ms-team {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 38%; /* Zostawia miejsce na środek z wynikiem */
+      position: relative;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .ms-logo {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .ms-name {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--text-dark);
+      word-break: break-word;
+      line-height: 1.2;
+    }
+
+    /* Blok wyniku na środku */
+    .ms-center-score {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 24%;
+      margin-top: 6px; /* Wyrównanie optyczne z herbami */
+    }
+
+    .ms-score {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--primary-brown);
+    }
+
+    .ms-colon {
+      font-size: 1.2rem;
+      font-weight: 900;
+      color: #94a3b8;
+    }
+
+    /* Wyśrodkowany tooltip nad herbem */
+    .mobile-tooltip.center-align {
+      left: 50%;
+      bottom: 110%;
+      transform: translateX(-50%);
+
+      &::after {
+        left: 50%;
+        transform: translateX(-50%);
+      }
+    }
   }
 }

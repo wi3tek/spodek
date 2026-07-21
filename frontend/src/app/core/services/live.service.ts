@@ -20,7 +20,7 @@ export class LiveService {
       const eventSource = new EventSource(`${environment.apiUrl}/public/live/stream/${seasonCode}`);
 
       eventSource.addEventListener('INIT', (event: any) => {
-        console.log('📡 Połączono ze strumieniem Kanapa Live!');
+        console.log('📡 Połączono ze strumieniem Live!');
       });
 
       // Kiedy backend wyrzuci nowy Cache, my go odbieramy
