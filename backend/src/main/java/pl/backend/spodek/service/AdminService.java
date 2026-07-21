@@ -24,14 +24,14 @@ public class AdminService {
     private final MatchRepository matchRepository;
 
     // Cacheable: Jeśli dane są w cache, metoda w ogóle się nie wykona (brak logu MISS)
-    @Cacheable(value = "playersCache")
+   // @Cacheable(value = "playersCache")
     public Map<String, Player> getPlayersMap() {
         log.info("⚠️ [CACHE MISS] Pobieram wszystkich GRACZY z MongoDB...");
         return playerRepository.findAll().stream()
                 .collect(Collectors.toMap(Player::getId, p -> p));
     }
 
-    @Cacheable(value = "teamsCache")
+   // @Cacheable(value = "teamsCache")
     public Map<String, Team> getTeamsMap() {
         log.info("⚠️ [CACHE MISS] Pobieram wszystkie DRUŻYNY z MongoDB...");
         return teamRepository.findAll().stream()
@@ -39,19 +39,19 @@ public class AdminService {
     }
 
     // CacheEvict: Każda zmiana "zabija" stary cache
-    @CacheEvict(value = "playersCache", allEntries = true)
+   // @CacheEvict(value = "playersCache", allEntries = true)
     public Player savePlayer(Player player) {
         log.warn("🧹 [CACHE EVICT] Zmiana w graczach - czyszczę cache.");
         return playerRepository.save(player);
     }
 
-    @CacheEvict(value = "teamsCache", allEntries = true)
+  //  @CacheEvict(value = "teamsCache", allEntries = true)
     public Team saveTeam(Team team) {
         log.warn("🧹 [CACHE EVICT] Zmiana w drużynach - czyszczę cache.");
         return teamRepository.save(team);
     }
 
-    @CacheEvict(value = "playersCache", allEntries = true)
+  //  @CacheEvict(value = "playersCache", allEntries = true)
     public void deletePlayer(String id) {
         // Sprawdzamy czy gracz istnieje w jakimkolwiek meczu
         // Zakładam istnienie metody w MatchRepository
