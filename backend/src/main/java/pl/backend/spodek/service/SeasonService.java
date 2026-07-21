@@ -180,7 +180,7 @@ public class SeasonService {
     }
 
     // 1. POPRAWIONY KLUCZ: #seasonId
-    @Cacheable(value = "leagueIdBySeason", key = "#seasonId")
+   // @Cacheable(value = "leagueIdBySeason", key = "#seasonId")
     public String getLeagueIdBySeason(String seasonId) {
         log.info( "⚠️ [CACHE MISS] Pobieram id ligi dla sezonu: " + seasonId );
         LeagueIdProjection projection = seasonRepository.findLeagueIdById( seasonId );
@@ -188,7 +188,7 @@ public class SeasonService {
     }
 
     // 2. LEPSZA NAZWA CACHE: seasonById
-    @Cacheable(value = "seasonById", key = "#seasonId")
+  //  @Cacheable(value = "seasonById", key = "#seasonId")
     public Season getSeasonById(String seasonId) {
         return findBySeasonId( seasonId ).orElseThrow( () -> new IllegalArgumentException( "There is no " +
                 "season with id: " + seasonId ) );
@@ -199,7 +199,7 @@ public class SeasonService {
     }
 
     // 3. LEPSZA NAZWA CACHE: seasonByCode
-    @Cacheable(value = "seasonByCode", key = "#seasonCode")
+  //  @Cacheable(value = "seasonByCode", key = "#seasonCode")
     public Season getBySeasonCode(String seasonCode) {
         return seasonRepository.findByLiveCode( seasonCode ).orElseThrow( () -> new IllegalArgumentException( "Cannot " +
                 "find season by code " + seasonCode ) );
