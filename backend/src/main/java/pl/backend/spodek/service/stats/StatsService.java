@@ -30,7 +30,7 @@ public class StatsService {
     private final TeamRepository teamRepository;
     private final FunFactFactory funFactFactory;
 
-    @Cacheable(value = "stats", key = "#leagueId.concat('-').concat(#seasonId).concat('-').concat(#scope)")
+   // @Cacheable(value = "stats", key = "#leagueId.concat('-').concat(#seasonId).concat('-').concat(#scope)")
     public StatsDto.Response generateFullStats(String leagueId, String seasonId, String scope) {
         Map<String, Player> playersMap = playerRepository.findAll().stream()
                 .collect(Collectors.toMap(Player::getId, p -> p));
