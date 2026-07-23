@@ -52,13 +52,12 @@
       object-position: center;
       transition: width 0.3s ease, height 0.3s ease;
       border-radius: 10px;
-      border: 2px solid var(--primary-brown);
       background-color: transparent;
 
       /* UWAGA: Tutaj nie ma żadnych reguł image-rendering ani transform!
          Zostawiamy przeglądarce wolną rękę do użycia najlepszego wygładzania. */
     }
-    
+
     .title-group {
       display: flex;
       flex-direction: column;
@@ -77,10 +76,11 @@
       /* TYTUŁ: Zmniejsza się przy scrollu */
       .app-title {
         margin: 0;
-        font-size: 1.4rem;
+        font-size: 1.7rem;
         color: var(--primary-brown);
         font-weight: 800;
         transition: font-size 0.3s ease;
+        letter-spacing: 2px;
       }
     }
   }
@@ -385,4 +385,53 @@
   0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
   70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
   100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+.ios-instruction-tooltip {
+  position: absolute;
+  top: 130%;
+  right: 0;
+  width: 260px;
+  background: #0f172a;
+  color: white;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+  white-space: normal;
+  text-align: left;
+  border: 1px solid #1e293b;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 20px;
+    border-width: 0 6px 6px 6px;
+    border-style: solid;
+    border-color: transparent transparent #0f172a transparent;
+  }
+
+  &.mobile-drawer-tooltip {
+    top: unset;
+    bottom: 110%;
+    right: auto;
+    left: 0;
+
+    &::before {
+      top: auto;
+      bottom: -6px;
+      left: 20px;
+      right: auto;
+      border-color: #0f172a transparent transparent transparent;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }

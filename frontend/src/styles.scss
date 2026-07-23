@@ -33,11 +33,11 @@ body.theme-worldcup {
 
 /* GLOBALNE ZASTOSOWANIE TŁA I TEKSTÓW */
 html, body {
-  overflow-x: clip; /* Odcina wszystko, co wychodzi poza szerokość telefonu */
+  overflow-x: clip;
   width: 100%;
   background-color: var(--app-bg);
   color: var(--text-dark);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif; /* Inter dla całego tekstu */
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -78,10 +78,32 @@ input, select, .edit-input, .search-input {
    PRZYCISKI (DOPASOWANE DO MOTYWÓW)
    ========================================================================== */
 button {
-  font-family: 'Inter', sans-serif;
   transition: all 0.2s ease-in-out;
   cursor: pointer;
   border: none;
+}
+
+/* NOWE: Sportowy Montserrat dla wszystkich nagłówków */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: -0.5px; /* Delikatne ściśnięcie dodaje dynamiki */
+}
+
+/* Wymuszenie czcionki dla elementów formularzy i przycisków */
+input, button, textarea, select {
+  font-family: inherit; /* Będą dziedziczyć 'Inter' z body */
+}
+
+/* NOWE: Magiczna funkcja dla cyfr w aplikacjach sportowych!
+   Dzięki "tabular-nums" cyfra "1" zajmuje tyle samo szerokości co "8".
+   Stosujemy to do wszystkich tabel (td) i widoków wyników (score). */
+table td,
+.score-display,
+.wc26-score-digit,
+.match-time {
+  font-variant-numeric: tabular-nums;
+  /* Opcjonalnie: wymuszenie Montserrat dla samych cyfr w wynikach */
+  font-family: 'Montserrat', sans-serif;
 }
 
 .btn-primary {

@@ -1,8 +1,10 @@
-import { Component, Input, inject, signal, HostListener } from '@angular/core';
+import { Component, Input, inject, signal, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ThemeService } from '../../../core/services/theme.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
+import { filter } from 'rxjs';
 import { CommonService } from '../../../core/services/common.service';
 
 @Component({
@@ -12,22 +14,49 @@ import { CommonService } from '../../../core/services/common.service';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit {
   @Input() title: string = 'FIFOWA ŚPODA';
   @Input() backLink?: any[] | string | null;
   @Input() backText?: string;
-  @Input() isReadOnly: boolean = false; // NOWE: Flaga trybu gościa
+  @Input() isReadOnly: boolean = false;
   @Input() logoUrl?: string | null = null;
 
   public themeService = inject(ThemeService);
-  private router = inject(Router);
+  private readonly router = inject(Router);
+  private readonly swUpdate = inject(SwUpdate);
   authService = inject(AuthService);
-  public commonService = inject(CommonService);
+  commonService = inject(CommonService);
 
   isMobileMenuOpen = signal(false);
   isScrolled = signal(false);
 
-  // Nasłuchiwanie scrollowania strony
+  // --- STAN PWA ---
+  installPrompt: any = null;
+  isStandalone = signal(false);
+  isIOS = signal(false);
+  showIosInstruction = signal(false);
+
+  ngOnInit() {
+    // 1. Sprawdzamy czy apka już jest odpalona jako PWA
+    const isStandAlone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+    this.isStandalone.set(isStandAlone);
+
+    // 2. Sprawdzamy czy to urządzenie Apple
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    this.isIOS.set(/iphone|ipad|ipod/.test(userAgent));
+
+    // 3. Automatyczna aktualizacja w tle
+    if (this.swUpdate.isEnabled) {
+      this.swUpdate.versionUpdates
+        .pipe(filter((evt): evt is VersionReadyEvent => evt.type === 'VERSION_READY'))
+        .subscribe(() => {
+          document.location.reload(); // Wymusza twardy restart po pobraniu nowej wersji
+        });
+    }
+  }
+
   @HostListener('window:scroll', [])
   onWindowScroll() {
     this.isScrolled.set(window.scrollY > 20);
@@ -36,37 +65,36 @@ export class HeaderComponent {
   toggleMobileMenu() {
     this.isMobileMenuOpen.update((v) => !v);
   }
-
   closeMobileMenu() {
     this.isMobileMenuOpen.set(false);
   }
 
   logout() {
     this.closeMobileMenu();
-    localStorage.removeItem('spodek_token');
-    this.router.navigate(['/login']);
-
+    this.authService.logout();
   }
 
-  // Zmienna przechowująca zdarzenie instalacji
-  installPrompt: any;
-
-  // Nasłuchiwanie na zgłoszenie gotowości do instalacji PWA
   @HostListener('window:beforeinstallprompt', ['$event'])
   onBeforeInstallPrompt(event: Event) {
-    event.preventDefault(); // Zablokuj domyślne zachowanie przeglądarki
-    this.installPrompt = event; // Zapisz zdarzenie, by wyświetlić przycisk
+    event.preventDefault();
+    this.installPrompt = event;
   }
 
   installPWA() {
-    if (!this.installPrompt) return;
+    if (this.isIOS()) {
+      this.showIosInstruction.set(true);
+      setTimeout(() => this.showIosInstruction.set(false), 6000);
+      return;
+    }
 
-    this.installPrompt.prompt();
-    this.installPrompt.userChoice.then((choiceResult: any) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('Aplikacja została zainstalowana.');
-      }
-      this.installPrompt = null; // Ukryj przycisk po reakcji użytkownika
-    });
+    if (this.installPrompt) {
+      this.installPrompt.prompt();
+      this.installPrompt.userChoice.then((choiceResult: any) => {
+        if (choiceResult.outcome === 'accepted') {
+          this.isStandalone.set(true);
+        }
+        this.installPrompt = null;
+      });
+    }
   }
 }

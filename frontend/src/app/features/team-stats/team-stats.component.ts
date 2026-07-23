@@ -163,7 +163,7 @@ export class TeamStatsComponent implements OnChanges, AfterViewInit, OnDestroy {
             // NOWY DYMEK: Zawiera Ratio, wygrywa czytelność!
             const marker = L.marker([lat, lng], { icon: customIcon }).bindTooltip(
               `
-                <div style="text-align: center; min-width: 150px; font-family: 'Inter', sans-serif;">
+                <div style="text-align: center; min-width: 150px;">
                   <div style="font-weight: 800; font-size: 1rem; color: var(--primary-brown, #2A398D); border-bottom: 1px dashed #cbd5e1; padding-bottom: 6px; margin-bottom: 6px;">
                     ${point.alias}
                   </div>
