@@ -55,7 +55,8 @@ jobs:
         with:
           node-version: '24'
 
-      - run: |
+      - name: Konfiguracja Git
+        run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
 
@@ -73,7 +74,7 @@ jobs:
           CHANGE_CLEAN=$(echo "$CHANGE" | tr '\n' ' ')
           echo "CHANGELOG=$CHANGE_CLEAN" >> $GITHUB_ENV
 
-      - name: Wyliczenie nowej wersji
+      - name: Wyliczenie nowej wersji globalnej
         id: prep
         run: |
           OLD_VERSION=$(cat app-version.txt)
@@ -83,39 +84,46 @@ jobs:
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Aktualizacja PWA
+      - name: Sync wersji -> Backend (pom.xml)
+        working-directory: ./backend
+        run: |
+          # Używamy Mavena do spójnej zmiany wersji w pom.xml
+          mvn versions:set -DnewVersion=${{ env.NEW_VERSION }} -DgenerateBackupPoms=false
+
+      - name: Sync wersji -> Frontend (package.json)
+        working-directory: ./frontend
+        run: |
+          # Aktualizujemy package.json bez tworzenia tagu gita
+          npm version ${{ env.NEW_VERSION }} --no-git-tag-version
+
+      - name: Aktualizacja PWA (ngsw-config.json)
+        # UWAGA: To wykonuje się TYLKO gdy zmienił się frontend!
+        if: ${{ needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           jq --arg v "${{ env.NEW_VERSION }}" --arg c "${{ env.CHANGELOG }}" '.appData.version = $v | .appData.changelog = $c' ./frontend/ngsw-config.json > tmp.json
           mv tmp.json ./frontend/ngsw-config.json
 
       - name: Commit i Tag
         run: |
-          git add app-version.txt ./frontend/ngsw-config.json
-          git commit -m "🚀 release: v${{ env.NEW_VERSION }}" -m "${{ env.CHANGELOG }}"
+          # Dodajemy wszystkie pliki, które mogły ulec zmianie (|| true zapobiega błędom, gdy plik się nie zmienił)
+          git add app-version.txt
+          git add ./backend/pom.xml || true
+          git add ./frontend/package.json || true
+          git add ./frontend/package-lock.json || true
+          git add ./frontend/ngsw-config.json || true
+          
+          # Dodana flaga [skip ci] aby uniknąć zapętlenia GitHub Actions
+          git commit -m "🚀 release: v${{ env.NEW_VERSION }} [skip ci]" -m "${{ env.CHANGELOG }}"
           
           git tag "v${{ env.NEW_VERSION }}"
           git push origin HEAD
           git push origin "v${{ env.NEW_VERSION }}"
 
   # ==========================================
-  # (SZABLON) ZADANIE 2.5: WDROŻENIE TESTOWE
-  # ==========================================
-  # deploy-test:
-  #   needs: prepare-release
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: Test
-  #     url: https://test.spoda.app
-  #   steps:
-  #     - run: echo "Tutaj kiedyś trafi logika wrzucania na dedykowany kontener testowy"
-  #     - run: echo "Po tym zadaniu, GitHub będzie czekał na Twój 'Approve' przed odpaleniem deploy-backend i frontend"
-
-  # ==========================================
   # ZADANIE 3: WDROŻENIE BACKENDU (RAILWAY)
   # ==========================================
   deploy-backend:
     needs: [detect-changes, prepare-release]
-    # Uruchom jeśli zmieniono backend LUB odpalono ręcznie
     if: ${{ needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     outputs:
@@ -164,7 +172,6 @@ jobs:
   # ==========================================
   deploy-frontend:
     needs: [detect-changes, prepare-release]
-    # Uruchom jeśli zmieniono frontend LUB odpalono ręcznie
     if: ${{ needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     outputs:
@@ -211,14 +218,12 @@ jobs:
     steps:
       - name: Generowanie raportu końcowego
         run: |
-          # 0. Szybkie wyjście, jeśli zmiany były tylko poza projektami (np. AGENTS.md)
           if [ "${{ needs.deploy-backend.result }}" = "skipped" ] && [ "${{ needs.deploy-frontend.result }}" = "skipped" ]; then
             echo "### Wynik wdrożenia 🚀" >> $GITHUB_STEP_SUMMARY
             echo "ℹ️ **Instalacja pominięta** --> Zmiany dotyczyły wyłącznie plików poza głównymi katalogami (np. konfiguracja repozytorium, dokumentacja)." >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
           
-          # 1. Sprawdzenie statusu BACKENDU
           BACKEND_ICON="❌"
           BACKEND_URL="https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs"
           BACKEND_DESC="[Przejdź do logów Railway]($BACKEND_URL)"
@@ -230,7 +235,6 @@ jobs:
             BACKEND_ICON="✅"
           fi
           
-          # 2. Sprawdzenie statusu FRONTENDU
           FRONTEND_ICON="❌"
           FRONTEND_DESC="[Przejdź do logów Render](${{ needs.deploy-frontend.outputs.render_url }})"
           
@@ -241,12 +245,10 @@ jobs:
             FRONTEND_ICON="✅"
           fi
           
-          # 3. Podsumowanie
           echo "### Wynik wdrożenia 🚀" >> $GITHUB_STEP_SUMMARY
           echo "$BACKEND_ICON **deploy - backend** --> $BACKEND_DESC" >> $GITHUB_STEP_SUMMARY
           echo "$FRONTEND_ICON **deploy - frontend** --> $FRONTEND_DESC" >> $GITHUB_STEP_SUMMARY
           
-          # Ostateczna weryfikacja
           if [ "$BACKEND_ICON" = "❌" ] || [ "$FRONTEND_ICON" = "❌" ]; then
             echo "❌ Przynajmniej jedno wdrożenie się nie powiodło."
             exit 1
