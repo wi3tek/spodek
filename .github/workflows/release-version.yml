@@ -82,6 +82,11 @@ jobs:
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
+      - name: Aktualizacja tytułu w GitHub Actions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh run edit ${{ github.run_id }} --title "🚀 Wdrożenie v${{ env.NEW_VERSION }}"
+
       - name: Sync wersji -> Backend (pom.xml)
         working-directory: ./backend
         run: mvn versions:set -DnewVersion=${{ env.NEW_VERSION }} -DgenerateBackupPoms=false
