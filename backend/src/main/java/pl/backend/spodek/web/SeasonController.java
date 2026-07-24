@@ -21,7 +21,6 @@ public class SeasonController {
 
     @GetMapping("/league/{leagueId}")
     public List<Season> getSeasonsByLeague(@PathVariable String leagueId) {
-        // Zwracamy sezony od najnowszego (audyt nam w tym pomaga)
         return seasonRepository.findByLeagueId( leagueId ).stream()
                 .sorted(Comparator.comparing( Season::getCreatedAt ).reversed())
                 .toList();
