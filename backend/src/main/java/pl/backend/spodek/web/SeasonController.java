@@ -50,13 +50,11 @@ public class SeasonController {
 
     @GetMapping("/{seasonId}")
     public Season getSeasonsById(@PathVariable String seasonId) {
-        // Zwracamy sezony od najnowszego (audyt nam w tym pomaga)
         return seasonService.getSeasonById( seasonId );
     }
 
     @GetMapping("/{seasonId}/table")
     public ResponseEntity<List<SeasonTableEntryDTO>> getSeasonTable(@PathVariable String seasonId) {
-        // Wywołujemy logikę przeliczania w locie, którą napisaliśmy wcześniej
         return ResponseEntity.ok(seasonService.getSeasonTable(seasonId));
     }
 }
