@@ -14,7 +14,7 @@ on:
           - minor
           - major
       changelog:
-        description: 'Co nowego (zostaw puste dla domyślnego)'
+        description: 'Co nowego? (zostaw puste dla domyślnego)'
         required: false
         type: string
 
