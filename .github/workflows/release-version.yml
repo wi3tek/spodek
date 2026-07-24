@@ -1,0 +1,253 @@
+name: Śpoda CI/CD (Release Version) 🚀
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Wyśniony przycisk "Release Version"
+    inputs:
+      bump_type:
+        description: 'Rodzaj aktualizacji (MAJOR/MINOR/PATCH)'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      changelog:
+        description: 'Co nowego (zostaw puste dla domyślnego)'
+        required: false
+        type: string
+
+jobs:
+  # ==========================================
+  # ZADANIE 1: WYKRYWANIE ZMIAN
+  # ==========================================
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend: 'backend/**'
+            frontend: 'frontend/**'
+
+  # ==========================================
+  # ZADANIE 2: PRZYGOTOWANIE WERSJI I COMMIT
+  # ==========================================
+  prepare-release:
+    needs: detect-changes
+    # Uruchom tylko jeśli cokolwiek się zmieniło LUB uruchomiono ręcznie
+    if: ${{ needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.prep.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: Ustalenie parametrów podbicia (Automatyczne vs Ręczne)
+        id: setup_vars
+        run: |
+          # Jeśli z palca to bierzemy input, jeśli push to domyślnie 'patch'
+          BUMP="${{ github.event.inputs.bump_type || 'patch' }}"
+          # Jeśli z palca to bierzemy input, jeśli push to treść commita (lub fallback)
+          CHANGE="${{ github.event.inputs.changelog || github.event.head_commit.message || 'Automatyczna aktualizacja' }}"
+          
+          echo "BUMP_TYPE=$BUMP" >> $GITHUB_ENV
+          
+          # Zabezpieczenie przed znakami nowej linii w changelogu dla JQ
+          CHANGE_CLEAN=$(echo "$CHANGE" | tr '\n' ' ')
+          echo "CHANGELOG=$CHANGE_CLEAN" >> $GITHUB_ENV
+
+      - name: Wyliczenie nowej wersji
+        id: prep
+        run: |
+          OLD_VERSION=$(cat app-version.txt)
+          NEW_VERSION=$(npx semver -i ${{ env.BUMP_TYPE }} $OLD_VERSION)
+          
+          echo $NEW_VERSION > app-version.txt
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Aktualizacja PWA
+        run: |
+          jq --arg v "${{ env.NEW_VERSION }}" --arg c "${{ env.CHANGELOG }}" '.appData.version = $v | .appData.changelog = $c' ./frontend/ngsw-config.json > tmp.json
+          mv tmp.json ./frontend/ngsw-config.json
+
+      - name: Commit i Tag
+        run: |
+          git add app-version.txt ./frontend/ngsw-config.json
+          git commit -m "🚀 release: v${{ env.NEW_VERSION }}" -m "${{ env.CHANGELOG }}"
+          
+          git tag "v${{ env.NEW_VERSION }}"
+          git push origin HEAD
+          git push origin "v${{ env.NEW_VERSION }}"
+
+  # ==========================================
+  # (SZABLON) ZADANIE 2.5: WDROŻENIE TESTOWE
+  # ==========================================
+  # deploy-test:
+  #   needs: prepare-release
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: Test
+  #     url: https://test.spoda.app
+  #   steps:
+  #     - run: echo "Tutaj kiedyś trafi logika wrzucania na dedykowany kontener testowy"
+  #     - run: echo "Po tym zadaniu, GitHub będzie czekał na Twój 'Approve' przed odpaleniem deploy-backend i frontend"
+
+  # ==========================================
+  # ZADANIE 3: WDROŻENIE BACKENDU (RAILWAY)
+  # ==========================================
+  deploy-backend:
+    needs: [detect-changes, prepare-release]
+    # Uruchom jeśli zmieniono backend LUB odpalono ręcznie
+    if: ${{ needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    outputs:
+      skipped: ${{ steps.deploy.outputs.skipped }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/v${{ needs.prepare-release.outputs.new_version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Instalacja Railway CLI
+        run: npm i -g @railway/cli
+      - name: Uruchomienie wdrożenia Railway i oczekiwanie na wynik
+        id: deploy
+        working-directory: ./backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "🚀 Rozpoczynam wdrożenie na Railway..."
+          rm -f /tmp/railway_pipe && mkfifo /tmp/railway_pipe
+          date > .railway-force-deploy.txt
+          railway up --service fifowa-spoda-backend > /tmp/railway_pipe 2>&1 &
+          RAILWAY_PID=$!
+          
+          SKIPPED=false
+          while read -r line; do
+            echo "$line"
+            if [[ "$line" == *"No changes to watched files"* ]] || [[ "$line" == *"no changes detected in watch paths"* ]] || [[ "$line" == *"build will skip"* ]]; then
+              echo "=========================================="
+              echo "⚠️ Wykryto brak zmian! Przerywam zawieszone CLI."
+              echo "skipped=true" >> $GITHUB_OUTPUT
+              SKIPPED=true
+              kill -9 $RAILWAY_PID 2>/dev/null || true
+              break
+            fi
+          done < /tmp/railway_pipe
+          
+          rm -f /tmp/railway_pipe
+          if [ "$SKIPPED" = "true" ]; then exit 0; fi
+          wait $RAILWAY_PID
+          if [ $? -ne 0 ]; then exit 1; fi
+
+  # ==========================================
+  # ZADANIE 4: WDROŻENIE FRONTENDU (RENDER)
+  # ==========================================
+  deploy-frontend:
+    needs: [detect-changes, prepare-release]
+    # Uruchom jeśli zmieniono frontend LUB odpalono ręcznie
+    if: ${{ needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    outputs:
+      render_url: ${{ steps.deploy.outputs.render_url }}
+    steps:
+      - name: Uruchomienie wdrożenia i oczekiwanie na wynik (Polling)
+        id: deploy
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+        run: |
+          echo "🚀 Rozpoczynam wdrożenie na Renderze..."
+          TRIGGER_RESPONSE=$(curl -s -X POST \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+            -H "Accept: application/json" \
+            -H "Authorization: Bearer $RENDER_API_KEY")
+          
+          DEPLOY_ID=$(echo "$TRIGGER_RESPONSE" | jq -r '.id')
+          echo "render_url=https://dashboard.render.com/static/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID" >> $GITHUB_OUTPUT
+          
+          if [ "$DEPLOY_ID" = "null" ] || [ -z "$DEPLOY_ID" ]; then exit 1; fi
+          
+          echo "✅ Wdrożenie wystartowało. ID zadania: $DEPLOY_ID"
+          
+          while true; do
+            STATUS_RESPONSE=$(curl -s -X GET \
+              "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID" \
+              -H "Accept: application/json" \
+              -H "Authorization: Bearer $RENDER_API_KEY")
+            STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status')
+          
+            if [ "$STATUS" = "live" ]; then exit 0;
+            elif [ "$STATUS" = "build_failed" ] || [ "$STATUS" = "canceled" ] || [ "$STATUS" = "update_failed" ]; then exit 1; fi
+            sleep 10
+          done
+
+  # ==========================================
+  # ZADANIE 5: WSPÓLNE PODSUMOWANIE WYNIKÓW
+  # ==========================================
+  summary:
+    needs: [ detect-changes, deploy-backend, deploy-frontend ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generowanie raportu końcowego
+        run: |
+          # 0. Szybkie wyjście, jeśli zmiany były tylko poza projektami (np. AGENTS.md)
+          if [ "${{ needs.deploy-backend.result }}" = "skipped" ] && [ "${{ needs.deploy-frontend.result }}" = "skipped" ]; then
+            echo "### Wynik wdrożenia 🚀" >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️ **Instalacja pominięta** --> Zmiany dotyczyły wyłącznie plików poza głównymi katalogami (np. konfiguracja repozytorium, dokumentacja)." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          # 1. Sprawdzenie statusu BACKENDU
+          BACKEND_ICON="❌"
+          BACKEND_URL="https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs"
+          BACKEND_DESC="[Przejdź do logów Railway]($BACKEND_URL)"
+          
+          if [ "${{ needs.deploy-backend.result }}" = "skipped" ] || [ "${{ needs.deploy-backend.outputs.skipped }}" = "true" ]; then
+            BACKEND_ICON="⚠️"
+            BACKEND_DESC="Pominięto (Brak zmian w backendzie)"
+          elif [ "${{ needs.deploy-backend.result }}" = "success" ]; then 
+            BACKEND_ICON="✅"
+          fi
+          
+          # 2. Sprawdzenie statusu FRONTENDU
+          FRONTEND_ICON="❌"
+          FRONTEND_DESC="[Przejdź do logów Render](${{ needs.deploy-frontend.outputs.render_url }})"
+          
+          if [ "${{ needs.deploy-frontend.result }}" = "skipped" ]; then
+            FRONTEND_ICON="⚠️"
+            FRONTEND_DESC="Pominięto (Brak zmian we frontendzie)"
+          elif [ "${{ needs.deploy-frontend.result }}" = "success" ]; then 
+            FRONTEND_ICON="✅"
+          fi
+          
+          # 3. Podsumowanie
+          echo "### Wynik wdrożenia 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "$BACKEND_ICON **deploy - backend** --> $BACKEND_DESC" >> $GITHUB_STEP_SUMMARY
+          echo "$FRONTEND_ICON **deploy - frontend** --> $FRONTEND_DESC" >> $GITHUB_STEP_SUMMARY
+          
+          # Ostateczna weryfikacja
+          if [ "$BACKEND_ICON" = "❌" ] || [ "$FRONTEND_ICON" = "❌" ]; then
+            echo "❌ Przynajmniej jedno wdrożenie się nie powiodło."
+            exit 1
+          fi
