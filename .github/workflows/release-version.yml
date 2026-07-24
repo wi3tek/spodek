@@ -202,14 +202,20 @@ jobs:
   # ZADANIE 5: WSPÓLNE PODSUMOWANIE WYNIKÓW
   # ==========================================
   summary:
-    needs: [ detect-changes, deploy-backend, deploy-frontend ]
+    # 1. DODANO: 'prepare-release' do sekcji needs, aby mieć dostęp do wygenerowanej wersji
+    needs: [ detect-changes, prepare-release, deploy-backend, deploy-frontend ]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Generowanie raportu końcowego
         run: |
+          # 2. DODANO: Odczytanie wersji. Jeśli skrypt pominięto, ustawiamy tekst zastępczy.
+          VERSION="v${{ needs.prepare-release.outputs.new_version }}"
+          if [ "$VERSION" = "v" ]; then VERSION="(Brak nowej wersji)"; fi
+
           if [ "${{ needs.deploy-backend.result }}" = "skipped" ] && [ "${{ needs.deploy-frontend.result }}" = "skipped" ]; then
-            echo "### Wynik wdrożenia 🚀" >> $GITHUB_STEP_SUMMARY
+            # Wersja w nagłówku przy pominięciu
+            echo "### Wynik wdrożenia $VERSION 🚀" >> $GITHUB_STEP_SUMMARY
             echo "ℹ️ **Instalacja pominięta** --> Zmiany dotyczyły wyłącznie plików poza głównymi katalogami." >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
@@ -235,7 +241,8 @@ jobs:
             FRONTEND_ICON="✅"
           fi
           
-          echo "### Wynik wdrożenia 🚀" >> $GITHUB_STEP_SUMMARY
+          # 3. DODANO: Wersja wklejona w główny tytuł raportu!
+          echo "### Wynik wdrożenia $VERSION 🚀" >> $GITHUB_STEP_SUMMARY
           echo "$BACKEND_ICON **deploy - backend** --> $BACKEND_DESC" >> $GITHUB_STEP_SUMMARY
           echo "$FRONTEND_ICON **deploy - frontend** --> $FRONTEND_DESC" >> $GITHUB_STEP_SUMMARY
           
