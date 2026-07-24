@@ -367,8 +367,7 @@ public class MigrationService {
             log.warn("[MatchSide] Brak mapowania w CSV dla starego ID drużyny: '{}'. Przypisuję domyślnie 'Nieznana Drużyna' (9999751)...", oldTeamId);
             teamRepository.findByAssetId(9999751).ifPresentOrElse(
                     t -> ms.setTeamId(t.getId()), //
-                    () -> log.error("[MatchSide] Błąd krytyczny! Nie znaleziono nawet domyślnej Nieznanej Drużyny " +
-                            "(9999751) w Mongo! ")
+                    () -> log.error("[MatchSide] Błąd krytyczny! Nie znaleziono nawet domyślnej Nieznanej Drużyny (9999751) w Mongo! ")
             );
         }
 
