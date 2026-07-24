@@ -7,6 +7,7 @@ import pl.backend.spodek.matchmaking.model.RuleResult;
 
 @Component
 public class HistoryRule implements MatchScoringRule {
+
     @Override
     public RuleResult evaluate(MatchContext ctx, MatchmakingProperties properties) {
         int penalty = 0;
