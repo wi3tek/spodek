@@ -4,6 +4,8 @@ import { LoadingSpinnerComponent } from './features/loading-spinner/loading-spin
 import { CommonModule } from '@angular/common';
 import {SwUpdate, VersionReadyEvent} from '@angular/service-worker';
 import {filter} from 'rxjs';
+import { HeaderComponent } from './shared/components/header/header.component';
+import { HeaderService } from './core/services/header.service';
 
 interface AppUpdateData {
   version?: string;
@@ -13,15 +15,18 @@ interface AppUpdateData {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, LoadingSpinnerComponent, CommonModule],
+  imports: [RouterOutlet, LoadingSpinnerComponent, CommonModule, HeaderComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
   protected readonly title = signal('fifowa-spoda-ui');
   private swUpdate = inject(SwUpdate);
+  protected headerService = inject(HeaderService)
+
   // ODCZYT: Sprawdzamy czy w localStorage zapisano włączony motyw
   isWorldCupTheme = signal<boolean>(localStorage.getItem('theme_worldcup') === 'true');
+
 
   constructor() {
     // Reagujemy na każdą zmianę sygnału (zaskoczy też przy pierwszym załadowaniu)

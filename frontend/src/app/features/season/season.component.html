@@ -1,13 +1,5 @@
 <div class="dashboard-container">
 
-  <app-header
-    [title]="season()?.name"
-    [backText]="isReadOnly() ? undefined : '← Powrót do ligi'"
-    [backLink]="isReadOnly() ? null : ['/league', season()?.leagueId]"
-    [isReadOnly]="isReadOnly()"
-    [logoUrl]="season()?.logoUrl">
-  </app-header>
-
   <!-- NOWY PASEK STATUSU I USTAWIEŃ -->
   <div class="season-header-bar animate-in">
     <div class="status-indicator">
@@ -72,7 +64,7 @@
           <div class="squad-layout">
 
             @if (isLoadingAttendance()) {
-              <app-fifa-loader></app-fifa-loader>
+              <spoda-loader></spoda-loader>
             } @else {
               <div class="attendance-grid-mini">
                 @for (p of modalDisplayPlayers(); track p.id) {

@@ -12,14 +12,14 @@ import {
 } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { TeamStatsResponse, TeamStatsService } from '../../core/services/team-stats.service';
-import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
+import { SpodaLoaderComponent } from '../../shared/components/spoda-loader/spoda-loader.component';
 import * as L from 'leaflet';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-team-stats',
   standalone: true,
-  imports: [CommonModule, FifaLoaderComponent],
+  imports: [CommonModule, SpodaLoaderComponent],
   providers: [DecimalPipe],
   templateUrl: './team-stats.component.html',
   styleUrls: ['./team-stats.component.scss'],

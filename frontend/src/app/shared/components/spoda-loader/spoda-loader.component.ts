@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'app-fifa-loader',
+  selector: 'spoda-loader',
   standalone: true,
   template: `
-    <div class="fifa-loader-container">
-      <div class="fifa-loader">
+    <div class="spoda-loader-container">
+      <div class="app-loader">
         <div class="xbox-ring"></div>
         <img src="/logo.png" alt="Ładowanie..." class="loader-logo" width="45" height="45" />
       </div>
@@ -20,7 +20,7 @@ import { Component } from '@angular/core';
         justify-content: center;
       }
 
-      .fifa-loader-container {
+      .spoda-loader-container {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -29,7 +29,7 @@ import { Component } from '@angular/core';
         animation: fadeIn 0.2s ease-in;
       }
 
-      .fifa-loader {
+      .app-loader {
         position: relative;
         width: 65px;
         height: 65px;
@@ -92,4 +92,4 @@ import { Component } from '@angular/core';
     `,
   ],
 })
-export class FifaLoaderComponent {}
+export class SpodaLoaderComponent {}

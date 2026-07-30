@@ -8,6 +8,7 @@ import {
   HostListener,
   ElementRef,
   ViewChild,
+  effect,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -22,13 +23,14 @@ import { AdminService } from '../../core/services/admin.service';
 import { MatchweekService } from '../../core/services/matchweek.service';
 import { MatchmakingService } from '../../core/services/matchmaking.service';
 import { LiveService } from '../../core/services/live.service';
-import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
+import { SpodaLoaderComponent } from '../../shared/components/spoda-loader/spoda-loader.component';
 import { StatsComponent } from '../stats/stats.component';
 import { TeamStatsComponent } from '../team-stats/team-stats.component';
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { PlayerAvatarComponent } from '../../shared/components/player-avatar/player-avatar.component';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { CommonService } from '../../core/services/common.service';
+import { HeaderService } from '../../core/services/header.service';
 Chart.register(...registerables);
 
 @Component({
@@ -37,10 +39,9 @@ Chart.register(...registerables);
   imports: [
     CommonModule,
     FormsModule,
-    FifaLoaderComponent,
+    SpodaLoaderComponent,
     StatsComponent,
     TeamStatsComponent,
-    HeaderComponent,
     PlayerAvatarComponent,
     QRCodeComponent,
   ],
@@ -58,6 +59,7 @@ export class SeasonComponent implements OnInit, OnDestroy {
   private matchmakingService = inject(MatchmakingService);
   private liveService = inject(LiveService);
   public commonService = inject(CommonService);
+  private headerService = inject(HeaderService);
 
   // --- WŁAŚCIWOŚCI I SYGNAŁY ---
   private liveSubscription?: Subscription;
@@ -334,12 +336,26 @@ export class SeasonComponent implements OnInit, OnDestroy {
     this.matchweekSubject.pipe(debounceTime(400), distinctUntilChanged()).subscribe((newWeek) => {
       this.loadAttendanceForWeek(newWeek);
     });
+
+    effect(() => {
+      const currentSeason = this.season();
+      const readOnly = this.isReadOnly();
+
+      if (currentSeason) {
+        this.headerService.setState({
+          title: currentSeason.name,
+          backText: readOnly ? undefined : '← Powrót do ligi',
+          backLink: readOnly ? null : ['/league', currentSeason.leagueId],
+          isReadOnly: readOnly,
+          logoUrl: currentSeason.logoUrl,
+        });
+      }
+    });
   }
 
   ngOnInit() {
     const codeParam = this.route.snapshot.paramMap.get('code');
     const id = this.route.snapshot.paramMap.get('id');
-
     if (codeParam) {
       this.isReadOnly.set(true);
       this.loadPublicData(codeParam);
@@ -349,6 +365,22 @@ export class SeasonComponent implements OnInit, OnDestroy {
       this.loadSeasonData(id);
       this.loadInitialData();
     }
+    // /**
+    //  *   <app-header
+    //  *     [title]="
+    //  *     [backLink]="isReadOnly() ? null : ['/league', season()?.leagueId]"
+    //  *     [isReadOnly]="isReadOnly()"
+    //  *     [logoUrl]="season()?.logoUrl">
+    //  *   </app-header>
+    //  */
+    //
+    // this.headerService.setState({
+    //   title: this.season().name,
+    //   backText: this.isReadOnly() ? undefined : '← Powrót do ligi',
+    //   backLink: this.isReadOnly() ? null : ['/league', this.season().leagueId],
+    //   isReadOnly: this.isReadOnly(),
+    //   logoUrl: this.season().logoUrl,
+    // });
   }
 
   ngOnDestroy() {
@@ -422,7 +454,7 @@ export class SeasonComponent implements OnInit, OnDestroy {
   loadSeasonData(id: string) {
     this.seasonService.getSeasonById(id).subscribe((s) => {
       this.season.set(s);
-      console.log("HALO" + this.season);
+      console.log('HALO' + this.season);
       this.initFilterToggle(s.status); // <--- DODANO
     });
     this.matchService.getMatchesBySeason(id).subscribe((m) => {

@@ -6,11 +6,12 @@ import { FormsModule } from '@angular/forms';
 import { SeasonService } from '../../core/services/season.service';
 import { Season } from '../../core/models/season.model';
 import { HeaderComponent } from '../../shared/components/header/header.component';
+import { HeaderService } from '../../core/services/header.service';
 
 @Component({
   selector: 'app-league-seasons',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, HeaderComponent],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './league-seasons.component.html',
   styleUrls: ['./league-seasons.component.scss'],
 })
@@ -19,6 +20,7 @@ export class LeagueSeasonsComponent implements OnInit {
   private router = inject(Router);
   private seasonService = inject(SeasonService);
   private leagueService = inject(LeagueService);
+  private headerService = inject(HeaderService);
 
   leagueId = signal<string | null>(null);
   league = signal<any>(null);
@@ -60,9 +62,15 @@ export class LeagueSeasonsComponent implements OnInit {
   }
 
   loadData(id: string) {
-    this.leagueService.getLeagueById(id).subscribe((l) => this.league.set(l));
+    this.leagueService.getLeagueById(id).subscribe((l) => {
+      this.league.set(l);
+      // Ustawienie headera PO załadowaniu danych z serwera
+      this.headerService.setState({
+        title: l.name,
+      });
+    });
+
     this.seasonService.getSeasonsByLeague(id).subscribe((s) => {
-      // Sortowanie: od najnowszego startDate (góra) do najstarszego (dół)
       const sortedSeasons = s.sort((a, b) => {
         return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
       });

@@ -1,4 +1,4 @@
-import { Component, Input, inject, signal, HostListener, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ThemeService } from '../../../core/services/theme.service';
@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
 import { CommonService } from '../../../core/services/common.service';
+import { HeaderService } from '../../../core/services/header.service';
 
 @Component({
   selector: 'app-header',
@@ -15,17 +16,19 @@ import { CommonService } from '../../../core/services/common.service';
   styleUrls: ['./header.component.scss'],
 })
 export class HeaderComponent implements OnInit {
-  @Input() title: string = 'ŚPODA•FC';
-  @Input() backLink?: any[] | string | null;
-  @Input() backText?: string;
-  @Input() isReadOnly: boolean = false;
-  @Input() logoUrl?: string | null = null;
-
   public themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly swUpdate = inject(SwUpdate);
-  authService = inject(AuthService);
-  commonService = inject(CommonService);
+  public authService = inject(AuthService);
+  public commonService = inject(CommonService);
+  private readonly headerService = inject(HeaderService);
+
+  // Zastępujemy @Input sygnałami computed
+  title = computed(() => this.headerService.state().title);
+  backLink = computed(() => this.headerService.state().backLink);
+  backText = computed(() => this.headerService.state().backText);
+  isReadOnly = computed(() => this.headerService.state().isReadOnly);
+  logoUrl = computed(() => this.headerService.state().logoUrl);
 
   isMobileMenuOpen = signal(false);
   isScrolled = signal(false);
@@ -37,22 +40,19 @@ export class HeaderComponent implements OnInit {
   showIosInstruction = signal(false);
 
   ngOnInit() {
-    // 1. Sprawdzamy czy apka już jest odpalona jako PWA
     const isStandAlone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true;
     this.isStandalone.set(isStandAlone);
 
-    // 2. Sprawdzamy czy to urządzenie Apple
     const userAgent = window.navigator.userAgent.toLowerCase();
     this.isIOS.set(/iphone|ipad|ipod/.test(userAgent));
 
-    // 3. Automatyczna aktualizacja w tle
     if (this.swUpdate.isEnabled) {
       this.swUpdate.versionUpdates
         .pipe(filter((evt): evt is VersionReadyEvent => evt.type === 'VERSION_READY'))
         .subscribe(() => {
-          document.location.reload(); // Wymusza twardy restart po pobraniu nowej wersji
+          document.location.reload();
         });
     }
   }
@@ -65,6 +65,7 @@ export class HeaderComponent implements OnInit {
   toggleMobileMenu() {
     this.isMobileMenuOpen.update((v) => !v);
   }
+
   closeMobileMenu() {
     this.isMobileMenuOpen.set(false);
   }

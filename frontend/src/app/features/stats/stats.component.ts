@@ -18,7 +18,7 @@ import {
   Relation,
   FavoriteTeam,
 } from '../../core/services/stats.service';
-import { FifaLoaderComponent } from '../../shared/components/fifa-loader/fifa-loader.component';
+import { SpodaLoaderComponent } from '../../shared/components/spoda-loader/spoda-loader.component';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { Router } from '@angular/router';
 
@@ -37,7 +37,7 @@ type TeamSortKey = 'matches' | 'winRatio' | 'avgScored' | 'avgConceded';
 @Component({
   selector: 'app-stats',
   standalone: true,
-  imports: [CommonModule, FormsModule, FifaLoaderComponent],
+  imports: [CommonModule, FormsModule, SpodaLoaderComponent],
   templateUrl: './stats.component.html',
   styleUrls: ['./stats.component.scss'],
 })

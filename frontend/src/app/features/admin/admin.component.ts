@@ -2,24 +2,25 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../core/services/admin.service';
-import { HeaderComponent } from '../../shared/components/header/header.component';
+import { HeaderService } from '../../core/services/header.service';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, HeaderComponent],
+  imports: [CommonModule, FormsModule], // Usunięto HeaderComponent
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent implements OnInit {
   public adminService = inject(AdminService);
+  private headerService = inject(HeaderService);
 
   // --- STAN GLOBALNY ---
   editingId = signal<string | null>(null);
-  activeTab = signal<'players' | 'teams'>('players'); // NOWE: Zakładki
+  activeTab = signal<'players' | 'teams'>('players');
 
   // --- SEKCJA: GRACZE ---
-  newPlayer = signal({ name: '', alias: '', imageUrl: '' }); // NOWE: dodano imageUrl
+  newPlayer = signal({ name: '', alias: '', imageUrl: '' });
   playerSearchTerm = signal('');
   playerCurrentPage = signal(1);
   pageSizePlayers = 10;
@@ -63,6 +64,10 @@ export class AdminComponent implements OnInit {
   totalTeamPages = computed(() => Math.ceil(this.filteredTeams().length / this.pageSizeTeams));
 
   ngOnInit() {
+    this.headerService.setState({
+      title: 'Ustawienia',
+    });
+
     this.adminService.loadPlayers();
     this.adminService.loadTeams();
   }
