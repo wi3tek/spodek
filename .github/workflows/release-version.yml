@@ -18,6 +18,11 @@ on:
         required: false
         type: string
 
+# 🚨 TUTAJ DODAJEMY UPRAWNIENIA
+permissions:
+  contents: write    # Pozwala na zarządzanie kodem i tagami (opcjonalne u Ciebie, bo masz SPODA_ADMIN_TOKEN, ale dobra praktyka)
+  actions: write     # Pozwala skryptowi zmienić własną nazwę wdrożenia!
+
 jobs:
   # ==========================================
   # ZADANIE 1: WYKRYWANIE ZMIAN
