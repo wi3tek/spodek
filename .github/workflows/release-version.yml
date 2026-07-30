@@ -23,6 +23,7 @@ jobs:
   # ZADANIE 1: WYKRYWANIE ZMIAN
   # ==========================================
   detect-changes:
+    # 🚨 TWARDY HAMULEC: Uruchom tylko jeśli to kliknięto ręcznie LUB commit NIE JEST od bota
     if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, '🚀 release:')
     runs-on: ubuntu-latest
     outputs:
@@ -64,6 +65,7 @@ jobs:
         id: setup_vars
         run: |
           BUMP="${{ github.event.inputs.bump_type || 'patch' }}"
+          # Jeśli bot, wymuszamy tekst domyślny, żeby nie pętlił logów
           CHANGE="${{ github.event.inputs.changelog || 'Automatyczna aktualizacja CI/CD' }}"
           
           echo "BUMP_TYPE=$BUMP" >> $GITHUB_ENV
@@ -79,20 +81,6 @@ jobs:
           echo $NEW_VERSION > app-version.txt
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Aktualizacja tytułu w GitHub Actions
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          SHORT_TITLE=$(echo "${CHANGELOG}" | cut -c 1-80)
-          # Dynamiczny przedrostek środowiska w nazwie
-          ENV_PREFIX="${{ github.event_name == 'workflow_dispatch' && 'PROD' || 'TEST' }}"
-          
-          gh api \
-            --method PATCH \
-            -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/actions/runs/${{ github.run_id }} \
-            -f name="🚀 [${ENV_PREFIX}] v${NEW_VERSION} - ${SHORT_TITLE}"
 
       - name: Sync wersji -> Backend (pom.xml)
         working-directory: ./backend
@@ -123,7 +111,7 @@ jobs:
           git push origin "v${{ env.NEW_VERSION }}"
 
   # ==========================================
-  # ZADANIE 3: WDROŻENIE BACKENDU (DYNAMICZNE)
+  # ZADANIE 3: WDROŻENIE BACKENDU (RAILWAY)
   # ==========================================
   deploy-backend:
     needs: [detect-changes, prepare-release]
@@ -144,8 +132,7 @@ jobs:
         id: deploy
         working-directory: ./backend
         env:
-          # MAGIA DECZYJNA: Push na Main = Token Testowy | Ręczny przycisk = Token Produkcyjny
-          RAILWAY_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.RAILWAY_PROD_TOKEN || secrets.RAILWAY_TEST_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           echo "🚀 Rozpoczynam wdrożenie na Railway..."
           rm -f /tmp/railway_pipe && mkfifo /tmp/railway_pipe
@@ -171,7 +158,7 @@ jobs:
           if [ $? -ne 0 ]; then exit 1; fi
 
   # ==========================================
-  # ZADANIE 4: WDROŻENIE FRONTENDU (DYNAMICZNE)
+  # ZADANIE 4: WDROŻENIE FRONTENDU (RENDER)
   # ==========================================
   deploy-frontend:
     needs: [detect-changes, prepare-release]
@@ -184,10 +171,9 @@ jobs:
         id: deploy
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          # MAGIA DECZYJNA: Push = ID Testowe | Ręczny = ID Produkcyjne
-          RENDER_SERVICE_ID: ${{ github.event_name == 'workflow_dispatch' && vars.RENDER_PROD_SERVICE_ID || vars.RENDER_TEST_SERVICE_ID }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
         run: |
-          echo "🚀 Rozpoczynam wdrożenie na serwer..."
+          echo "🚀 Rozpoczynam wdrożenie na Renderze..."
           TRIGGER_RESPONSE=$(curl -s -X POST \
             "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
             -H "Accept: application/json" \
@@ -224,18 +210,15 @@ jobs:
         run: |
           VERSION="v${{ needs.prepare-release.outputs.new_version }}"
           if [ "$VERSION" = "v" ]; then VERSION="(Brak nowej wersji)"; fi
-          
-          ENV_NAME="${{ github.event_name == 'workflow_dispatch' && 'PRODUKCJA' || 'TEST' }}"
-          RAILWAY_PROJECT="${{ github.event_name == 'workflow_dispatch' && vars.RAILWAY_PROD_PROJECT_ID || vars.RAILWAY_TEST_PROJECT_ID }}"
 
           if [ "${{ needs.deploy-backend.result }}" = "skipped" ] && [ "${{ needs.deploy-frontend.result }}" = "skipped" ]; then
-            echo "### Wynik wdrożenia $VERSION ($ENV_NAME) 🚀" >> $GITHUB_STEP_SUMMARY
+            echo "### Wynik wdrożenia $VERSION 🚀" >> $GITHUB_STEP_SUMMARY
             echo "ℹ️ **Instalacja pominięta** --> Zmiany dotyczyły wyłącznie plików poza głównymi katalogami." >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
           
           BACKEND_ICON="❌"
-          BACKEND_URL="https://railway.com/project/${RAILWAY_PROJECT}/logs"
+          BACKEND_URL="https://railway.com/project/${{ vars.RAILWAY_PROJECT_ID }}/logs"
           BACKEND_DESC="[Przejdź do logów Railway]($BACKEND_URL)"
           
           if [ "${{ needs.deploy-backend.result }}" = "skipped" ] || [ "${{ needs.deploy-backend.outputs.skipped }}" = "true" ]; then
@@ -246,7 +229,7 @@ jobs:
           fi
           
           FRONTEND_ICON="❌"
-          FRONTEND_DESC="[Przejdź do logów Rendera](${{ needs.deploy-frontend.outputs.render_url }})"
+          FRONTEND_DESC="[Przejdź do logów Render](${{ needs.deploy-frontend.outputs.render_url }})"
           
           if [ "${{ needs.deploy-frontend.result }}" = "skipped" ]; then
             FRONTEND_ICON="⚠️"
@@ -255,7 +238,7 @@ jobs:
             FRONTEND_ICON="✅"
           fi
           
-          echo "### Wynik wdrożenia $VERSION ($ENV_NAME) 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "### Wynik wdrożenia $VERSION 🚀" >> $GITHUB_STEP_SUMMARY
           echo "$BACKEND_ICON **deploy - backend** --> $BACKEND_DESC" >> $GITHUB_STEP_SUMMARY
           echo "$FRONTEND_ICON **deploy - frontend** --> $FRONTEND_DESC" >> $GITHUB_STEP_SUMMARY
           
