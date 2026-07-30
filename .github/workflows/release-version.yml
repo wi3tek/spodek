@@ -1,4 +1,7 @@
-name: ŚPODA•FC CI/CD (Release Version) 🚀
+name: Śpoda CI/CD 🚀
+
+# 🚨 NATYWNA, BEZAWARYJNA ZMIANA TYTUŁU (Oceniana przed startem)
+run-name: 🚀 [${{ github.event_name == 'workflow_dispatch' && 'PROD' || 'TEST' }}] ${{ github.event_name == 'workflow_dispatch' && inputs.bump_type || 'auto-push' }} • ${{ inputs.changelog || 'Aktualizacja z kodu' }}
 
 on:
   push:
@@ -18,10 +21,8 @@ on:
         required: false
         type: string
 
-# 🚨 UPRAWNIENIA
 permissions:
-  contents: write
-  actions: write
+  contents: write # Wystarczy do tworzenia tagów i commitów
 
 jobs:
   # ==========================================
@@ -84,15 +85,6 @@ jobs:
           echo $NEW_VERSION > app-version.txt
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Aktualizacja tytułu w GitHub Actions
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          SHORT_TITLE=$(echo "${CHANGELOG}" | cut -c 1-80)
-          ENV_PREFIX="${{ github.event_name == 'workflow_dispatch' && 'PROD' || 'TEST' }}"
-          
-          gh run edit ${{ github.run_id }} --title "🚀 [${ENV_PREFIX}] v${NEW_VERSION} - ${SHORT_TITLE}"
 
       - name: Sync wersji -> Backend (pom.xml)
         working-directory: ./backend
