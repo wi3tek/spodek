@@ -4,26 +4,28 @@
 
 /* --- DOMYŚLNY MOTYW: JASKINIA NIEDŹWIEDZIA (Jasny, Kremowy) --- */
 :root {
-  --primary-brown: #6b4423;    /* Kolor futra */
-  --sash-red: #c1442a;         /* Czerwona szarfa */
-  --beer-gold: #f59e0b;        /* Złoty kolor trunku */
-  --app-bg: #fffbeb;           /* Kremowe tło aplikacji (zewnętrzne) */
-  --card-bg: #ffffff;          /* Białe tło dla paneli/kart */
-  --surface-bg: #f8fafc;       /* Szare tło dla tabel i list (zamiast beżu!) */
-  --text-dark: #1e293b;        /* Główny ciemny tekst */
-  --text-muted: #64748b;       /* Pomocniczy szary tekst */
-  --border-color: #f1f5f9;     /* Jasne ramki */
+  //--primary-brown: #6b4423;    /* Kolor futra */
+  --primary-brown: #523921; /* Kolor futra */
+  --sash-red: #c1442a; /* Czerwona szarfa */
+  --beer-gold: #f59e0b; /* Złoty kolor trunku */
+  --app-bg: #fffbeb; /* Kremowe tło aplikacji (zewnętrzne) */
+  --card-bg: #ffffff; /* Białe tło dla paneli/kart */
+  --surface-bg: #f8fafc; /* Szare tło dla tabel i list (zamiast beżu!) */
+  --text-dark: #1e293b; /* Główny ciemny tekst */
+  --text-muted: #64748b; /* Pomocniczy szary tekst */
+  --border-color: #f1f5f9; /* Jasne ramki */
   --border-radius: 16px;
 }
 
 /* --- JASNY MOTYW: MUNDIAL FIFA 2026 (Oficjalne Kolory + Jasne tło) --- */
 body.theme-worldcup {
-  --primary-brown: #2A398D;    /* Hermes Blue (Główny) */
-  --sash-red: #E61D25;         /* Torch Red (Przyciski) */
-  --beer-gold: #3CAC3B;        /* Average Green (Statystyki) */
-  --app-bg: #e2e8f0;           /* Chłodny, jasnoszary kolor tła aplikacji */
-  --card-bg: #ffffff;          /* Czysta biel kart */
-  --surface-bg: #f1f5f9;       /* Delikatnie szare tło wnętrza tabel */
+  //--primary-brown: #2A398D;    /* Hermes Blue (Główny) */
+  --primary-brown: #1a2977; /* Hermes Blue (Główny) */
+  --sash-red: #E61D25; /* Torch Red (Przyciski) */
+  --beer-gold: #3CAC3B; /* Average Green (Statystyki) */
+  --app-bg: #e2e8f0; /* Chłodny, jasnoszary kolor tła aplikacji */
+  --card-bg: #ffffff; /* Czysta biel kart */
+  --surface-bg: #f1f5f9; /* Delikatnie szare tło wnętrza tabel */
 
   /* UWAGA: Wracamy do CZYTELNEGO, ciemnego tekstu! */
   --text-dark: #0f172a;
@@ -150,5 +152,5 @@ table td,
 
 app-header {
   display: block;
-  margin-bottom: 30px;
+  margin-bottom: 50px;
 }

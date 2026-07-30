@@ -16,11 +16,11 @@
   transition: padding 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
 
   /* DUŻY ROZMIAR STARTOWY (GÓRA STRONY) */
-  padding: 16px 0;
+  padding: 10px 0;
 
   /* KIEDY DESKTOP ZJEDZIE W DÓŁ */
   &.scrolled {
-    padding: 6px 0;
+    padding: 2px 0;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     backdrop-filter: blur(10px);
     background: color-mix(in srgb, var(--card-bg) 95%, transparent);
@@ -46,11 +46,11 @@
 
     /* LOGO: Maleje płynnie przy scrollu */
     .app-logo {
-      width: 55px;
-      height: 55px;
+      width: 100px;
+      height: 100px;
       object-fit: cover; /* Zmień na 'fill', jeśli chcesz zignorować proporcje i po prostu naciągnąć obrazek */
       object-position: center;
-      transition: width 0.3s ease, height 0.3s ease;
+      transition: width 0.5s ease, height 0.5s ease;
       border-radius: 10px;
       background-color: transparent;
 
@@ -70,25 +70,39 @@
         font-size: 0.75rem;
         cursor: pointer;
         text-align: left;
-        &:hover { color: var(--primary-brown); }
+
+        &:hover {
+          color: var(--primary-brown);
+        }
       }
 
       /* TYTUŁ: Zmniejsza się przy scrollu */
       .app-title {
+        font-family: "Tourney", sans-serif;
+        font-optical-sizing: auto;
+        font-weight: 800; /* Maksymalnie gruba */
+        font-style: unset;
+        font-variation-settings: "wdth" 125; /* Maksymalnie szeroka */
         margin: 0;
-        font-size: 1.7rem;
+        font-size: 2.4rem;
         color: var(--primary-brown);
-        font-weight: 800;
         transition: font-size 0.3s ease;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
       }
     }
   }
 
   /* REAKCJA ELEMENTÓW NA SCROLL NA DESKTOPIE */
   &.scrolled .brand {
-    .app-logo { width: 38px; height: 38px; }
-    .app-title { font-size: 1.15rem; }
+    .app-logo {
+      width: 60px;
+      height: 60px;
+    }
+
+    .app-title {
+      font-size: 1.5rem !important;
+    }
   }
 
   .user-actions {
@@ -96,7 +110,10 @@
     align-items: center;
     gap: 15px;
 
-    .top-nav { display: flex; gap: 5px; }
+    .top-nav {
+      display: flex;
+      gap: 5px;
+    }
 
     .btn-nav {
       background: transparent;
@@ -107,12 +124,23 @@
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s;
+      letter-spacing: 1px;
 
-      &:hover { background: rgba(0, 0, 0, 0.05); }
-      &.active { background: var(--border-color); color: var(--primary-brown); }
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      &.active {
+        background:  color-mix(in srgb, var(--primary-brown) 40%, transparent);
+        color: var(--primary-brown);
+      }
     }
 
-    .divider { width: 1px; height: 24px; background: var(--border-color); }
+    .divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border-color);
+    }
 
     .btn-theme {
       background: var(--surface-bg);
@@ -123,7 +151,10 @@
       font-weight: 700;
       font-size: 0.8rem;
       cursor: pointer;
-      &:hover { background: var(--border-color); }
+
+      &:hover {
+        background: var(--border-color);
+      }
     }
 
     .btn-logout {
@@ -136,7 +167,11 @@
       cursor: pointer;
       font-size: 0.85rem;
       transition: all 0.2s;
-      &:hover { background: var(--sash-red); color: white; }
+
+      &:hover {
+        background: var(--sash-red);
+        color: white;
+      }
     }
 
     /* --- NOWE: ROZWIJANY PRZYCISK INSTALACJI (DESKTOP) --- */
@@ -202,8 +237,13 @@
 }
 
 /* --- RWD: SZYWNY, MINIMALISTYCZNY PASEK NA TABLET + MOBILE (<1100px) --- */
-.desktop-only { display: flex; }
-.mobile-only { display: none; }
+.desktop-only {
+  display: flex;
+}
+
+.mobile-only {
+  display: none;
+}
 
 .hamburger-btn {
   background: transparent;
@@ -215,8 +255,12 @@
 }
 
 @media (max-width: 1100px) {
-  .desktop-only { display: none !important; }
-  .mobile-only { display: block; }
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: block;
+  }
 
   /* Wymuszamy, aby na mobile pasek ZAWSZE (nawet z klasą .scrolled) miał sztywne, wygodne wymiary */
   .main-header, .main-header.scrolled {
@@ -226,17 +270,20 @@
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
 
     .header-inner {
-      padding: 0 15px; /* Mniejsze marginesy boczne dedykowane smartfonom */
+      //padding: 0 15px; /* Mniejsze marginesy boczne dedykowane smartfonom */
     }
 
     .brand {
       gap: 10px;
+
       .app-logo {
         width: 38px !important;
         height: 38px !important;
       }
+
       .app-title {
         font-size: 1.1rem !important;
+        letter-spacing: 1px !important;
       }
     }
 
@@ -255,6 +302,7 @@
   backdrop-filter: blur(2px);
   z-index: 9998;
 }
+
 .side-drawer {
   position: fixed;
   top: 0;
@@ -263,27 +311,44 @@
   width: 75vw;
   max-width: 280px;
   background: var(--card-bg);
-  box-shadow: -5px 0 25px rgba(0,0,0,0.1);
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
   z-index: 9999;
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  &.open { transform: translateX(0); }
+
+  &.open {
+    transform: translateX(0);
+  }
+
   .drawer-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 20px;
     border-bottom: 1px solid var(--border-color);
-    h3 { margin: 0; color: var(--primary-brown); }
-    .close-btn { background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; }
+
+    h3 {
+      margin: 0;
+      color: var(--primary-brown);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #94a3b8;
+      cursor: pointer;
+    }
   }
+
   .drawer-content {
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 15px;
+
     .drawer-link {
       background: transparent;
       border: none;
@@ -294,12 +359,31 @@
       padding: 10px;
       border-radius: 8px;
       cursor: pointer;
-      &.active { background: var(--border-color); color: var(--primary-brown); }
-      &:active { background: #f1f5f9; }
-      &.theme-link { color: var(--sash-red); }
-      &.logout-link { color: #dc2626; margin-top: auto; }
+
+      &.active {
+        background:  color-mix(in srgb, var(--primary-brown) 40%, transparent);
+        color: var(--primary-brown);
+      }
+
+      &:active {
+        background: #f1f5f9;
+      }
+
+      &.theme-link {
+        color: var(--sash-red);
+      }
+
+      &.logout-link {
+        color: #dc2626;
+        margin-top: auto;
+      }
     }
-    .drawer-divider { height: 1px; background: var(--border-color); margin: 10px 0; }
+
+    .drawer-divider {
+      height: 1px;
+      background: var(--border-color);
+      margin: 10px 0;
+    }
   }
 }
 
@@ -373,7 +457,7 @@
     font-size: 0.8rem;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
     &:hover {
       background: #f8fafc;
@@ -382,9 +466,15 @@
 }
 
 @keyframes pulse-warning {
-  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
 }
 
 .ios-instruction-tooltip {
@@ -398,7 +488,7 @@
   border-radius: 8px;
   font-size: 0.85rem;
   line-height: 1.4;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   z-index: 2000;
   animation: fadeIn 0.3s ease;
   white-space: normal;
@@ -432,6 +522,12 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

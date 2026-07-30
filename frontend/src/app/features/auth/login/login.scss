@@ -43,11 +43,9 @@
 
 .login-header {
   text-align: center;
-  margin-bottom: 30px;
 
   .login-logo {
-    margin-bottom: 20px;
-    height: 160px; /* ZMNIEJSZONO: Aby proporcje były nowocześniejsze (karta nie jest już tak "długa") */
+    height: 18rem;
     object-fit: contain;
 
     @media (max-width: 600px) {
@@ -244,11 +242,6 @@
     /* Delikatna, przerywana linia oddzielająca obie kolumny */
     border-right: 1px dashed #cbd5e1;
     padding-right: 25px;
-
-    .login-logo {
-      height: 90px; /* W poziomie logo musi być dużo mniejsze */
-      margin-bottom: 10px;
-    }
 
     h1 {
       font-size: 1.2rem;

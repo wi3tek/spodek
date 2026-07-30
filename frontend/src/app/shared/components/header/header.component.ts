@@ -15,7 +15,7 @@ import { CommonService } from '../../../core/services/common.service';
   styleUrls: ['./header.component.scss'],
 })
 export class HeaderComponent implements OnInit {
-  @Input() title: string = 'FIFOWA ŚPODA';
+  @Input() title: string = 'ŚPODA•FC';
   @Input() backLink?: any[] | string | null;
   @Input() backText?: string;
   @Input() isReadOnly: boolean = false;
