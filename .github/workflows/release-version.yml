@@ -1,4 +1,4 @@
-name: Śpoda CI/CD (Release Version) 🚀
+name: ŚPODA•FC CI/CD (Release Version) 🚀
 
 on:
   push:
@@ -18,10 +18,10 @@ on:
         required: false
         type: string
 
-# 🚨 TUTAJ DODAJEMY UPRAWNIENIA
+# 🚨 UPRAWNIENIA
 permissions:
-  contents: write    # Pozwala na zarządzanie kodem i tagami (opcjonalne u Ciebie, bo masz SPODA_ADMIN_TOKEN, ale dobra praktyka)
-  actions: write     # Pozwala skryptowi zmienić własną nazwę wdrożenia!
+  contents: write
+  actions: write
 
 jobs:
   # ==========================================
@@ -79,7 +79,7 @@ jobs:
         id: prep
         run: |
           OLD_VERSION=$(cat app-version.txt)
-          NEW_VERSION=$(npx semver -i ${{ env.BUMP_TYPE }} $OLD_VERSION)
+          NEW_VERSION=$(npx --yes semver -i ${{ env.BUMP_TYPE }} $OLD_VERSION)
           
           echo $NEW_VERSION > app-version.txt
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
@@ -90,14 +90,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           SHORT_TITLE=$(echo "${CHANGELOG}" | cut -c 1-80)
-          # Dynamiczny przedrostek środowiska w nazwie
           ENV_PREFIX="${{ github.event_name == 'workflow_dispatch' && 'PROD' || 'TEST' }}"
           
-          gh api \
-            --method PATCH \
-            -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/actions/runs/${{ github.run_id }} \
-            -f name="🚀 [${ENV_PREFIX}] v${NEW_VERSION} - ${SHORT_TITLE}"
+          gh run edit ${{ github.run_id }} --title "🚀 [${ENV_PREFIX}] v${NEW_VERSION} - ${SHORT_TITLE}"
 
       - name: Sync wersji -> Backend (pom.xml)
         working-directory: ./backend
@@ -149,7 +144,6 @@ jobs:
         id: deploy
         working-directory: ./backend
         env:
-          # MAGIA DECZYJNA: Push na Main = Token Testowy | Ręczny przycisk = Token Produkcyjny
           RAILWAY_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.RAILWAY_PROD_TOKEN || secrets.RAILWAY_TEST_TOKEN }}
         run: |
           echo "🚀 Rozpoczynam wdrożenie na Railway..."
@@ -189,7 +183,6 @@ jobs:
         id: deploy
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          # MAGIA DECZYJNA: Push = ID Testowe | Ręczny = ID Produkcyjne
           RENDER_SERVICE_ID: ${{ github.event_name == 'workflow_dispatch' && vars.RENDER_PROD_SERVICE_ID || vars.RENDER_TEST_SERVICE_ID }}
         run: |
           echo "🚀 Rozpoczynam wdrożenie na serwer..."
@@ -233,38 +226,48 @@ jobs:
           ENV_NAME="${{ github.event_name == 'workflow_dispatch' && 'PRODUKCJA' || 'TEST' }}"
           RAILWAY_PROJECT="${{ github.event_name == 'workflow_dispatch' && vars.RAILWAY_PROD_PROJECT_ID || vars.RAILWAY_TEST_PROJECT_ID }}"
 
-          if [ "${{ needs.deploy-backend.result }}" = "skipped" ] && [ "${{ needs.deploy-frontend.result }}" = "skipped" ]; then
-            echo "### Wynik wdrożenia $VERSION ($ENV_NAME) 🚀" >> $GITHUB_STEP_SUMMARY
-            echo "ℹ️ **Instalacja pominięta** --> Zmiany dotyczyły wyłącznie plików poza głównymi katalogami." >> $GITHUB_STEP_SUMMARY
-            exit 0
-          fi
-          
-          BACKEND_ICON="❌"
-          BACKEND_URL="https://railway.com/project/${RAILWAY_PROJECT}/logs"
-          BACKEND_DESC="[Przejdź do logów Railway]($BACKEND_URL)"
-          
+          # Przygotowanie statusów dla backendu
+          BACKEND_STATUS="❌ [Błąd logów](${BACKEND_URL})"
           if [ "${{ needs.deploy-backend.result }}" = "skipped" ] || [ "${{ needs.deploy-backend.outputs.skipped }}" = "true" ]; then
-            BACKEND_ICON="⚠️"
-            BACKEND_DESC="Pominięto (Brak zmian w backendzie)"
+            BACKEND_STATUS="⚠️ Pominięto (Brak zmian)"
           elif [ "${{ needs.deploy-backend.result }}" = "success" ]; then 
-            BACKEND_ICON="✅"
+            BACKEND_STATUS="✅ Wdrożono pomyślnie"
           fi
-          
-          FRONTEND_ICON="❌"
-          FRONTEND_DESC="[Przejdź do logów Rendera](${{ needs.deploy-frontend.outputs.render_url }})"
-          
+
+          # Przygotowanie statusów dla frontendu
+          FRONTEND_STATUS="❌ [Błąd logów](${{ needs.deploy-frontend.outputs.render_url }})"
           if [ "${{ needs.deploy-frontend.result }}" = "skipped" ]; then
-            FRONTEND_ICON="⚠️"
-            FRONTEND_DESC="Pominięto (Brak zmian we frontendzie)"
+            FRONTEND_STATUS="⚠️ Pominięto (Brak zmian)"
           elif [ "${{ needs.deploy-frontend.result }}" = "success" ]; then 
-            FRONTEND_ICON="✅"
+            FRONTEND_STATUS="✅ Wdrożono pomyślnie ([Zobacz logi](${{ needs.deploy-frontend.outputs.render_url }}))"
           fi
           
-          echo "### Wynik wdrożenia $VERSION ($ENV_NAME) 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "$BACKEND_ICON **deploy - backend** --> $BACKEND_DESC" >> $GITHUB_STEP_SUMMARY
-          echo "$FRONTEND_ICON **deploy - frontend** --> $FRONTEND_DESC" >> $GITHUB_STEP_SUMMARY
+          # Główny nagłówek
+          echo "## Wynik wdrożenia $VERSION ($ENV_NAME) 🚀" >> $GITHUB_STEP_SUMMARY
           
-          if [ "$BACKEND_ICON" = "❌" ] || [ "$FRONTEND_ICON" = "❌" ]; then
-            echo "❌ Przynajmniej jedno wdrożenie się nie powiodło."
+          # Logi "po kolei" - Oś czasu
+          echo "### 📋 Dziennik operacji:" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.detect-changes.result }}" = "success" ]; then
+            echo "1. **Wykrywanie zmian:** Zakończone (Backend zmieniony: \`${{ needs.detect-changes.outputs.backend }}\`, Frontend zmieniony: \`${{ needs.detect-changes.outputs.frontend }}\`)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "1. **Wykrywanie zmian:** ❌ Błąd" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.prepare-release.result }}" = "success" ]; then
+            echo "2. **Wersjonowanie:** Wygenerowano nową wersję \`$VERSION\` i wysłano zmiany tagiem do repozytorium." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.prepare-release.result }}" = "skipped" ]; then
+            echo "2. **Wersjonowanie:** ⚠️ Pominięto (Brak zmian wymuszających nową wersję)." >> $GITHUB_STEP_SUMMARY
+          else
+             echo "2. **Wersjonowanie:** ❌ Błąd przygotowania paczki." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "3. **Wdrożenie Backend:** $BACKEND_STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "4. **Wdrożenie Frontend:** $FRONTEND_STATUS" >> $GITHUB_STEP_SUMMARY
+          
+          # Końcowa weryfikacja błędu
+          if [ "${{ needs.deploy-backend.result }}" = "failure" ] || [ "${{ needs.deploy-frontend.result }}" = "failure" ]; then
+            echo "---" >> $GITHUB_STEP_SUMMARY
+            echo "### ❌ Wystąpił błąd podczas wdrażania. Sprawdź szczegóły logów powyżej." >> $GITHUB_STEP_SUMMARY
             exit 1
           fi

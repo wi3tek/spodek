@@ -1,4 +1,4 @@
-# KONTEKST PROJEKTU: FIFOWA ŚPODA (Micro-SaaS)
+# KONTEKST PROJEKTU: ŚPODA•FC (Micro-SaaS)
 
 Jestem programistą. Wrzucam Ci pliki z kodem i piszę, co trzeba zrobić. Oczekuję profesjonalnego, zoptymalizowanego kodu bez tłumaczenia podstaw programowania. Odpowiadaj krótko, technicznie i od razu przechodź do konkretów.
 
