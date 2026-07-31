@@ -1,6 +1,4 @@
-
 <div class="dashboard-container admin-layout">
-
   <div class="tabs-container">
     <div class="tabs">
       <button class="tab-btn" [class.active]="activeTab() === 'players'" (click)="activeTab.set('players')">
@@ -12,21 +10,15 @@
     </div>
   </div>
 
+  <!-- ==================== ZAKŁADKA GRACZY ==================== -->
   @if (activeTab() === 'players') {
     <section class="admin-section animate-in">
       <div class="section-header team-header-flex">
         <h2>🐻 Zarządzanie Graczami</h2>
-        <input type="text" class="search-input" placeholder="Szukaj gracza..."
-               (input)="playerSearchTerm.set($any($event.target).value); playerCurrentPage.set(1)">
-      </div>
-
-      <div class="add-card">
-        <h3>Dodaj nowego gracza</h3>
-        <div class="input-row">
-          <input [(ngModel)]="newPlayer().name" placeholder="Imię">
-          <input [(ngModel)]="newPlayer().alias" placeholder="Ksywka">
-          <input [(ngModel)]="newPlayer().imageUrl" placeholder="URL Avatara (opcjonalnie)">
-          <button class="btn-primary" (click)="saveNewPlayer()">Dodaj</button>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <input type="text" class="search-input" placeholder="Szukaj gracza..."
+                 (input)="playerSearchTerm.set($any($event.target).value); playerCurrentPage.set(1)">
+          <button class="btn-primary" (click)="showAddPlayerModal.set(true)">+ Dodaj Gracza</button>
         </div>
       </div>
 
@@ -34,13 +26,11 @@
         @for (player of paginatedPlayers(); track player.id) {
           <div class="team-row" [class.editing]="editingId() === player.id">
             <div class="team-left-group">
-
               @if (player.imageUrl) {
                 <img [src]="player.imageUrl" class="player-avatar-img" alt="Avatar">
               } @else {
                 <span class="player-avatar">👤</span>
               }
-
               <div class="team-names">
                 @if (editingId() === player.id) {
                   <input [(ngModel)]="player.name" class="sm-input" placeholder="Imię">
@@ -48,14 +38,11 @@
                   <input [(ngModel)]="player.imageUrl" class="sm-input" placeholder="URL Avatara">
                 } @else {
                   <div class="info">
-                    <strong>{{ player.alias }}</strong>
-                    <br>
-                    <small>{{ player.name }}</small>
+                    <strong>{{ player.alias }}</strong><br><small>{{ player.name }}</small>
                   </div>
                 }
               </div>
             </div>
-
             <div class="team-right-group">
               @if (editingId() === player.id) {
                 <button (click)="saveEdit(player, 'player')" class="btn-primary btn-save-sm" title="Zapisz">✔</button>
@@ -72,7 +59,6 @@
       <div class="pagination" *ngIf="totalPlayerPages() > 1">
         <button class="btn-page" [disabled]="playerCurrentPage() === 1" (click)="playerCurrentPage.set(playerCurrentPage() - 1)">«</button>
         <div class="page-jumper">
-          <span>Str.</span>
           <input type="number" [value]="playerCurrentPage()" (change)="goToPage($event, 'player')" class="page-input">
           <span>z {{ totalPlayerPages() }}</span>
         </div>
@@ -81,41 +67,178 @@
     </section>
   }
 
+  <!-- ==================== ZAKŁADKA DRUŻYN ==================== -->
   @if (activeTab() === 'teams') {
     <section class="admin-section animate-in">
       <div class="section-header team-header-flex">
         <h2>⚽ Zarządzanie Drużynami</h2>
-        <input type="text" class="search-input" placeholder="Szukaj drużyny..."
-               (input)="teamSearchTerm.set($any($event.target).value); teamCurrentPage.set(1)">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <input type="text" class="search-input" placeholder="Szukaj drużyny..."
+                 (input)="teamSearchTerm.set($any($event.target).value); teamCurrentPage.set(1)">
+          <button class="btn-primary" (click)="showAddTeamModal.set(true)">+ Dodaj Drużynę</button>
+        </div>
       </div>
 
       <div class="list-container">
         @for (team of paginatedTeams(); track team.id) {
           <div class="team-row" [class.editing]="editingId() === team.id">
-            <div class="team-left-group">
-              <img [src]="'/logos/light/' + team.assetId + '.png'" class="logo-small" alt="">
+
+            <div class="team-left-group" style="align-items: flex-start;">
+              @if (editingId() === team.id) {
+                <div style="margin-right: 15px; margin-top: 5px;">
+                  <app-team-shield
+                    [teamId]="'edit-' + team.id"
+                    [shape]="team.shapeType || 'SHIELD'"
+                    [pattern]="team.patternType || 'PLAIN'"
+                    [topElement]="team.topElement || 'NONE'"
+                    [centerElement]="team.centerElement || 'NONE'"
+                    [initial]="team.alias ? team.alias.charAt(0).toUpperCase() : (team.name ? team.name.charAt(0).toUpperCase() : null)"
+                    [color1]="team.primaryColor"
+                    [color2]="team.secondaryColor"
+                    [color3]="team.tertiaryColor"
+                    [color4]="team.quaternaryColor"
+                    [color5]="team.quinaryColor"
+                    [topColor]="team.topElementColor"
+                    [centerColor]="team.centerElementColor"
+                    size="50">
+                  </app-team-shield>
+                </div>
+              } @else {
+                @if (team.primaryColor && team.shapeType) {
+                  <div style="margin-right: 15px;">
+                    <app-team-shield
+                      [teamId]="'list-' + team.id"
+                      [shape]="team.shapeType"
+                      [pattern]="team.patternType"
+                      [topElement]="team.topElement || 'NONE'"
+                      [centerElement]="team.centerElement || 'NONE'"
+                      [initial]="team.alias ? team.alias.charAt(0).toUpperCase() : (team.name ? team.name.charAt(0).toUpperCase() : null)"
+                      [color1]="team.primaryColor"
+                      [color2]="team.secondaryColor"
+                      [color3]="team.tertiaryColor"
+                      [color4]="team.quaternaryColor"
+                      [color5]="team.quinaryColor"
+                      [topColor]="team.topElementColor"
+                      [centerColor]="team.centerElementColor"
+                      size="30">
+                    </app-team-shield>
+                  </div>
+                } @else {
+                  <img [src]="'/logos/light/' + team.assetId + '.png'" class="logo-small" alt="" style="margin-right: 15px;">
+                }
+              }
+
               <div class="team-names">
                 @if (editingId() === team.id) {
-                  <span class="asset-id">ID: {{ team.assetId }}</span>
-                  <input [(ngModel)]="team.name" class="sm-input" placeholder="Nazwa drużyny">
-                  <input [(ngModel)]="team.alias" class="sm-input" placeholder="Wyświetlana nazwa">
+                  <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                    <input [(ngModel)]="team.name" class="sm-input" placeholder="Pełna nazwa">
+                    <input [(ngModel)]="team.alias" class="sm-input" placeholder="Alias">
+                  </div>
+
+                  <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                    <select [(ngModel)]="team.shapeType" class="sm-input" style="flex:1;">
+                      <option value="SHIELD">Tarcza</option>
+                      <option value="SQUARE">Kwadrat</option>
+                      <option value="CIRCLE">Koło</option>
+                      <option value="TRIANGLE">Trójkąt</option>
+                      <option value="WIDE_TRIANGLE">Szeroki Trójkąt</option>
+                      <option value="DIAMOND">Romb</option>
+                      <option value="OVAL_SHIELD">Pękata Tarcza</option>
+                      <option value="CREST_WITH_RIBBON">Tarcza z Szarfą</option>
+                      <option value="FLAG">Flaga</option>
+                      <option value="ELLIPSE">Elipsa pozioma</option>
+                    </select>
+                    <select [(ngModel)]="team.patternType" class="sm-input" style="flex:1;">
+                      <option value="PLAIN">Czysty</option>
+                      <option value="SASH">Ukośna Szarfa</option>
+                      <option value="STRIPES_V">Pionowe Pasy</option>
+                      <option value="STRIPES_H">Poziome Pasy</option>
+                      <option value="CHECKER">Szachownica</option>
+                    </select>
+                  </div>
+
+                  <!-- EDYCJA (LISTA): ELEMENTY TOP I CENTER Z PICKERAMI -->
+                  <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <div style="flex:1; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                      <select [(ngModel)]="team.topElement" class="sm-input" style="flex:1; min-width: 100px;">
+                        <option value="NONE">Góra: Brak</option>
+                        <option value="STAR">Góra: Gwiazda</option>
+                        <option value="CROWN">Góra: Korona</option>
+                      </select>
+                      <div class="color-field" title="Kolor góry">
+                        <input type="color" [(ngModel)]="team.topElementColor" class="color-picker-ui" />
+                        <input type="text" [(ngModel)]="team.topElementColor" class="hex-input" maxlength="7" />
+                        <button type="button" (click)="copyToClipboard(team.topElementColor)" class="copy-btn">📋</button>
+                      </div>
+                    </div>
+
+                    <div style="flex:1; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                      <select [(ngModel)]="team.centerElement" class="sm-input" style="flex:1; min-width: 100px;">
+                        <option value="NONE">Środek: Brak</option>
+                        <option value="BALL">Środek: Piłka</option>
+                        <option value="INITIAL">Środek: Inicjał</option>
+                      </select>
+                      <div class="color-field" title="Kolor środka">
+                        <input type="color" [(ngModel)]="team.centerElementColor" class="color-picker-ui" />
+                        <input type="text" [(ngModel)]="team.centerElementColor" class="hex-input" maxlength="7" />
+                        <button type="button" (click)="copyToClipboard(team.centerElementColor)" class="copy-btn">📋</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- EDYCJA (LISTA): GŁÓWNA PALETA -->
+                  <div class="colors-grid" style="margin-top: 10px;">
+                    <div class="color-field" title="C1 (Wzór 1)">
+                      <span class="color-label">C1</span>
+                      <input type="color" [(ngModel)]="team.primaryColor" class="color-picker-ui" />
+                      <input type="text" [(ngModel)]="team.primaryColor" class="hex-input" maxlength="7" />
+                      <button type="button" (click)="copyToClipboard(team.primaryColor)" class="copy-btn">📋</button>
+                    </div>
+                    <div class="color-field" title="C2 (Wzór 2)">
+                      <span class="color-label">C2</span>
+                      <input type="color" [(ngModel)]="team.secondaryColor" class="color-picker-ui" />
+                      <input type="text" [(ngModel)]="team.secondaryColor" class="hex-input" maxlength="7" />
+                      <button type="button" (click)="copyToClipboard(team.secondaryColor)" class="copy-btn">📋</button>
+                    </div>
+                    <div class="color-field" title="C3 (Zewnętrzna ramka)">
+                      <span class="color-label">C3</span>
+                      <input type="color" [(ngModel)]="team.tertiaryColor" class="color-picker-ui" />
+                      <input type="text" [(ngModel)]="team.tertiaryColor" class="hex-input" maxlength="7" />
+                      <button type="button" (click)="copyToClipboard(team.tertiaryColor)" class="copy-btn">📋</button>
+                    </div>
+                    <div class="color-field" title="C4 (Wewnętrzna ramka)">
+                      <span class="color-label">C4</span>
+                      <input type="color" [(ngModel)]="team.quaternaryColor" class="color-picker-ui" />
+                      <input type="text" [(ngModel)]="team.quaternaryColor" class="hex-input" maxlength="7" />
+                      <button type="button" (click)="copyToClipboard(team.quaternaryColor)" class="copy-btn">📋</button>
+                    </div>
+                    <div class="color-field" title="C5 (Akcent / Wieniec)">
+                      <span class="color-label">C5</span>
+                      <input type="color" [(ngModel)]="team.quinaryColor" class="color-picker-ui" />
+                      <input type="text" [(ngModel)]="team.quinaryColor" class="hex-input" maxlength="7" />
+                      <button type="button" (click)="copyToClipboard(team.quinaryColor)" class="copy-btn">📋</button>
+                    </div>
+                  </div>
+
                 } @else {
-                  <div class="info">
-                    <strong>{{ team.alias || team.name }} ID={{team.assetId}}</strong>
+                  <div class="info" style="margin-top: 5px;">
+                    <strong>{{ team.alias || team.name }}</strong>
+                    <br><small>ID={{team.assetId}}</small>
                   </div>
                 }
               </div>
             </div>
 
-            <div class="team-right-group" >
-              <div class="ratings" *ngIf="editingId() !== team.id" [title]="'Ocena ogólna (ATK | POM | OBR)'">
-                {{team.overallRating}} ({{team.attackRating}} - {{team.midfieldRating}} - {{team.defenseRating}})
-              </div>
-              <button *ngIf="editingId() === team.id" (click)="saveEdit(team, 'team')" class="btn-primary btn-save-sm"
-                      title="Zapisz">✔
-              </button>
-              <button *ngIf="editingId() !== team.id" class="btn-icon" (click)="editingId.set(team.id!)" title="Edytuj">✏️
-              </button>
+            <div class="team-right-group">
+              @if (editingId() !== team.id) {
+                <div class="ratings" title="Ocena ogólna (ATK - OBR)">
+                  {{team.overallRating}} ({{team.attackRating}} - {{team.defenseRating}})
+                </div>
+              }
+              <button *ngIf="editingId() === team.id" (click)="saveEdit(team, 'team')" class="btn-primary btn-save-sm" title="Zapisz">✔ Zapisz</button>
+              <button *ngIf="editingId() === team.id" (click)="editingId.set(null)" class="btn-icon" title="Anuluj">✖</button>
+
+              <button *ngIf="editingId() !== team.id" class="btn-icon" (click)="editingId.set(team.id!)" title="Edytuj">✏️</button>
             </div>
           </div>
         }
@@ -124,12 +247,195 @@
       <div class="pagination" *ngIf="totalTeamPages() > 1">
         <button class="btn-page" [disabled]="teamCurrentPage() === 1" (click)="teamCurrentPage.set(teamCurrentPage() - 1)">«</button>
         <div class="page-jumper">
-          <span>Str.</span>
           <input type="number" [value]="teamCurrentPage()" (change)="goToPage($event, 'team')" class="page-input">
           <span>z {{ totalTeamPages() }}</span>
         </div>
         <button class="btn-page" [disabled]="teamCurrentPage() === totalTeamPages()" (click)="teamCurrentPage.set(teamCurrentPage() + 1)">»</button>
       </div>
     </section>
+  }
+
+  <!-- MODAL DODAWANIA DRUŻYNY Z KREATOREM -->
+  @if (showAddTeamModal()) {
+    <div class="modal-overlay">
+      <div class="modal-content" style="max-width: 800px;">
+        <h3>Kreator nowej drużyny</h3>
+
+        <div style="background: #eef2ff; border-left: 4px solid #6366f1; padding: 10px 15px; margin-bottom: 15px; border-radius: 4px; font-size: 12px; color: #3730a3;">
+          <strong>💡 Skaner:</strong> Wklej link do herbu w formacie PNG bez tła. Algorytm odtworzy go z matematyczną precyzją.
+        </div>
+
+        <div class="input-row" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+          <input [(ngModel)]="newTeam().name" class="modal-input" placeholder="Pełna nazwa (np. Bayern)" style="flex:1;">
+          <input [(ngModel)]="newTeam().alias" class="modal-input" placeholder="Alias" style="flex:1;">
+          <!-- ZMIANA: Usunięto (blur), dodano (ngModelChange) do natychmiastowej obsługi wklejenia -->
+          <input [ngModel]="newTeam().logoUrl" (ngModelChange)="onLogoUrlChange($event)" class="modal-input" placeholder="Wklej URL dla Skanera (NIE zapisujemy go w bazie)" style="flex:2;">
+        </div>
+
+        @if (corsError()) {
+          <div class="cors-error" style="margin-bottom: 10px;">
+            <small style="color: #d9534f;">Serwer obrazka blokuje skaner. Skonfiguruj herb ręcznie w kreatorze poniżej.</small>
+          </div>
+        }
+
+        <div class="shield-preview-container">
+          @if (newTeam().logoUrl && !corsError()) {
+            <div class="preview-box">
+              <p>Oryginał:</p>
+              <img [src]="newTeam().logoUrl" crossorigin="anonymous" class="preview-img" alt="Oryginał">
+            </div>
+          }
+
+          <div class="preview-controls" style="width: 100%; max-width: 380px;">
+
+            <!-- DODAWANIE: GŁÓWNA PALETA -->
+            <div style="margin-bottom: 15px;">
+              <p style="margin-bottom: 5px; font-size: 12px; font-weight: bold;">Tarcza (Baza):</p>
+              <div class="colors-grid">
+                <div class="color-field" title="C1 (Wzór 1)">
+                  <span class="color-label">C1</span>
+                  <input type="color" [ngModel]="newTeam().primaryColor" (ngModelChange)="updateNewTeamColor('primaryColor', $event)" class="color-picker-ui" />
+                  <input type="text" [ngModel]="newTeam().primaryColor" (ngModelChange)="updateNewTeamColor('primaryColor', $event)" class="hex-input" maxlength="7" />
+                  <button type="button" (click)="copyToClipboard(newTeam().primaryColor)" class="copy-btn">📋</button>
+                </div>
+                <div class="color-field" title="C2 (Wzór 2)">
+                  <span class="color-label">C2</span>
+                  <input type="color" [ngModel]="newTeam().secondaryColor" (ngModelChange)="updateNewTeamColor('secondaryColor', $event)" class="color-picker-ui" />
+                  <input type="text" [ngModel]="newTeam().secondaryColor" (ngModelChange)="updateNewTeamColor('secondaryColor', $event)" class="hex-input" maxlength="7" />
+                  <button type="button" (click)="copyToClipboard(newTeam().secondaryColor)" class="copy-btn">📋</button>
+                </div>
+                <div class="color-field" title="C3 (Zewnętrzna ramka)">
+                  <span class="color-label">C3</span>
+                  <input type="color" [ngModel]="newTeam().tertiaryColor" (ngModelChange)="updateNewTeamColor('tertiaryColor', $event)" class="color-picker-ui" />
+                  <input type="text" [ngModel]="newTeam().tertiaryColor" (ngModelChange)="updateNewTeamColor('tertiaryColor', $event)" class="hex-input" maxlength="7" />
+                  <button type="button" (click)="copyToClipboard(newTeam().tertiaryColor)" class="copy-btn">📋</button>
+                </div>
+                <div class="color-field" title="C4 (Wewnętrzna ramka)">
+                  <span class="color-label">C4</span>
+                  <input type="color" [ngModel]="newTeam().quaternaryColor" (ngModelChange)="updateNewTeamColor('quaternaryColor', $event)" class="color-picker-ui" />
+                  <input type="text" [ngModel]="newTeam().quaternaryColor" (ngModelChange)="updateNewTeamColor('quaternaryColor', $event)" class="hex-input" maxlength="7" />
+                  <button type="button" (click)="copyToClipboard(newTeam().quaternaryColor)" class="copy-btn">📋</button>
+                </div>
+                <div class="color-field" title="C5 (Dodatki domyślnie)">
+                  <span class="color-label">C5</span>
+                  <input type="color" [ngModel]="newTeam().quinaryColor" (ngModelChange)="updateNewTeamColor('quinaryColor', $event)" class="color-picker-ui" />
+                  <input type="text" [ngModel]="newTeam().quinaryColor" (ngModelChange)="updateNewTeamColor('quinaryColor', $event)" class="hex-input" maxlength="7" />
+                  <button type="button" (click)="copyToClipboard(newTeam().quinaryColor)" class="copy-btn">📋</button>
+                </div>
+              </div>
+              <button type="button" (click)="shuffleColors()" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; width: 100%;">🔀 Przetasuj kolory bazy</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; width: 100%; margin-bottom: 10px;">
+              <div style="flex:1;">
+                <p style="font-size: 11px;">Kształt:</p>
+                <select [(ngModel)]="newTeam().shapeType" class="shape-select" style="width: 100%;">
+                  <option value="SHIELD">Tarcza</option>
+                  <option value="SQUARE">Kwadrat</option>
+                  <option value="CIRCLE">Koło</option>
+                  <option value="TRIANGLE">Trójkąt</option>
+                  <option value="WIDE_TRIANGLE">Szeroki Trójkąt</option>
+                  <option value="DIAMOND">Romb</option>
+                  <option value="OVAL_SHIELD">Pękata Tarcza</option>
+                  <option value="CREST_WITH_RIBBON">Tarcza z Szarfą</option>
+                  <option value="FLAG">Flaga</option>
+                  <option value="ELLIPSE">Elipsa pozioma</option>
+                </select>
+              </div>
+              <div style="flex:1;">
+                <p style="font-size: 11px;">Wzór:</p>
+                <select [(ngModel)]="newTeam().patternType" class="shape-select" style="width: 100%;">
+                  <option value="PLAIN">Czysty</option>
+                  <option value="SASH">Ukośna Szarfa</option>
+                  <option value="STRIPES_V">Pionowe Pasy</option>
+                  <option value="STRIPES_H">Poziome Pasy</option>
+                  <option value="CHECKER">Szachownica</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- DODAWANIE: ELEMENTY GÓRA I ŚRODEK -->
+            <div style="display: flex; gap: 10px; width: 100%;">
+              <div style="flex:1;">
+                <p style="font-size: 11px;">Góra (Top):</p>
+                <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                  <select [(ngModel)]="newTeam().topElement" class="shape-select" style="flex: 1; min-width: 100px;">
+                    <option value="NONE">Brak</option>
+                    <option value="STAR">Gwiazda</option>
+                    <option value="CROWN">Korona</option>
+                  </select>
+                  <div class="color-field" title="Kolor elementu z góry">
+                    <input type="color" [ngModel]="newTeam().topElementColor" (ngModelChange)="updateNewTeamColor('topElementColor', $event)" class="color-picker-ui" />
+                    <input type="text" [ngModel]="newTeam().topElementColor" (ngModelChange)="updateNewTeamColor('topElementColor', $event)" class="hex-input" maxlength="7" />
+                    <button type="button" (click)="copyToClipboard(newTeam().topElementColor)" class="copy-btn">📋</button>
+                  </div>
+                </div>
+              </div>
+              <div style="flex:1;">
+                <p style="font-size: 11px;">Środek:</p>
+                <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                  <select [(ngModel)]="newTeam().centerElement" class="shape-select" style="flex: 1; min-width: 100px;">
+                    <option value="NONE">Brak</option>
+                    <option value="BALL">Piłka (Telstar)</option>
+                    <option value="INITIAL">Inicjał (Litera)</option>
+                  </select>
+                  <div class="color-field" title="Kolor elementu ze środka">
+                    <input type="color" [ngModel]="newTeam().centerElementColor" (ngModelChange)="updateNewTeamColor('centerElementColor', $event)" class="color-picker-ui" />
+                    <input type="text" [ngModel]="newTeam().centerElementColor" (ngModelChange)="updateNewTeamColor('centerElementColor', $event)" class="hex-input" maxlength="7" />
+                    <button type="button" (click)="copyToClipboard(newTeam().centerElementColor)" class="copy-btn">📋</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="preview-box">
+            <p>Podgląd:</p>
+            <div class="generated-shield">
+              <app-team-shield
+                teamId="preview-shield"
+                [shape]="newTeam().shapeType"
+                [pattern]="newTeam().patternType"
+                [topElement]="newTeam().topElement"
+                [centerElement]="newTeam().centerElement"
+                [initial]="newTeam().alias ? newTeam().alias.charAt(0).toUpperCase() : (newTeam().name ? newTeam().name.charAt(0).toUpperCase() : null)"
+                [color1]="newTeam().primaryColor"
+                [color2]="newTeam().secondaryColor"
+                [color3]="newTeam().tertiaryColor"
+                [color4]="newTeam().quaternaryColor"
+                [color5]="newTeam().quinaryColor"
+                [topColor]="newTeam().topElementColor"
+                [centerColor]="newTeam().centerElementColor"
+                size="90">
+              </app-team-shield>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button class="btn-secondary" (click)="showAddTeamModal.set(false)">Anuluj</button>
+          <button class="btn-primary" (click)="saveNewTeam()">Zapisz Drużynę</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL DODAWANIA GRACZA -->
+  @if (showAddPlayerModal()) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <h3>Dodaj nowego gracza</h3>
+        <div class="input-row" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+          <input [(ngModel)]="newPlayer().name" class="modal-input" placeholder="Imię">
+          <input [(ngModel)]="newPlayer().alias" class="modal-input" placeholder="Ksywka">
+          <input [(ngModel)]="newPlayer().imageUrl" class="modal-input" placeholder="URL Avatara (opcjonalnie)">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="btn-secondary" (click)="showAddPlayerModal.set(false)">Anuluj</button>
+          <button class="btn-primary" (click)="saveNewPlayer()">Zapisz Gracza</button>
+        </div>
+      </div>
+    </div>
   }
 </div>

@@ -1,30 +1,40 @@
 import { Router, Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { AuthService } from './core/services/auth.service'; // Upewnij się co do ścieżki
 import { LoginComponent } from './features/auth/login/login';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { LeagueFormComponent } from './features/leagues/league-form/league-form.component';
-import { inject } from '@angular/core';
 import { AdminComponent } from './features/admin/admin.component';
 import { LeagueSeasonsComponent } from './features/league-seasons/league-seasons.component';
 import { SeasonComponent } from './features/season/season.component';
 import { NotFoundComponent } from './shared/not-found/not-found.component';
 
-// Guard pilnujący dostępu do prywatnych stref (Wymaga tokena)
 const authGuard = () => {
   const router = inject(Router);
-  if (localStorage.getItem('access_token')) {
+  const authService = inject(AuthService);
+
+  if (authService.isTokenValid()) {
     return true;
   }
-  // Używamy parseUrl, co jest nowszą, szybszą metodą na przekierowania wewnątrz guardów
+
+  authService.logout(); // Zapewniamy całkowite wyczyszczenie śmieci i stanu
   return router.parseUrl('/login');
 };
 
-// NOWY: Guard pilnujący ekranu logowania (Odrzuca zalogowanych)
 const guestGuard = () => {
   const router = inject(Router);
-  if (localStorage.getItem('access_token')) {
-    return router.parseUrl('/dashboard'); // Zalogowany? Lecisz na dashboard
+  const authService = inject(AuthService);
+
+  if (authService.isTokenValid()) {
+    return router.parseUrl('/dashboard');
   }
-  return true; // Niezalogowany? Wchodzisz na logowanie
+
+  // Usuń stary nieważny token, jeśli istnieje
+  if (localStorage.getItem('access_token')) {
+    localStorage.removeItem('access_token');
+  }
+
+  return true;
 };
 
 export const routes: Routes = [

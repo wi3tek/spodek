@@ -47,15 +47,6 @@
         {{ themeService.isWorldCupTheme() ? 'Motyw ₊✧' : 'Motyw 🏆' }}
       </button>
 
-      <!-- NOWE: Sekcja z czasem sesji na desktopie -->
-      @if (authService.sessionTimeLeft() !== null) {
-        <div class="divider"></div>
-        <div class="session-info" [class.warning]="authService.sessionTimeLeft()! < 300">
-          <span class="time-left">⏱ {{ authService.formatTime(authService.sessionTimeLeft()!) }}</span>
-          <button class="btn-icon-sm" (click)="authService.refreshToken()" title="Odśwież sesję">🔄</button>
-        </div>
-      }
-
       <button class="btn-secondary btn-sm btn-logout" (click)="logout()"> {{ isReadOnly() ? 'Wyjdź' : 'Wyloguj' }}</button>
     </div>
 
@@ -97,18 +88,22 @@
       <div class="divider"></div>
     }
 
-    <!-- NOWE: Sekcja z czasem sesji w menu mobilnym -->
-    @if (!isReadOnly() && authService.sessionTimeLeft() !== null) {
-      <div class="drawer-session-info" [class.warning]="authService.sessionTimeLeft()! < 300">
-        <span>Czas sesji: <strong>{{ authService.formatTime(authService.sessionTimeLeft()!) }}</strong></span>
-        <button class="btn-refresh" (click)="authService.refreshToken()">Odśwież 🔄</button>
-      </div>
-      <div class="drawer-divider"></div>
-    }
-
     <button class="drawer-link theme-link" (click)="themeService.toggleTheme(); closeMobileMenu()">
       🎨 Zmień motyw {{ themeService.isWorldCupTheme() ? '₊✧' : '🏆' }}
     </button>
     <button class="drawer-link logout-link" (click)="logout()">🚪 {{ isReadOnly() ? 'Wyjdź' : 'Wyloguj' }}</button>
   </div>
 </div>
+
+@if (authService.showSessionWarning()) {
+  <div class="session-overtime-overlay">
+    <div class="overtime-box">
+      <div class="icon-whistle">⏱️</div>
+      <div class="overtime-text">
+        <h3>Zbliża się koniec sesji</h3>
+        <p>Do końca pozostało: <strong>{{ authService.formatTime(authService.sessionTimeLeft()!) }}</strong></p>
+      </div>
+      <button class="btn-dogrywka" (click)="authService.refreshToken()">Dogrywka!</button>
+    </div>
+  </div>
+}

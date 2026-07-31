@@ -1,25 +1,34 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../core/services/admin.service';
 import { HeaderService } from '../../core/services/header.service';
+import {
+  TeamShieldComponent,
+  TopElement,
+  CenterElement,
+} from '../../shared/components/team-shield/team-shield.component';
+import { LogoScannerService } from '../../core/services/logo-scanner.service';
+import { BadgeShape, PatternType } from '../../core/models/team.model';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule], // Usunięto HeaderComponent
+  imports: [CommonModule, FormsModule, TeamShieldComponent],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent implements OnInit {
   public adminService = inject(AdminService);
   private headerService = inject(HeaderService);
+  private scannerService = inject(LogoScannerService);
 
-  // --- STAN GLOBALNY ---
   editingId = signal<string | null>(null);
   activeTab = signal<'players' | 'teams'>('players');
 
-  // --- SEKCJA: GRACZE ---
+  showAddPlayerModal = signal(false);
+  showAddTeamModal = signal(false);
+
   newPlayer = signal({ name: '', alias: '', imageUrl: '' });
   playerSearchTerm = signal('');
   playerCurrentPage = signal(1);
@@ -41,10 +50,46 @@ export class AdminComponent implements OnInit {
     Math.ceil(this.filteredPlayers().length / this.pageSizePlayers),
   );
 
-  // --- SEKCJA: DRUŻYNY ---
   teamSearchTerm = signal('');
   teamCurrentPage = signal(1);
   pageSizeTeams = 10;
+
+  newTeam = signal<{
+    name: string;
+    alias: string;
+    logoUrl: string;
+    shapeType: BadgeShape;
+    patternType: PatternType;
+    topElement: TopElement;
+    centerElement: CenterElement;
+    primaryColor: string;
+    secondaryColor: string;
+    tertiaryColor: string;
+    quaternaryColor: string;
+    quinaryColor: string;
+    topElementColor: string;
+    centerElementColor: string;
+  }>({
+    name: '',
+    alias: '',
+    logoUrl: '',
+    shapeType: 'SHIELD',
+    patternType: 'SASH',
+    topElement: 'NONE',
+    centerElement: 'NONE',
+    primaryColor: '#B0B0B0',
+    secondaryColor: '#CCCCCC',
+    tertiaryColor: '#464646',
+    quaternaryColor: '#ffffff',
+    quinaryColor: '#FFD700',
+    topElementColor: '#FFD700',
+    centerElementColor: '#FFD700',
+  });
+
+  corsError = signal(false);
+
+  // Timer do opóźnienia skanowania (Debounce)
+  private logoScanTimeout: any;
 
   filteredTeams = computed(() => {
     const term = this.teamSearchTerm().toLowerCase();
@@ -63,16 +108,19 @@ export class AdminComponent implements OnInit {
 
   totalTeamPages = computed(() => Math.ceil(this.filteredTeams().length / this.pageSizeTeams));
 
-  ngOnInit() {
-    this.headerService.setState({
-      title: 'Ustawienia',
-    });
+  @HostListener('document:keydown.escape', ['$event'])
+  handleEscape(event: KeyboardEvent) {
+    if (this.showAddPlayerModal()) this.showAddPlayerModal.set(false);
+    if (this.showAddTeamModal()) this.showAddTeamModal.set(false);
+    if (this.editingId()) this.editingId.set(null);
+  }
 
+  ngOnInit() {
+    this.headerService.setState({ title: 'Ustawienia' });
     this.adminService.loadPlayers();
     this.adminService.loadTeams();
   }
 
-  // --- LOGIKA GRACZY ---
   isAliasUnique(alias: string, excludeId?: string): boolean {
     return !this.adminService
       .players()
@@ -81,52 +129,137 @@ export class AdminComponent implements OnInit {
 
   saveNewPlayer() {
     const p = this.newPlayer();
-
-    const payload = {
-      name: p.name,
-      alias: p.alias,
-      imageUrl: p.imageUrl,
-    };
-
-    if (!payload.name || !payload.alias) return;
-
-    if (!this.isAliasUnique(payload.alias)) {
-      alert('BŁĄD: Nazwa gracza "' + payload.alias + '" jest już zajęta!');
+    if (!p.name || !p.alias) return;
+    if (!this.isAliasUnique(p.alias)) {
+      alert('BŁĄD: Nazwa gracza jest już zajęta!');
       return;
     }
-
-    this.adminService.addPlayer(payload).subscribe(() => {
-      this.adminService.loadPlayers();
-      // Czyszczenie formularza wraz z linkiem do avatara
+    this.adminService.addPlayer(p).subscribe(() => {
       this.newPlayer.set({ name: '', alias: '', imageUrl: '' });
+      this.showAddPlayerModal.set(false);
     });
   }
 
-  // --- OBSŁUGA STRONICOWANIA (GENERYCZNA) ---
-  goToPage(event: any, type: 'team' | 'player') {
-    const target = parseInt(event.target.value, 10);
-    if (type === 'team') {
-      if (!isNaN(target) && target >= 1 && target <= this.totalTeamPages()) {
-        this.teamCurrentPage.set(target);
-      } else {
-        event.target.value = this.teamCurrentPage();
+  saveNewTeam() {
+    const t = this.newTeam();
+    if (!t.name) return;
+
+    const payload = {
+      name: t.name,
+      alias: t.alias || t.name,
+      shapeType: t.shapeType,
+      patternType: t.patternType,
+      topElement: t.topElement,
+      centerElement: t.centerElement,
+      primaryColor: t.primaryColor,
+      secondaryColor: t.secondaryColor,
+      tertiaryColor: t.tertiaryColor,
+      quaternaryColor: t.quaternaryColor,
+      quinaryColor: t.quinaryColor,
+      topElementColor: t.topElementColor,
+      centerElementColor: t.centerElementColor,
+    };
+
+    this.adminService.addTeam(payload).subscribe(() => {
+      this.newTeam.set({
+        name: '',
+        alias: '',
+        logoUrl: '',
+        shapeType: 'SHIELD',
+        patternType: 'SASH',
+        topElement: 'NONE',
+        centerElement: 'NONE',
+        primaryColor: '#B0B0B0',
+        secondaryColor: '#CCCCCC',
+        tertiaryColor: '#464646',
+        quaternaryColor: '#ffffff',
+        quinaryColor: '#FFD700',
+        topElementColor: '#FFD700',
+        centerElementColor: '#FFD700',
+      });
+      this.corsError.set(false);
+      this.showAddTeamModal.set(false);
+    });
+  }
+
+  // --- NOWA METODA NASŁUCHUJĄCA ZMIAN W POLU URL ---
+  onLogoUrlChange(url: string) {
+    this.newTeam.update((t) => ({ ...t, logoUrl: url }));
+
+    // Anulujemy poprzedni timer jeśli użytkownik nadal wpisuje/wkleja
+    clearTimeout(this.logoScanTimeout);
+
+    // Ustawiamy nowy timer (150ms to niezauważalne opóźnienie dla oka, ale ratujące wydajność)
+    this.logoScanTimeout = setTimeout(() => {
+      if (url && url.length > 5) {
+        this.analyzeLogoUrl();
       }
-    } else {
-      if (!isNaN(target) && target >= 1 && target <= this.totalPlayerPages()) {
-        this.playerCurrentPage.set(target);
-      } else {
-        event.target.value = this.playerCurrentPage();
-      }
+    }, 150);
+  }
+
+  async analyzeLogoUrl() {
+    const url = this.newTeam().logoUrl;
+    if (!url) return;
+    this.corsError.set(false);
+
+    try {
+      const result = await this.scannerService.scanImage(url);
+      this.newTeam.update((t) => ({
+        ...t,
+        ...result,
+        topElementColor: result.quinaryColor,
+        centerElementColor: result.quinaryColor,
+      }));
+    } catch (e) {
+      console.warn(e);
+      this.corsError.set(true);
     }
   }
 
-  // --- ZAPIS EDYCJI ---
+  updateNewTeamColor(
+    key:
+      | 'primaryColor'
+      | 'secondaryColor'
+      | 'tertiaryColor'
+      | 'quaternaryColor'
+      | 'quinaryColor'
+      | 'topElementColor'
+      | 'centerElementColor',
+    event: any,
+  ) {
+    const value = typeof event === 'string' ? event : event?.target?.value;
+    if (value) this.newTeam.update((t) => ({ ...t, [key]: value }));
+  }
+
+  shuffleColors() {
+    this.newTeam.update((t) => ({
+      ...t,
+      primaryColor: t.secondaryColor,
+      secondaryColor: t.tertiaryColor,
+      tertiaryColor: t.quaternaryColor,
+      quaternaryColor: t.quinaryColor,
+      quinaryColor: t.primaryColor,
+    }));
+  }
+
+  goToPage(event: any, type: 'team' | 'player') {
+    const target = parseInt(event.target.value, 10);
+    if (type === 'team') {
+      if (!isNaN(target) && target >= 1 && target <= this.totalTeamPages())
+        this.teamCurrentPage.set(target);
+      else event.target.value = this.teamCurrentPage();
+    } else {
+      if (!isNaN(target) && target >= 1 && target <= this.totalPlayerPages())
+        this.playerCurrentPage.set(target);
+      else event.target.value = this.playerCurrentPage();
+    }
+  }
+
   saveEdit(item: any, type: 'team' | 'player') {
     if (type === 'player' && !this.isAliasUnique(item.alias, item.id)) {
-      alert('BŁĄD: Ten alias jest już używany przez innego gracza!');
+      alert('BŁĄD: Ten alias jest już używany!');
       return;
     }
-
     if (type === 'team') {
       this.adminService.updateTeam(item).subscribe(() => this.editingId.set(null));
     } else {
@@ -141,15 +274,20 @@ export class AdminComponent implements OnInit {
           alert('✅ Gracz został usunięty.');
           this.adminService.loadPlayers();
         },
-        error: (err) => {
-          // Jeśli backend wysłał IllegalStateException, komunikat będzie tutaj
-          const msg =
-            typeof err.error === 'string'
-              ? err.error
-              : 'Nie można usunąć gracza (prawdopodobnie grał już w meczach).';
-          alert('🚫 Błąd: ' + msg);
-        },
+        error: (err) =>
+          alert('🚫 Błąd: ' + (typeof err.error === 'string' ? err.error : 'Błąd usuwania')),
       });
     }
+  }
+
+  handleImageError(team: any) {
+    team.logoUrl = null;
+  }
+
+  copyToClipboard(text: string | undefined | null) {
+    if (!text) return;
+    navigator.clipboard
+      .writeText(text)
+      .catch((err) => console.error('Błąd kopiowania do schowka', err));
   }
 }

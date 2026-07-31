@@ -7,6 +7,7 @@ import pl.backend.spodek.model.Team;
 import pl.backend.spodek.repository.TeamRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/teams")
@@ -17,7 +18,23 @@ public class TeamController {
     @GetMapping
     public List<Team> getAllTeams() {
         // Sortujemy po overallRating (DESC - od największego)
-        return teamRepository.findAll( Sort.by( Sort.Direction.DESC, "overallRating" ));
+        return teamRepository.findAll(Sort.by(Sort.Direction.DESC, "overallRating"));
+    }
+
+    // NOWA METODA: Tworzenie pojedynczej drużyny z kreatora
+    @PostMapping
+    public Team createTeam(@RequestBody Team team) {
+        // Nadajemy losowy assetId, aby odróżnić drużyny customowe od domyślnych
+        if (team.getAssetId() == null)  team.setAssetId( 0 );
+
+
+        // Zabezpieczenie statystyk dla nowo dodanych drużyn
+        if (team.getOverallRating() == null) team.setOverallRating(75);
+        if (team.getAttackRating() == null) team.setAttackRating(75);
+        if (team.getMidfieldRating() == null) team.setMidfieldRating(75);
+        if (team.getDefenseRating() == null) team.setDefenseRating(75);
+
+        return teamRepository.save(team);
     }
 
     @PutMapping("/{id}")
@@ -25,7 +42,15 @@ public class TeamController {
         return teamRepository.findById(id)
                 .map(existing -> {
                     existing.setAlias(team.getAlias());
-                    existing.setName(team.getName()); // Na wszelki wypadek
+                    existing.setName(team.getName());
+                    // Zapisujemy nowe pola kolorów i stylów herbu:
+                    existing.setPrimaryColor(team.getPrimaryColor());
+                    existing.setSecondaryColor(team.getSecondaryColor());
+                    existing.setTertiaryColor(team.getTertiaryColor());
+                    existing.setQuaternaryColor(team.getQuaternaryColor());
+                    existing.setQuinaryColor(team.getQuinaryColor());
+                    existing.setShapeType(team.getShapeType());
+                    existing.setPatternType(team.getPatternType());
                     return teamRepository.save(existing);
                 })
                 .orElseThrow(() -> new RuntimeException("Drużyna nie istnieje"));

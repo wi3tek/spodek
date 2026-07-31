@@ -26,4 +26,12 @@ public class Team extends BaseDocument {
     private Double longitude;
     private Double latitude;
     private Integer internationalPrestige;
+
+    private String primaryColor;
+    private String secondaryColor;
+    private String tertiaryColor;
+    private String quaternaryColor;
+    private String quinaryColor;
+    private String shapeType;
+    private String patternType;
 }

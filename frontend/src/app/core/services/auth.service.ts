@@ -7,23 +7,39 @@ import { environment } from '../../../environments/environment';
 export interface AuthResponse {
   token: string;
   name: string;
-  // expiresIn przestało być nam potrzebne, liczymy czas prosto z tokena
 }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
-
   private apiUrl = environment.apiUrl;
 
   public sessionTimeLeft = signal<number | null>(null);
+  public showSessionWarning = signal<boolean>(false);
   private timerRef: any;
 
-  // 1. Zaktualizowana metoda: przyjmuje tylko token, sama oblicza resztę
+  timeleft = 60 * 5;
+
+  constructor() {
+    this.checkSessionOnStart();
+  }
+
+  // Weryfikacja przy starcie aplikacji (każdego komponentu wstrzykującego ten serwis)
+  private checkSessionOnStart() {
+    const token = this.getToken();
+    if (token) {
+      const expiresInSeconds = this.calculateRemainingSecondsFromToken(token);
+      if (expiresInSeconds > 0) {
+        this.startSessionTimer(expiresInSeconds);
+      } else {
+        this.logout('Sesja wygasła pod Twoją nieobecność. Zaloguj się ponownie.');
+      }
+    }
+  }
+
   public handleAuthentication(token: string) {
     localStorage.setItem('access_token', token);
-
     const expiresInSeconds = this.calculateRemainingSecondsFromToken(token);
 
     if (expiresInSeconds > 0) {
@@ -33,25 +49,22 @@ export class AuthService {
     }
   }
 
-  // NOWE: Bezpieczne parsowanie daty wygaśnięcia z payloadu JWT
   private calculateRemainingSecondsFromToken(token: string): number {
     try {
       const payload = token.split('.')[1];
-      const decoded = JSON.parse(atob(payload)); // atob bezpiecznie dekoduje Base64
-
-      // 'exp' w tokenie JWT to zawsze UNIX timestamp w sekundach
+      const decoded = JSON.parse(atob(payload));
       const expirationDateSeconds = decoded.exp;
       const currentSeconds = Math.floor(Date.now() / 1000);
-
       return expirationDateSeconds - currentSeconds;
     } catch (e) {
       console.error('Błąd parsowania tokena JWT', e);
-      return 0; // W przypadku uszkodzonego tokena wymuszamy wylogowanie
+      return 0;
     }
   }
 
   public startSessionTimer(expiresInSeconds: number) {
     this.clearTimer();
+    this.showSessionWarning.set(false); // Resetujemy flagę doliczonego czasu
     const expiresAtMs = Date.now() + expiresInSeconds * 1000;
     this.updateTimeLeft(expiresAtMs);
 
@@ -65,16 +78,17 @@ export class AuthService {
     const left = Math.max(0, Math.floor((expiresAtMs - now) / 1000));
     this.sessionTimeLeft.set(left);
 
+    // Flaga doliczonego czasu, gdy zostaje <= 5 minut (300 sekund)
+    this.showSessionWarning.set(left > 0 && left <= this.timeleft);
+
     if (left === 0) {
-      this.logout('Czas Twojej sesji minął. Ze względów bezpieczeństwa wylogowano automatycznie.');
+      this.logout('Czas sesji dobiegł końca. Wylogowano ze względów bezpieczeństwa.');
     }
   }
 
-  // 2. Właściwa implementacja strzału do backendu
   public refreshToken() {
     this.http.post<AuthResponse>(`${this.apiUrl}/auth/refresh`, {}).subscribe({
       next: (res) => {
-        // Zależymy wyłącznie na pewnym tokenie
         this.handleAuthentication(res.token);
       },
       error: () => {
@@ -86,6 +100,7 @@ export class AuthService {
   public logout(message?: string) {
     this.clearTimer();
     this.sessionTimeLeft.set(null);
+    this.showSessionWarning.set(false);
     localStorage.removeItem('access_token');
 
     if (message) {
@@ -98,26 +113,17 @@ export class AuthService {
     if (this.timerRef) clearInterval(this.timerRef);
   }
 
+  // Uproszczony formater - odliczamy maksymalnie od 05:00
   public formatTime(seconds: number): string {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
+    const m = Math.floor(seconds / 60);
     const s = seconds % 60;
-
-    const formattedMinutes = m < 10 && h > 0 ? `0${m}` : m;
-    const formattedSeconds = s < 10 ? `0${s}` : s;
-
-    // Jeżeli zostało ponad godzinę, wyświetla "1:00:00", jeżeli mniej to np. "59:05"
-    if (h > 0) {
-      return `${h}:${formattedMinutes}:${formattedSeconds}`;
-    }
-    return `${formattedMinutes}:${formattedSeconds}`;
+    return `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
   }
 
   login(credentials: any) {
     return this.http.post<any>(`${this.apiUrl}/auth/login`, credentials).pipe(
       tap((response) => {
         if (response.token) {
-          // Uproszczono wywołanie – handleAuthentication robi wszystko za nas
           this.handleAuthentication(response.token);
           this.router.navigate(['/dashboard']);
         }
@@ -127,5 +133,11 @@ export class AuthService {
 
   getToken() {
     return localStorage.getItem('access_token');
+  }
+
+  // Wygodna metoda na potrzeby Guardów
+  isTokenValid(): boolean {
+    const token = this.getToken();
+    return token ? this.calculateRemainingSecondsFromToken(token) > 0 : false;
   }
 }

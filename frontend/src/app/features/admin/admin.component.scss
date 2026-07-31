@@ -140,6 +140,73 @@
   }
 }
 
+/* Dodatkowe style dla panelu podglądu herbu */
+.shield-preview-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 20px;
+  padding: 15px;
+  background: var(--card-bg);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+
+  p {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .preview-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80px;
+
+    .preview-img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+
+    .generated-shield {
+      width: 60px;
+      height: auto;
+
+      .shield-svg {
+        width: 100%;
+        height: auto;
+        display: block;
+        filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2));
+      }
+    }
+  }
+
+  .preview-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .shape-select {
+      padding: 6px;
+      border: 1px solid var(--beer-gold);
+      border-radius: 6px;
+      background: var(--app-bg);
+      color: var(--text-dark);
+      outline: none;
+      font-weight: bold;
+    }
+  }
+
+  /* RWD na telefony */
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
+
 /* NOWY AWATAR ZE ZDJĘCIEM */
 .player-avatar-img {
   width: 32px;
@@ -493,4 +560,171 @@
   }
 
 
+}
+
+/* ==========================================================================
+   MODALE I EFEKT BLUR
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Półprzezroczysta czerń i efekt zmrożonego szkła */
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  /* Flexbox na środek ekranu */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* Z-index wyższy niż interfejs roboczy, ale mniejszy niż ew. globalny Header (zazwyczaj 1000+) */
+  z-index: 900;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: var(--card-bg);
+  padding: 25px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  max-height: 90vh;
+  overflow-y: auto;
+
+  h3 {
+    margin-top: 0;
+    color: var(--primary-brown);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+}
+
+.modal-input {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: var(--app-bg);
+  color: var(--text-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--beer-gold);
+  }
+}
+
+/* Standaryzacja pickera kolorów z zaokrąglonymi rogami */
+.color-picker-ui {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  overflow: hidden;
+
+  &::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  &::-webkit-color-swatch {
+    border: none;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ==========================================================================
+   PICKERY KOLORÓW (Wbudowany HEX + Schowek)
+   ========================================================================== */
+.colors-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.color-field {
+  display: flex;
+  align-items: center;
+  background: var(--app-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 3px 6px;
+  gap: 6px;
+  transition: border-color 0.2s;
+
+  &:focus-within {
+    border-color: var(--beer-gold);
+  }
+
+  .color-label {
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--text-muted);
+    min-width: 18px;
+  }
+
+  .color-picker-ui {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+    background: none;
+
+    &::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    &::-webkit-color-swatch {
+      border: none;
+      border-radius: 3px;
+    }
+  }
+
+  .hex-input {
+    width: 58px;
+    border: none;
+    background: transparent;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--text-dark);
+    outline: none;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0;
+    margin: 0;
+  }
+
+  .copy-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 2px;
+    opacity: 0.5;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      opacity: 1;
+    }
+    &:active {
+      transform: scale(0.9);
+    }
+  }
 }

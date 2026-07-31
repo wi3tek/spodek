@@ -1,6 +1,7 @@
 package pl.backend.spodek.web;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,8 +32,15 @@ public class LiveController {
 
     // Ten endpoint zostawiamy na wszelki wypadek / awaryjne zapytania
     @GetMapping("/{seasonCode}")
-    public LiveResponse getSeasonsByLeague(@PathVariable String seasonCode) {
-        return liveService.getLiveResults( seasonCode );
+    public ResponseEntity<LiveResponse> getSeasonsByLeague(@PathVariable String seasonCode) {
+        LiveResponse response;
+        try {
+            response = liveService.getLiveResults( seasonCode );
+        } catch(Exception e) {
+            return ResponseEntity.status( HttpStatus.FORBIDDEN ).body( null );
+        }
+
+        return ResponseEntity.ok( response );
     }
 
     @GetMapping("/team-stats/{leagueId}")

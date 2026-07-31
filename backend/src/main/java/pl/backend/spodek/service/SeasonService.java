@@ -3,6 +3,7 @@ package pl.backend.spodek.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
 import pl.backend.spodek.dto.SeasonTableEntryDTO;
 import pl.backend.spodek.model.Match;
